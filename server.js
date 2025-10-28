@@ -1918,5 +1918,7 @@ app.use((req, res) => res.status(404).json({ sucesso: false, erro: 'Rota não en
 // ========================
 // INICIAR SERVIDOR
 // ========================
-const PORT = 3000;
-app.listen(PORT, () => console.log(`🚀 Servidor rodando em http://localhost:${PORT}`));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+});
