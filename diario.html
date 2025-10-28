@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles-diario.css">
+    <title>Objetos de Conhecimento</title>
+</head>
+<body>
+    
+    <div class="titulo-header">
+        <div class="header-container">
+            <div class="header-content">
+                <button onclick="voltarParaProfessor()" class="btn-voltar">← Voltar</button>
+                <h1 class="titulo">Diário Digital</h1>
+                <div class="selecao-disciplina">
+                    <div class="seletor-group">
+                        <label for="select-turma">Turma:</label>
+                        <select id="select-turma">
+                            <option value="">Carregando turmas...</option>
+                        </select>
+                    </div>
+                    <div class="seletor-group">
+                        <label for="select-disciplina">Disciplina:</label>
+                        <select id="select-disciplina">
+                            <option value="">Selecione a disciplina</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="info-professor">
+                    <div class="info-item">
+                        <span class="info-label">Professor:</span>
+                        <span id="professor-nome">Carregando...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Data:</span>
+                        <span id="data-atual">--/--/----</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Hora:</span>
+                        <span id="hora-atual">--:--:--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendário e Objetos de Conhecimento -->
+    <section class="calendario-objetos">
+        <div class="controles-calendario">
+            <button onclick="mudarMes(-1)" class="btn-mes">◀ Mês Anterior</button>
+            <h2 id="mes-ano-atual"></h2>
+            <button onclick="mudarMes(1)" class="btn-mes">Próximo Mês ▶</button>
+        </div>
+        
+        <div class="tabela-objetos-container">
+            <table class="tabela-objetos">
+                <thead>
+                    <tr>
+                        <th class="col-dia">Dia</th>
+                        <th class="col-semana">Dia da Semana</th>
+                        <th class="col-objeto">Objeto de Conhecimento (Conteúdo da Aula)</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-objetos-body">
+                    <!-- Linhas serão geradas pelo JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="botoes-acao">
+            <button onclick="salvarObjetosConhecimento()" class="btn-salvar">💾 Salvar Objetos de Conhecimento</button>
+            <button onclick="limparCampos()" class="btn-limpar">🗑️ Limpar Campos</button>
+        </div>
+    </section>
+
+    <div id="mensagem" class="mensagem" style="display: none;"></div>
+
+    <script src="script-diario.js"></script>
+</body>
+</html>

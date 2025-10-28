@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles-frequencia.css">
+    <title>Controle de Frequência</title>
+</head>
+<body>
+    
+    <div class="titulo-header">
+  <div class="header-container">
+    <div class="header-content">
+      <button onclick="voltarParaProfessor()" class="btn-voltar">← Voltar</button>
+      <h1 class="titulo">Controle de Frequência</h1>
+      <div class="seletor-turma">
+        <label for="select-turma">Turma:</label>
+        <select id="select-turma">
+          <option value="">Carregando turmas...</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+    <!-- Calendário Mensal -->
+    <section class="calendario-mensal">
+        <div class="controles-calendario">
+            <button onclick="mudarMes(-1)" class="btn-mes">◀ Mês Anterior</button>
+            <h2 id="mes-ano-atual"></h2>
+            <button onclick="mudarMes(1)" class="btn-mes">Próximo Mês ▶</button>
+        </div>
+        
+        <div class="calendario-grid">
+            <div class="dias-semana">
+                <div>Dom</div>
+                <div>Seg</div>
+                <div>Ter</div>
+                <div>Qua</div>
+                <div>Qui</div>
+                <div>Sex</div>
+                <div>Sáb</div>
+            </div>
+            <div class="dias-mes" id="dias-mes">
+                <!-- Dias serão gerados pelo JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Lista de Alunos (aparece quando clica em uma data) -->
+    <section class="lista-alunos" id="lista-alunos" style="display: none;">
+        <div class="cabecalho-lista">
+            <h3 id="data-selecionada">Data Selecionada</h3>
+            <button onclick="fecharListaAlunos()" class="btn-fechar">✕ Fechar</button>
+        </div>
+        
+        <div class="alunos-container">
+            <div class="aluno-item">
+                <span class="nome-aluno">Ana Silva</span>
+                <div class="controles-frequencia">
+                    <label class="checkbox-container">
+                        <input type="checkbox" class="check-presenca">
+                        <span class="checkmark">✓ Presente</span>
+                    </label>
+                    <input type="text" class="observacao" placeholder="Observação...">
+                </div>
+            </div>
+            <!-- Mais alunos serão adicionados pelo JavaScript -->
+        </div>
+        
+        <div class="botoes-acao">
+            <button onclick="salvarFrequencia()" class="btn-salvar">💾 Salvar Frequência</button>
+            <button onclick="fecharListaAlunos()" class="btn-cancelar">❌ Cancelar</button>
+        </div>
+    </section>
+
+    <!-- ⭐⭐ BLOCO DA API_URL - DEVE VIR ANTES do script-frequencia.js ⭐⭐ -->
+    <script>
+    // URL da API no Render - SUBSTITUA pelo seu URL real do Render
+    const API_URL = 'https://projetosemed2.onrender.com';
+
+    // Função para verificar se o professor está logado
+    async function verificarSessao() {
+      try {
+        const response = await fetch(`${API_URL}/api/dados-usuario`, {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Sessão expirada');
+        }
+        
+        const data = await response.json();
+        if (!data.sucesso || data.usuario.tipo !== 'professor') {
+          throw new Error('Acesso negado');
+        }
+        
+        return data.usuario;
+      } catch (error) {
+        console.error('Erro na verificação de sessão:', error);
+        localStorage.removeItem('usuarioLogado');
+        window.location.href = 'index.html';
+      }
+    }
+
+    // Verificar sessão quando a página carregar
+    document.addEventListener('DOMContentLoaded', async function() {
+      const usuario = await verificarSessao();
+      if (usuario) {
+        console.log('Professor logado:', usuario.nome);
+        // O script-frequencia.js continuará o carregamento das turmas
+      }
+    });
+
+    // Função para voltar para a página do professor
+    function voltarParaProfessor() {
+      window.location.href = 'pagina-professor.html';
+    }
+    </script>
+
+    <!-- ⭐⭐ SÓ UM script-frequencia.js ⭐⭐ -->
+    <script src="script-frequencia.js"></script>
+</body>
+</html>

@@ -1,0 +1,262 @@
+/* styles-relatorios.css */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Audiowide", sans-serif;
+    background: url("./img/frent2.jpg") no-repeat center center fixed;
+    background-size: cover;
+    background-position: center;
+    min-height: 100vh;
+    color: #333;
+    padding: 20px;
+}
+
+/* Header */
+.header-relatorios {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 20px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 20px rgba(24, 8, 247, 0.2);
+    border-bottom: 4px solid #1808f7;
+    border-radius: 15px;
+    margin-bottom: 20px;
+}
+
+.btn-voltar {
+    background: linear-gradient(135deg, #1808f7, #4facfe);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: "Audiowide", sans-serif;
+    font-size: 14px;
+}
+
+.titulo-header h1 {
+    color: #1808f7;
+    font-size: 28px;
+    margin-bottom: 5px;
+}
+
+/* Filtros */
+.filtros-section {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 25px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    border: 3px solid #1808f7;
+}
+
+.filtros-container {
+    display: flex;
+    gap: 20px;
+    align-items: end;
+    flex-wrap: wrap;
+}
+
+.filtro-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.filtro-group label {
+    font-weight: bold;
+    color: #1808f7;
+}
+
+.filtro-group select {
+    padding: 10px;
+    border: 2px solid #4facfe;
+    border-radius: 8px;
+    font-family: "Audiowide", sans-serif;
+    min-width: 150px;
+}
+
+.btn-carregar {
+    background: linear-gradient(135deg, #4CAF50, #66BB6A);
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: "Audiowide", sans-serif;
+    font-size: 16px;
+}
+
+/* Resumo */
+.resumo-section {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 25px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    border: 3px solid #1808f7;
+}
+
+.resumo-section h2 {
+    color: #1808f7;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.resumo-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.resumo-card {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border: 2px solid;
+}
+
+.resumo-card.total { border-color: #2196F3; }
+.resumo-card.presentes { border-color: #4CAF50; }
+.resumo-card.ausentes { border-color: #f44336; }
+.resumo-card.percentual { border-color: #FF9800; }
+
+.resumo-icon {
+    font-size: 40px;
+}
+
+.resumo-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.resumo-valor {
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.resumo-label {
+    font-size: 14px;
+    color: #666;
+}
+
+/* Tabela */
+.detalhes-section {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 25px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    border: 3px solid #1808f7;
+}
+
+.detalhes-section h2 {
+    color: #1808f7;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.tabela-container {
+    overflow-x: auto;
+}
+
+.tabela-relatorio {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.tabela-relatorio th {
+    background: linear-gradient(135deg, #1808f7, #4facfe);
+    color: white;
+    padding: 15px;
+    text-align: left;
+    font-weight: bold;
+}
+
+.tabela-relatorio td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #ddd;
+}
+
+.tabela-relatorio tr:hover {
+    background: #f5f5f5;
+}
+
+/* Detalhes por Data */
+.detalhes-data-section {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 25px;
+    border-radius: 15px;
+    border: 3px solid #1808f7;
+}
+
+.detalhes-data-section h2 {
+    color: #1808f7;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.dia-relatorio {
+    background: white;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+.dia-relatorio h4 {
+    color: #1808f7;
+    margin-bottom: 10px;
+}
+
+.lista-alunos-dia {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.aluno-dia {
+    padding: 8px;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.aluno-dia.presente {
+    background: #e8f5e8;
+    color: #2e7d32;
+    border: 1px solid #4CAF50;
+}
+
+.aluno-dia.ausente {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #f44336;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .filtros-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .resumo-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .header-relatorios {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+}

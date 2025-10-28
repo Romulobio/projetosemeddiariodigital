@@ -1,0 +1,728 @@
+/* styles-frequencia.css - VERSÃO ESTILIZADA */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Audiowide", sans-serif;
+    background: url("./img/frent2.jpg") no-repeat center center fixed;
+    background-size: cover;
+    background-position: center;
+    min-height: 100vh;
+    color: #12e8f0;
+}
+
+/* Header */
+.header-frequencia {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 20px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 20px rgba(24, 8, 247, 0.2);
+    border-bottom: 4px solid #1808f7;
+    backdrop-filter: blur(10px);
+}
+
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+}
+
+.btn-voltar {
+    background: linear-gradient(135deg, #1808f7, #4facfe);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: "Audiowide", sans-serif;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(24, 8, 247, 0.3);
+}
+
+.btn-voltar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(24, 8, 247, 0.4);
+}
+
+/* centraliza o título perfeitamente */
+.titulo-header h1 {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #1808f7;
+  font-size: 32px;
+  font-weight: bold;
+  font-family: "Audiowide", sans-serif;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(19, 255, 235, 0.3);
+}
+
+#turma-selecionada {
+    color: #37f807;
+    font-size: 16px;
+    background: rgba(24, 8, 247, 0.1);
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid #1808f7;
+}
+
+.header-right #data-header {
+    color: #1808f7;
+    font-weight: bold;
+    font-size: 16px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 8px 15px;
+    border-radius: 8px;
+    border: 2px solid #4facfe;
+}
+
+/* Calendário Mensal */
+.calendario-mensal {
+    background: rgba(255, 255, 255, 0.95);
+    margin: 30px auto;
+    padding: 30px;
+    border-radius: 20px;
+    max-width: 1200px;
+    border: 3px solid #1808f7;
+    box-shadow: 0 8px 25px rgba(24, 8, 247, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+.controles-calendario {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding: 0 15px;
+}
+
+.btn-mes {
+    background: linear-gradient(135deg, #1808f7, #4facfe);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: "Audiowide", sans-serif;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(24, 8, 247, 0.3);
+}
+
+.btn-mes:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(24, 8, 247, 0.4);
+}
+
+.controles-calendario h2 {
+    color: #1808f7;
+    font-size: 26px;
+    text-shadow: 1px 1px 3px rgba(255, 239, 19, 0.3);
+}
+
+/* Grid do Calendário */
+.calendario-grid {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    border: 2px solid #4facfe;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.dias-semana {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: linear-gradient(135deg, #1808f7, #4facfe);
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.dias-semana div {
+    padding: 18px;
+    text-align: center;
+    border-right: 1px solid rgba(255, 255, 255, 0.3);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.dias-semana div:last-child {
+    border-right: none;
+}
+
+.dias-mes {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background: #e0e0e0;
+}
+
+.dia-calendario {
+    background: white;
+    padding: 15px 10px;
+    min-height: 90px;
+    cursor: pointer;
+    border: none;
+    text-align: left;
+    font-family: "Audiowide", sans-serif;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.dia-calendario:hover {
+    background: #f0f8ff;
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(24, 8, 247, 0.2);
+    z-index: 1;
+}
+
+.dia-calendario.hoje {
+    background: linear-gradient(135deg, #1808f7, #4facfe);
+    color: white;
+    border: 2px solid #ffeb3b;
+    box-shadow: 0 4px 15px rgba(24, 8, 247, 0.4);
+}
+
+.dia-calendario.hoje .numero-dia {
+    color: white;
+    font-weight: bold;
+}
+
+.dia-calendario.outro-mes {
+    background: #f8f9fa;
+    color: #ccc;
+}
+
+.numero-dia {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+/* Lista de Alunos */
+.lista-alunos {
+    background: rgba(255, 255, 255, 0.98);
+    margin: 30px auto;
+    padding: 30px;
+    border-radius: 20px;
+    max-width: 1200px;
+    border: 3px solid #1808f7;
+    box-shadow: 0 8px 25px rgba(24, 8, 247, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.cabecalho-lista {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 3px solid #4facfe;
+}
+
+.cabecalho-lista h3 {
+    color: #1808f7;
+    font-size: 24px;
+    text-shadow: 1px 1px 3px rgba(255, 239, 19, 0.3);
+}
+
+.btn-fechar {
+    background: linear-gradient(135deg, #ff4444, #ff6b6b);
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: "Audiowide", sans-serif;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(255, 68, 68, 0.3);
+}
+
+.btn-fechar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(255, 68, 68, 0.4);
+}
+
+/* Itens dos Alunos */
+.alunos-container {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.alunos-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.alunos-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.alunos-container::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #1808f7, #4facfe);
+    border-radius: 10px;
+}
+
+.aluno-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, #f8f9ff, #e3f2fd);
+    border-radius: 12px;
+    border: 2px solid #4facfe;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(24, 8, 247, 0.1);
+}
+
+.aluno-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 15px rgba(24, 8, 247, 0.2);
+}
+
+.nome-aluno {
+    font-weight: bold;
+    color: #1808f7;
+    font-size: 18px;
+    min-width: 200px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.controles-frequencia {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Checkbox Personalizado */
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.checkbox-container input {
+    display: none;
+}
+
+.checkmark {
+    padding: 10px 20px;
+    background: #f0f0f0;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    font-weight: bold;
+    min-width: 120px;
+    text-align: center;
+}
+
+.checkbox-container input:checked + .checkmark {
+    background: linear-gradient(135deg, #4CAF50, #66BB6A);
+    color: white;
+    border-color: #4CAF50;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.observacao {
+    padding: 10px 15px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-family: "Audiowide", sans-serif;
+    font-size: 14px;
+    min-width: 250px;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.observacao:focus {
+    border-color: #1808f7;
+    outline: none;
+    box-shadow: 0 0 8px rgba(24, 8, 247, 0.3);
+    background: white;
+}
+
+/* Botões de Ação */
+.botoes-acao {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 30px;
+    padding-top: 25px;
+    border-top: 3px solid #4facfe;
+}
+
+.btn-salvar {
+    background: linear-gradient(135deg, #4CAF50, #66BB6A);
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: "Audiowide", sans-serif;
+    font-size: 18px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.btn-salvar:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4);
+}
+
+.btn-cancelar {
+    background: linear-gradient(135deg, #ff4444, #ff6b6b);
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: "Audiowide", sans-serif;
+    font-size: 18px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 68, 68, 0.3);
+}
+
+.btn-cancelar:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(255, 68, 68, 0.4);
+}
+
+/* Efeitos de loading e animações */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.calendario-mensal, .lista-alunos {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    
+    .header-frequencia {
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px;
+        text-align: center;
+    }
+    
+    .header-left {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .controles-calendario {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .aluno-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .controles-frequencia {
+        width: 100%;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .observacao {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    .botoes-acao {
+        flex-direction: column;
+    }
+    
+    .dia-calendario {
+        padding: 10px 5px;
+        min-height: 70px;
+        font-size: 12px;
+    }
+    
+    .numero-dia {
+        font-size: 14px;
+    }
+}
+
+/* Efeito de brilho nos botões */
+.btn-voltar, .btn-mes, .btn-salvar, .btn-cancelar {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-voltar::before, .btn-mes::before, .btn-salvar::before, .btn-cancelar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s;
+}
+
+.btn-voltar:hover::before, .btn-mes:hover::before, .btn-salvar:hover::before, .btn-cancelar:hover::before {
+    left: 100%;
+}
+/* ADICIONE ESTE CSS AO styles-frequencia.css */
+
+/* Opções de Presença */
+.opcoes-presenca {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.radio-container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.radio-container input {
+    display: none;
+}
+
+.radio-mark {
+    padding: 8px 15px;
+    background: #f0f0f0;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    font-weight: bold;
+    min-width: 100px;
+    text-align: center;
+}
+
+.radio-mark.presente {
+    background: #e8f5e8;
+    border-color: #c8e6c9;
+    color: #2e7d32;
+}
+
+.radio-mark.ausente {
+    background: #ffebee;
+    border-color: #ffcdd2;
+    color: #c62828;
+}
+
+.radio-container input:checked + .radio-mark.presente {
+    background: linear-gradient(135deg, #4CAF50, #66BB6A);
+    color: white;
+    border-color: #4CAF50;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.radio-container input:checked + .radio-mark.ausente {
+    background: linear-gradient(135deg, #f44336, #ef5350);
+    color: white;
+    border-color: #f44336;
+    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+}
+
+.radio-mark:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Ajuste nos controles de frequência */
+.controles-frequencia {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Responsividade para os botões de presença */
+@media (max-width: 768px) {
+    .opcoes-presenca {
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+    }
+    
+    .radio-mark {
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .controles-frequencia {
+        flex-direction: column;
+        gap: 15px;
+        width: 100%;
+    }
+    
+    .observacao {
+        width: 100%;
+    }
+}
+/* ================= SELETOR DE TURMA ================= */
+.seletor-turma {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.seletor-turma label {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+#select-turma {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background: white;
+    font-size: 14px;
+    min-width: 180px;
+    cursor: pointer;
+}
+
+#select-turma:focus {
+    outline: none;
+    border-color: #276EF1;
+    box-shadow: 0 0 0 2px rgba(39, 110, 241, 0.1);
+}
+/* ===========================
+   CABEÇALHO ESCOPADO - CONTROLE DE FREQUÊNCIA
+   (Substituir bloco anterior sem afetar outras áreas)
+   =========================== */
+.titulo-header {
+    width: 90%;
+    max-width: 1200px;
+    margin: 26px auto;         /* centraliza sem sobrepor o restante */
+    display: block;
+}
+
+/* container restrito ao .titulo-header para evitar colisões */
+.titulo-header > .header-container {
+    background: rgba(255, 255, 255, 0.97);
+    border-radius: 16px;
+    padding: 16px 20px;
+    box-shadow: 0 8px 20px rgba(24, 8, 247, 0.10);
+    border-bottom: 3px solid #1808f7;
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* layout interno restrito (não usa .header-content global) */
+.titulo-header > .header-container > .header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 12px;
+}
+
+/* Botão voltar: estilo parecido com o restante, mas escopado */
+.titulo-header .btn-voltar {
+    background: linear-gradient(135deg, #1808f7, #4facfe);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: "Audiowide", sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 4px 10px rgba(24,8,247,0.25);
+    transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.titulo-header .btn-voltar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(24,8,247,0.34);
+}
+
+/* Título: escopado para não colidir com outros h1 */
+.titulo-header .titulo {
+    color: #1808f7;
+    font-size: 28px;
+    font-weight: 800;
+    margin: 0;
+    text-shadow: 1px 1px 3px rgba(4, 248, 236, 0.22);
+    text-align: center;
+    flex: 1;               /* ocupa espaço central sem empurrar o calendário */
+}
+
+/* Seletor de turma: escopado */
+.titulo-header .seletor-turma {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 12px;
+}
+
+.titulo-header .seletor-turma label {
+    font-size: 14px;
+    color: #1808f7;
+    font-weight: 700;
+}
+
+.titulo-header .seletor-turma select,
+.titulo-header .seletor-turma #select-turma {
+    padding: 7px 12px;
+    border-radius: 8px;
+    border: 2px solid #dcdcdc;
+    background: #ffffff;
+    font-size: 14px;
+    min-width: 170px;
+    cursor: pointer;
+    transition: box-shadow .18s ease, border-color .18s ease;
+    color: #222;
+}
+
+.titulo-header .seletor-turma select:focus,
+.titulo-header .seletor-turma select:hover {
+    outline: none;
+    border-color: #4facfe;
+    box-shadow: 0 0 8px rgba(79,172,254,0.14);
+}
+
+/* responsividade local: só para o cabeçalho */
+@media (max-width: 768px) {
+    .titulo-header {
+        width: calc(100% - 24px);
+        margin: 18px auto;
+    }
+    .titulo-header > .header-container {
+        flex-direction: column;
+        align-items: center;
+        padding: 14px;
+        gap: 10px;
+    }
+    .titulo-header > .header-container > .header-content {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .titulo-header .titulo {
+        font-size: 20px;
+        order: 2;
+    }
+    .titulo-header .btn-voltar { order: 1; align-self: flex-start; }
+    .titulo-header .seletor-turma { order: 3; width: 100%; justify-content: center; }
+    .titulo-header .seletor-turma select { min-width: 200px; }
+}
