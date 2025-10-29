@@ -31,22 +31,9 @@ db.connect(err => {
   } else {
     console.log('✅ Conexão com o banco Railway bem-sucedida!');
     
-    // ========================
-    // INICIAR SERVIDOR
-    // ========================
-    // O servidor Express só inicia se a conexão com o banco for OK.
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-      console.log(`🚀 Servidor rodando na porta ${PORT}`);
-    });
-  }
-});
+ 
 
 module.exports = db;
-
-// ... (O restante do seu código, rotas, etc.)
-
-// ATENÇÃO: O antigo bloco app.listen no final do arquivo DEVE ser removido!
 
 
 // ========================
@@ -54,7 +41,13 @@ module.exports = db;
 // ========================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(__dirname + '/public'));
+// Torna a pasta 'public' acessível
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Rota padrão (raiz)
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 app.use(session({
   secret: 'seu-seguro-super-segredo',
@@ -1928,3 +1921,13 @@ app.use((err, req, res, next) => {
 
 app.use((req, res) => res.status(404).json({ sucesso: false, erro: 'Rota não encontrada' }));
 
+   // ========================
+    // INICIAR SERVIDOR
+    // ========================
+    // O servidor Express só inicia se a conexão com o banco for OK.
+   const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+});
+  }
+});
