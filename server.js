@@ -21,16 +21,20 @@ const db = mysql.createConnection({
   charset: 'utf8mb4'
 });
 
-// ...
+// ... (código anterior)
+
 db.connect(err => {
   if (err) {
     console.error('❌ Erro ao conectar ao banco:', err);
-    // Adicione um processo de saída para que o Railway saiba que falhou
+    // Adicionamos esta linha para que o Railway saiba que o deploy falhou
     process.exit(1); 
   } else {
     console.log('✅ Conexão com o banco Railway bem-sucedida!');
     
-    
+    // ========================
+    // INICIAR SERVIDOR
+    // ========================
+    // O servidor Express só inicia se a conexão com o banco for OK.
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
       console.log(`🚀 Servidor rodando na porta ${PORT}`);
@@ -39,6 +43,10 @@ db.connect(err => {
 });
 
 module.exports = db;
+
+// ... (O restante do seu código, rotas, etc.)
+
+// ATENÇÃO: O antigo bloco app.listen no final do arquivo DEVE ser removido!
 
 
 // ========================
