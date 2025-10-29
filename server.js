@@ -21,20 +21,25 @@ const db = mysql.createConnection({
   charset: 'utf8mb4'
 });
 
+// ...
 db.connect(err => {
   if (err) {
     console.error('❌ Erro ao conectar ao banco:', err);
+    // Adicione um processo de saída para que o Railway saiba que falhou
+    process.exit(1); 
   } else {
     console.log('✅ Conexão com o banco Railway bem-sucedida!');
+    
+    
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+      console.log(`🚀 Servidor rodando na porta ${PORT}`);
+    });
   }
 });
 
 module.exports = db;
 
-
-db.on('error', (err) => {
-  console.error('MySQL error event:', err);
-});
 
 // ========================
 // CONFIGURAÇÃO DO APP
@@ -1915,10 +1920,3 @@ app.use((err, req, res, next) => {
 
 app.use((req, res) => res.status(404).json({ sucesso: false, erro: 'Rota não encontrada' }));
 
-// ========================
-// INICIAR SERVIDOR
-// ========================
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
-});
