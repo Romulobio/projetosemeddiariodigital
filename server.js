@@ -41,7 +41,7 @@ db.on('error', (err) => {
 // ========================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(__dirname));
+app.use(express.static(__dirname + '/public'));
 
 app.use(session({
   secret: 'seu-seguro-super-segredo',
