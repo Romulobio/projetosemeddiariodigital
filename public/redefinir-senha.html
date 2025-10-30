@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redefinir Senha - Sistema Escolar</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .user-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .user-info p {
+            margin: 5px 0;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .links {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .links a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .links a:hover {
+            text-decoration: underline;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>🔄 Redefinir Senha</h1>
+            <p>Crie uma nova senha para sua conta</p>
+        </div>
+
+        <div id="loading" class="message info">
+            Validando token...
+        </div>
+
+        <div id="invalidToken" class="message error hidden">
+            Token inválido ou expirado! Solicite um novo link de recuperação.
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <div id="resetFormContainer" class="hidden">
+            <div id="userInfo" class="user-info hidden">
+                <!-- Informações do usuário serão preenchidas via JavaScript -->
+            </div>
+
+            <form id="resetForm">
+                <div class="form-group">
+                    <label for="nova_senha">Nova Senha:</label>
+                    <input type="password" id="nova_senha" name="nova_senha" required 
+                           placeholder="Mínimo 6 caracteres" minlength="6">
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmar_senha">Confirmar Nova Senha:</label>
+                    <input type="password" id="confirmar_senha" name="confirmar_senha" required 
+                           placeholder="Digite a senha novamente">
+                </div>
+
+                <button type="submit" class="btn" id="submitBtn">Redefinir Senha</button>
+            </form>
+        </div>
+
+        <div class="links">
+            <a href="/login.html">← Voltar para o Login</a>
+        </div>
+    </div>
+
+    <script>
+        // Pega o token da URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!token) {
+                showInvalidToken('Token não encontrado na URL!');
+                return;
+            }
+
+            validateToken(token);
+        });
+
+        async function validateToken(token) {
+            try {
+                showLoading();
+                
+                const response = await fetch(`/validar-token/${token}`);
+                const data = await response.json();
+                
+                hideLoading();
+                
+                if (data.sucesso) {
+                    showUserInfo(data.usuario);
+                    showResetForm();
+                } else {
+                    showInvalidToken(data.erro);
+                }
+            } catch (error) {
+                hideLoading();
+                showInvalidToken('Erro ao validar token. Tente novamente.');
+            }
+        }
+
+        function showUserInfo(usuario) {
+            const userInfoDiv = document.getElementById('userInfo');
+            userInfoDiv.innerHTML = `
+                <p><strong>Usuário:</strong> ${usuario.nome}</p>
+                <p><strong>Email:</strong> ${usuario.email}</p>
+            `;
+            userInfoDiv.classList.remove('hidden');
+        }
+
+        function showResetForm() {
+            document.getElementById('resetFormContainer').classList.remove('hidden');
+        }
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function showInvalidToken(message) {
+            document.getElementById('invalidToken').textContent = message;
+            document.getElementById('invalidToken').classList.remove('hidden');
+        }
+
+        // Form submission
+        document.getElementById('resetForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const nova_senha = document.getElementById('nova_senha').value;
+            const confirmar_senha = document.getElementById('confirmar_senha').value;
+            const submitBtn = document.getElementById('submitBtn');
+            const messageDiv = document.getElementById('message');
+            
+            if (nova_senha !== confirmar_senha) {
+                showMessage('As senhas não coincidem!', 'error', messageDiv);
+                return;
+            }
+
+            if (nova_senha.length < 6) {
+                showMessage('A senha deve ter pelo menos 6 caracteres!', 'error', messageDiv);
+                return;
+            }
+
+            try {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Redefinindo...';
+                
+                const response = await fetch('/redefinir-senha-token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        token: token,
+                        nova_senha: nova_senha,
+                        confirmar_senha: confirmar_senha
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.sucesso) {
+                    showMessage(data.mensagem, 'success', messageDiv);
+                    document.getElementById('resetForm').reset();
+                    submitBtn.textContent = 'Senha Redefinida!';
+                    
+                    // Redireciona para login após 3 segundos
+                    setTimeout(() => {
+                        window.location.href = '/login.html';
+                    }, 3000);
+                } else {
+                    showMessage(data.erro, 'error', messageDiv);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Redefinir Senha';
+                }
+            } catch (error) {
+                showMessage('Erro de conexão. Tente novamente.', 'error', messageDiv);
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Redefinir Senha';
+            }
+        });
+
+
+    </script>
+    
+</script>
+
+<script>
+// ✅ CORREÇÃO: URL automática para produção/desenvolvimento
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000'
+  : 'http://projetosemeddiariodigital-production.up.railway.app'; // ⚠️ SUBSTITUA pelo URL REAL do Railway depois!
+
+// Função auxiliar para fetch com tratamento de erro
+async function apiFetch(url, options = {}) {
+  try {
+    const response = await fetch(`${API_URL}${url}`, {
+      ...options,
+      credentials: 'include'
+    });
+    return response;
+  } catch (error) {
+    console.error('Erro na requisição:', error);
+    throw error;
+  }
+}
+</script>
+
+</body>
+</html>

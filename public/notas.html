@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles-notas.css">
+    <title>Sistema de Notas - Professor</title>
+    
+</head>
+<body>
+   
+        <!-- Controles de seleção -->
+        <section class="controls">
+            <!-- Header -->
+    <header class="header-relatorios">
+        <div class="header-left">
+            <button onclick="voltarParaProfessor()" class="btn-voltar">← Voltar</button>
+            <div class="titulo-header">
+                <h1>Relatórios de Notas</h1>
+                
+            </div>
+        </div>
+        <div class="header-right">
+            <span id="data-relatorio"></span>
+        </div>
+    </header>
+
+            <div class="control-group">
+                <div class="select-group">
+                    <label for="selectTurma">Selecionar Turma:</label>
+                    <select id="selectTurma">
+                        <option value="">Selecione uma turma</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button id="btnSalvar" class="btn btn-success">💾 Salvar Todas as Notas</button>
+        </section>
+
+        <!-- Abas das unidades -->
+        <div class="unidades-tabs">
+            <button class="tab active" data-unidade="1">📚 Unidade 1</button>
+            <button class="tab" data-unidade="2">📚 Unidade 2</button>
+            <button class="tab" data-unidade="3">📚 Unidade 3</button>
+        </div>
+
+        <!-- Tabela de notas -->
+        <section class="tabela-notas-container">
+            <table class="tabela-notas">
+                <thead>
+                    <tr>
+                        <th rowspan="2">Aluno</th>
+                        <th colspan="3">Qualitativo (4,0)</th>
+                        <th rowspan="2">Atividade/Projeto (3,0)</th>
+                        <th rowspan="2">Avaliação (3,0)</th>
+                        <th rowspan="2">Média da Unidade</th>
+                        <th rowspan="2">Recuperação/Conselho</th>
+                    </tr>
+                    <tr>
+                        <th>Participação (2,0)</th>
+                        <th>Organização (1,0)</th>
+                        <th>Respeito (1,0)</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaNotasBody">
+                    <tr>
+                        <td colspan="8" class="loading">Selecione uma turma para carregar as notas</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Tabela de Média Anual -->
+        <section class="tabela-anual">
+            <h3>📈 Média Anual</h3>
+            <div class="tabela-notas-container">
+                <table class="tabela-notas">
+                    <thead>
+                        <tr>
+                            <th>Aluno</th>
+                            <th>Unidade 1</th>
+                            <th>Unidade 2</th>
+                            <th>Unidade 3</th>
+                            <th>Média Anual</th>
+                            <th>Status Final</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaAnualBody">
+                        <tr>
+                            <td colspan="6" class="loading">As médias anuais serão calculadas automaticamente</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+<script>
+// ✅ CORREÇÃO: URL automática para produção/desenvolvimento
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000'
+  : 'http://projetosemeddiariodigital-production.up.railway.app'; // ⚠️ SUBSTITUA pelo URL REAL do Railway depois!
+
+// Função auxiliar para fetch com tratamento de erro
+async function apiFetch(url, options = {}) {
+  try {
+    const response = await fetch(`${API_URL}${url}`, {
+      ...options,
+      credentials: 'include'
+    });
+    return response;
+  } catch (error) {
+    console.error('Erro na requisição:', error);
+    throw error;
+  }
+}
+</script>
+
+
+    <script src="script-notas.js"></script>
+</body>
+</html>

@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Painel Administrativo — Sistema Escolar</title>
+<link rel="stylesheet" href="styles-admin.css">
+</head>
+<body>
+<div class="wrap">
+  <aside class="sidebar">
+    <div class="brand">SISTEMA ESCOLAR</div>
+    <div class="muted">Painel administrativo</div>
+
+    <div class="hr"></div>
+
+    <nav class="nav" id="menu">
+      <button data-view="dashboard" class="active">💠 Dashboard <small>Visão geral</small></button>
+      <button data-view="turmas">📘Turmas <small>Cadastrar / Listar</small></button>
+      <button data-view="professores">👨‍🏫Professores <small>Cadastrar / Vincular</small></button>
+      <button data-view="alunos">👩‍🎓Alunos <small>Cadastrar / Exportar</small></button>
+      <button data-view="relatorios">📋Relatórios <small>Exportar listagens</small></button>
+      <button data-view="configuracoes">⚙️ Administradores <small>Permissões e Sistema</small></button>
+      <button data-view="Senhas">🔐 Senhas <small>Alterar senha</small></button>
+    </nav>
+
+    <div style="flex:1"></div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button id="btn-logout" class="btn ghost">🚪 Logout</button>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">Usuário: <span id="admin-name" class="muted">Admin</span></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="header">
+      <div>
+        <h2 style="margin:0">Painel do Administrador</h2>
+        <div class="muted" id="subinfo">Gerencie turmas, professores e alunos</div>
+      </div>
+      <div class="flex-right">
+        <div class="search">
+          <input id="global-search" placeholder="Pesquisar alunos / turmas / professores..." />
+        </div>
+        <button id="btn-export" class="export">Pesquisar</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Turmas</h3>
+        <p id="count-turmas">0</p>
+      </div>
+      <div class="card">
+        <h3>Professores</h3>
+        <p id="count-professores">0</p>
+      </div>
+      <div class="card">
+        <h3>Alunos</h3>
+        <p id="count-alunos">0</p>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- ================= DASHBOARD ================= -->
+      <div id="view-dashboard" class="panel view"> 
+        <h3>Visão geral</h3>
+        <p class="muted">Use o menu à esquerda para navegar e gerenciar dados.</p>
+      </div>
+
+     <!-- ================= TURMAS ================= -->
+<div id="view-turmas" class="panel view" style="display:none">
+  <h3>Turmas</h3>
+  
+  <!-- CADASTRAR TURMA -->
+  <div class="card-section turmas">
+    <h4>📘 Cadastrar Nova Turma</h4>
+    <form id="form-turma">
+      <div class="row" style="align-items:end">
+        <div>
+          <label>Nome da Turma</label>
+          <input type="text" name="nome" required placeholder="Ex: 3º Ano A" />
+        </div>
+        <div>
+          <label>Ano</label>
+          <input type="number" name="ano" required min="2000" max="2100" value="2025" />
+        </div>
+        <div>
+          <label>Turno</label>
+          <select name="turno" required>
+            <option value="matutino">Matutino</option>
+            <option value="vespertino">Vespertino</option>
+            <option value="noturno">Noturno</option>
+          </select>
+        </div>
+        <div style="align-self:end">
+          <button class="btn btn-turmas" type="submit">Cadastrar Turma</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- LISTA DE TURMAS -->
+  <div style="margin-top:18px">
+    <table id="table-turmas" class="table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Ano</th>
+          <th>Turno</th>
+          <th>Professores</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+      <!-- ================= PROFESSORES ================= -->
+<div id="view-professores" class="panel view" style="display:none">
+  <h3>Professores</h3>
+  
+  <!-- CADASTRAR PROFESSOR -->
+  <div style="margin-bottom:24px; padding:20px; background:#f8f9fa; border-radius:8px; border:2px solid #2196F3;">
+    <h4 style="color:#1976D2; margin-bottom:16px;">👨‍🏫 Cadastrar Novo Professor</h4>
+    <form id="form-professor">
+      <div class="row" style="align-items:end">
+        <div>
+          <label>Nome do Professor</label>
+          <input type="text" name="nome" required placeholder="Ex: João Silva" />
+        </div>
+        <div>
+          <label>Email (login)</label>
+          <input type="email" name="email" required placeholder="email@escola.com" />
+        </div>
+        <div style="align-self:end">
+          <button class="btn" type="submit" style="background:#2196F3;">Cadastrar Professor</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- VINCULAR PROFESSOR À TURMA -->
+  <div style="margin-bottom:24px; padding:20px; background:#f8f9fa; border-radius:8px; border:2px solid #FF9800;">
+    <h4 style="color:#F57C00; margin-bottom:16px;">📚 Vincular Professor à Turma</h4>
+    <div class="row" style="align-items:end">
+      <div>
+        <label>Professor</label>
+        <select id="select-professor"></select>
+      </div>
+      <div>
+        <label>Turma</label>
+        <select id="select-turma-vinculo"></select>
+      </div>
+      <div>
+        <button id="btn-vincular" class="btn" style="background:#FF9800;">Vincular à Turma</button>
+      </div>
+    </div>
+    <div style="margin-top:10px" id="vinculos-msg"></div>
+  </div>
+
+  <!-- VINCULAR DISCIPLINAS AO PROFESSOR -->
+  <div style="margin-bottom:24px; padding:20px; background:#f8f9fa; border-radius:8px; border:2px solid #4CAF50;">
+    <h4 style="color:#2E7D32; margin-bottom:16px;">🎓 Vincular Disciplinas ao Professor</h4>
+    
+    <div class="row" style="align-items:end">
+      <div>
+        <label>Professor</label>
+        <select id="select-professor-disciplina">
+          <option value="">Selecione um professor</option>
+        </select>
+      </div>
+      <div style="flex:2">
+        <label>Disciplinas</label>
+        <div class="disciplinas-container" id="disciplinas-container" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px; max-height:120px; overflow-y:auto; padding:8px; background:white; border-radius:6px; border:1px solid #ddd;">
+          <!-- Checkboxes das disciplinas serão gerados via JavaScript -->
+        </div>
+      </div>
+      <div>
+        <button id="btn-vincular-disciplinas" class="btn" style="background:#4CAF50;">Vincular Disciplinas</button>
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <h5 style="color:#2E7D32; margin-bottom:8px;">Disciplinas Vinculadas</h5>
+      <div id="lista-disciplinas-vinculadas" style="min-height:40px; padding:12px; background:white; border-radius:6px; border:1px solid #ddd;">
+        <p style="margin:0; color:#666; font-style:italic;">Selecione um professor para ver as disciplinas vinculadas.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- LISTA DE PROFESSORES -->
+  <div style="margin-top:18px">
+    <table id="table-professores" class="table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Email</th>
+          <th>Turmas</th>
+          <th>Disciplinas</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+      
+     <!-- ================= ALUNOS ================= -->
+<div id="view-alunos" class="panel view" style="display:none">
+  <h3>Alunos</h3>
+  
+  <!-- CADASTRAR ALUNO -->
+  <div class="card-section alunos">
+    <h4>👩‍🎓 Cadastrar Novo Aluno</h4>
+    <form id="form-aluno">
+      <div class="row" style="align-items:end">
+        <div>
+          <label>Nome do Aluno</label>
+          <input type="text" name="nome" required placeholder="Nome completo" />
+        </div>
+        <div>
+          <label>Turma</label>
+          <select name="turma_id" id="select-turma-aluno" required></select>
+        </div>
+        <div style="align-self:end">
+          <button class="btn btn-alunos" type="submit">Cadastrar Aluno</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- LISTA DE ALUNOS -->
+  <div style="margin-top:18px">
+    <table id="table-alunos" class="table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Turma</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ================= CONFIGURAÇÕES ================= -->
+<div id="view-configuracoes" class="panel view" style="display:none">
+  <h3>Configurações do Sistema</h3>
+    <!-- CADASTRAR NOVO ADMINISTRADOR (apenas para admin master) -->
+  <div id="secaoCadastroAdmin" class="card-section" style="margin-top: 24px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #9C27B0;">
+    <h4 style="color: #9C27B0; margin-bottom: 16px;">👑 Cadastrar Novo Administrador</h4>
+    
+    <form id="form-cadastro-admin">
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Nome do Administrador:</label>
+        <input type="text" id="nomeAdmin" placeholder="Nome completo" style="width: 100%; max-width: 400px; padding: 10px; border: 1px solid #ddd; border-radius: 4px;" required>
+      </div>
+      
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Email (login):</label>
+        <input type="email" id="emailAdmin" placeholder="email@escola.com" style="width: 100%; max-width: 400px; padding: 10px; border: 1px solid #ddd; border-radius: 4px;" required>
+      </div>
+      
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Senha:</label>
+        <input type="password" id="senhaAdmin" placeholder="Mínimo 6 caracteres" style="width: 100%; max-width: 400px; padding: 10px; border: 1px solid #ddd; border-radius: 4px;" required minlength="6">
+      </div>
+      
+      <button type="submit" class="btn" style="background: #9C27B0;">
+        ✅ Cadastrar Administrador
+      </button>
+    </form>
+    
+    <div id="mensagemCadastroAdmin" style="display: none; margin-top: 15px; padding: 12px; border-radius: 6px; text-align: center;"></div>
+  </div>
+  <!-- GERENCIAR PERMISSÕES DE ADMIN -->
+  <div class="card-section configuracoes">
+    <h4>🔐 Gerenciar Permissões de Administrador</h4>
+    
+    <div class="row" style="align-items:end">
+      <div style="flex:2">
+        <label>Administradores do Sistema</label>
+        <select id="select-admins">
+          <option value="">Carregando administradores...</option>
+        </select>
+      </div>
+      <div>
+        <button id="btn-toggle-admin" class="btn btn-configuracoes">Alternar Permissão</button>
+      </div>
+    </div>
+    
+    <div style="margin-top:16px">
+      <h5 style="color:#607D8B; margin-bottom:8px;">Status das Permissões</h5>
+      <div id="info-permissoes" style="min-height:40px; padding:12px; background:white; border-radius:6px; border:1px solid #ddd;">
+        <p style="margin:0; color:#666; font-style:italic;">Selecione um administrador para ver as permissões.</p>
+      </div>
+    </div>
+    
+    <div style="margin-top:12px; padding:12px; background:#E3F2FD; border-radius:6px;">
+      <p style="margin:0; font-size:12px; color:#1565C0;">
+        <strong>💡 Informação:</strong> Apenas administradores com permissão "Master" podem criar novos administradores.
+      </p>
+    </div>
+  </div>
+</div>
+
+ 
+<!-- ================= SENHAS ================= -->
+<div id="view-Senhas" class="panel view" style="display:none">
+  <h3>🔐 Gerenciamento de Senhas</h3>
+  
+  <!-- ALTERAR PRÓPRIA SENHA -->
+  <div class="card-section senha-propria">
+    <h4>🔒 Alterar Minha Senha</h4>
+    
+    <div style="margin-bottom:15px">
+      <label style="display:block;margin-bottom:8px;font-weight:600">Senha Atual:</label>
+      <input type="password" id="senhaAtual" placeholder="Digite sua senha atual" style="width:100%;max-width:400px;padding:10px;border:1px solid #ddd;border-radius:4px">
+    </div>
+    
+    <div style="margin-bottom:15px">
+      <label style="display:block;margin-bottom:8px;font-weight:600">Nova Senha:</label>
+      <input type="password" id="novaSenha" placeholder="Digite a nova senha (mín. 6 caracteres)" style="width:100%;max-width:400px;padding:10px;border:1px solid #ddd;border-radius:4px">
+    </div>
+    
+    <div style="margin-bottom:20px">
+      <label style="display:block;margin-bottom:8px;font-weight:600">Confirmar Nova Senha:</label>
+      <input type="password" id="confirmarSenha" placeholder="Confirme a nova senha" style="width:100%;max-width:400px;padding:10px;border:1px solid #ddd;border-radius:4px">
+    </div>
+    
+    <button onclick="alterarMinhaSenha()" class="btn" style="background:#28a745">
+      ✅ Alterar Minha Senha
+    </button>
+    
+    <div id="mensagemSenha" class="mensagem-senha"></div>
+  </div>
+
+  <!-- ADMIN MASTER: REDEFINIR SENHAS DE OUTROS USUÁRIOS -->
+  <div id="secaoAdminMaster" class="card-section senha-admin">
+    <h4>🔄 Redefinir Senha de Usuários</h4>
+    
+    <div style="margin-bottom:15px">
+      <label style="display:block;margin-bottom:8px;font-weight:600">Selecionar Usuário:</label>
+      <select id="selectUsuarioSenha" style="width:100%;max-width:400px;padding:8px;border:1px solid #ddd;border-radius:4px">
+        <option value="">Carregando usuários...</option>
+      </select>
+    </div>
+    
+    <div style="margin-bottom:15px">
+      <label style="display:block;margin-bottom:8px;font-weight:600">Nova Senha:</label>
+      <input type="password" id="novaSenhaUsuario" placeholder="Digite a nova senha (mín. 6 caracteres)" style="width:100%;max-width:400px;padding:10px;border:1px solid #ddd;border-radius:4px">
+    </div>
+    
+    <button onclick="redefinirSenhaUsuario()" class="btn" style="background:#007bff">
+      🔄 Redefinir Senha do Usuário
+    </button>
+  </div>
+</div>
+
+<!-- Inclua o JavaScript das senhas -->
+<script src="senhas-admin.js"></script>
+      <!-- ================= RELATÓRIOS ================= -->
+      
+
+      
+<!-- ================= SCRIPT JS ================= -->
+<script>
+async function carregarTurmas() {
+  try {
+    const res = await apiFetch("/api/turmas");
+    const data = await res.json();
+    if (!data.sucesso) throw new Error(data.erro || "Erro ao carregar turmas");
+
+    const tbody = document.querySelector("#table-turmas tbody");
+    tbody.innerHTML = "";
+    
+    data.turmas.forEach((turma) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td><strong>${turma.nome}</strong></td>
+        <td>${turma.ano}</td>
+        <td>${turma.turno}</td>
+        <td>${turma.professores || "<span style='color:#666; font-style:italic;'>Sem professor</span>"}</td>
+        <td style="text-align:right">
+          <button class="btn small danger" onclick="excluirTurma(${turma.id})">🗑️</button>
+        </td>
+      `;
+      tbody.appendChild(row);
+    });
+
+    document.getElementById("count-turmas").textContent = data.turmas.length;
+  } catch (error) {
+    console.error("Erro ao carregar turmas:", error);
+    alert("Erro ao carregar turmas!");
+  }
+}
+
+// ================== EXCLUIR TURMA ==================
+window.excluirTurma = async function(id) {
+  if (!confirm('Tem certeza que deseja excluir esta turma?')) return;
+  
+  try {
+    const res = await apiFetch(`/api/turmas/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    
+    if (data.sucesso) {
+      alert('Turma excluída com sucesso!');
+      carregarTurmas();
+      carregarSelectsTurmas();
+      atualizarContagens();
+    } else {
+      alert(data.erro || 'Erro ao excluir turma');
+    }
+  } catch (err) {
+    console.error('Erro ao excluir turma:', err);
+    alert('Erro ao excluir turma');
+  }
+}
+
+// carregar turmas assim que abrir o painel
+window.addEventListener('DOMContentLoaded', carregarTurmas);
+</script>
+
+<!-- ✅✅✅ CORREÇÃO: COLOCAR AQUI - ANTES DO script-admin.js ✅✅✅ -->
+<script>
+// ✅ CORREÇÃO: URL automática para produção/desenvolvimento
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000'
+  : 'http://projetosemeddiariodigital-production.up.railway.app'; // ⚠️ SUBSTITUA pelo URL REAL do Railway depois!
+
+// Função auxiliar para fetch com tratamento de erro
+async function apiFetch(url, options = {}) {
+  try {
+    const response = await fetch(`${API_URL}${url}`, {
+      ...options,
+      credentials: 'include'
+    });
+    return response;
+  } catch (error) {
+    console.error('Erro na requisição:', error);
+    throw error;
+  }
+}
+</script>
+
+<script src="/script-admin.js"></script>
+</body>
+</html>

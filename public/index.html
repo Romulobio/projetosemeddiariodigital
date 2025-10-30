@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <title>Tela de Login</title>
+</head>
+
+<body>
+  <!-- Imagem no canto superior direito -->
+  <img src="./img/logocd2.png" alt="Logo" class="logo">
+  <img src="./img/semed2.png" alt="Logo Esquerda" class="logo-esquerda">
+
+  <h1 class="titulo">Diário Escolar Digital</h1>
+
+  <!-- Container de Seleção de Tipo -->
+  <div class="login-container" id="tipo-login-container">
+    <h2>Escolha o Tipo de Acesso</h2>
+    
+    <button class="tipo-btn" onclick="mostrarLogin('professor')">
+      <img src="./img/iconsusuario.png" class="icon">
+      Acesso Professor
+    </button>
+    
+    <button class="tipo-btn" onclick="mostrarLogin('admin')">
+      <img src="./img/iconsadmin.png" class="icon">
+      Acesso Administrador
+    </button>
+  </div>
+
+  <!-- Container de Login Professor -->
+  <div class="login-container" id="login-professor-container" style="display:none;">
+    <h2>Login Professor</h2>
+    <div class="input-box">
+      <img src="./img/iconsusuario.png" class="icon">
+      <input type="text" id="login-professor-usuario" placeholder="E-mail">
+    </div>
+    <div class="input-box">
+      <img src="./img/iconssenha.png" class="icon">
+      <input type="password" id="login-professor-senha" placeholder="Senha">
+    </div>
+    <button type="button" onclick="fazerLogin('professor')">Entrar como Professor</button>
+    <div class="register-link">
+      <p>Não tem conta? <a href="#" onclick="mostrarCadastro('professor')">Cadastrar Professor</a></p>
+      <p><a href="#" onclick="voltarSelecao()">← Voltar</a></p>
+      <!-- Adicione isto após o formulário de login -->
+<div style="text-align: center; margin-top: 15px;">
+    <a href="recuperar-senha.html" style="color: #667eea; text-decoration: none;">
+        🔐 Esqueci minha senha
+    </a>
+</div>
+    </div>
+  </div>
+
+  <!-- Container de Login Administrador -->
+  <div class="login-container" id="login-admin-container" style="display:none;">
+    <h2>Login Administrador</h2>
+    <div class="input-box">
+      <img src="./img/iconsusuario.png" class="icon">
+      <input type="email" id="login-admin-email" placeholder="E-mail">
+    </div>
+    <div class="input-box">
+      <img src="./img/iconssenha.png" class="icon">
+      <input type="password" id="login-admin-senha" placeholder="Senha">
+    </div>
+    <button type="button" onclick="fazerLogin('admin')">Entrar como Admin</button>
+    <div class="register-link">
+      <p>Primeiro acesso? <a href="#" onclick="mostrarCadastro('admin')">Cadastrar Admin</a></p>
+      <p><a href="#" onclick="voltarSelecao()">← Voltar</a></p>
+      <!-- Adicione isto após o formulário de login -->
+<div style="text-align: center; margin-top: 15px;">
+    <a href="recuperar-senha.html" style="color: #667eea; text-decoration: none;">
+        🔐 Esqueci minha senha
+        
+    </a>
+</div>
+    </div>
+  </div>
+
+  <!-- Container de Cadastro Professor -->
+  <div class="login-container" id="cadastro-professor-container" style="display:none;">
+    <h2>Cadastro de Professor</h2>
+    <div class="input-box">
+      <img src="./img/iconsusuario.png" class="icon">
+      <input type="text" id="cadastro-professor-nome" placeholder="Nome completo">
+    </div>
+    <div class="input-box">
+      <img src="./img/iconsusuario.png" class="icon">
+      <input type="text" id="cadastro-professor-usuario" placeholder="E-mail">
+    </div>
+    <div class="input-box">
+      <img src="./img/iconssenha.png" class="icon">
+      <input type="password" id="cadastro-professor-senha" placeholder="Senha">
+    </div>
+    <button type="button" onclick="fazerCadastro('professor')">Cadastrar Professor</button>
+    <div class="register-link">
+      <p><a href="#" onclick="mostrarLogin('professor')">← Voltar para login</a></p>
+    </div>
+  </div>
+
+  <!-- Container de Cadastro Administrador -->
+  <div class="login-container" id="cadastro-admin-container" style="display:none;">
+    <h2>Cadastro de Administrador</h2>
+    <div class="input-box">
+      <img src="./img/iconsusuario.png" class="icon">
+      <input type="text" id="cadastro-admin-nome" placeholder="Nome completo">
+    </div>
+    <div class="input-box">
+      <img src="./img/iconsusuario.png" class="icon">
+      <input type="email" id="cadastro-admin-email" placeholder="Email">
+    </div>
+    <div class="input-box">
+      <img src="./img/iconssenha.png" class="icon">
+      <input type="password" id="cadastro-admin-senha" placeholder="Senha">
+    </div>
+    <button type="button" onclick="fazerCadastro('admin')">Cadastrar Administrador</button>
+    <div class="register-link">
+      <p><a href="#" onclick="mostrarLogin('admin')">← Voltar para login</a></p>
+    </div>
+ 
+    <script>
+// ✅ CORREÇÃO: URL automática para produção/desenvolvimento
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000'
+  : 'http://projetosemeddiariodigital-production.up.railway.app'; // ⚠️ SUBSTITUA pelo URL REAL do Railway depois!
+
+// Função auxiliar para fetch com tratamento de erro
+async function apiFetch(url, options = {}) {
+  try {
+    const response = await fetch(`${API_URL}${url}`, {
+      ...options,
+      credentials: 'include'
+    });
+    return response;
+  } catch (error) {
+    console.error('Erro na requisição:', error);
+    throw error;
+  }
+}
+</script>
+
+  <script src="script.js"></script>
+</body>
+</html>
