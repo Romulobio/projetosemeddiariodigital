@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const session = require('express-session');
 const MySQLStore = require('express-mysql-session')(session);
 const path = require('path');
@@ -44,11 +44,11 @@ db.connect(err => {
 // CONFIGURAÇÃO DA SESSÃO COM MYSQL
 // ========================
 const sessionStore = new MySQLStore({
-  host: process.env.MYSQLHOST || 'mysql.railway.internal',
+  host: process.env.MYSQLHOST || 'localhost',
   port: process.env.MYSQLPORT || 3306,
   user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQLPASSWORD || 'UsmVulfizfRRrMbMQgpyEcIpFvRHrPvY',
-  database: process.env.MYSQLDATABASE || 'railway'
+  password: process.env.MYSQLPASSWORD || 'professorbio25',
+  database: process.env.MYSQLDATABASE || 'escola'
 }, db);
 
 app.use(session({
