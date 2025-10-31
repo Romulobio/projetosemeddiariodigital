@@ -1,3 +1,5 @@
+// ⭐⭐ ADICIONE ISSO NO TOPO DE CADA ARQUIVO .js ⭐⭐
+const API_URL = 'https://projetosemeddiariodigital-production.up.railway.app';
 document.addEventListener("DOMContentLoaded", () => {
   const views = document.querySelectorAll(".view");
   const menuButtons = document.querySelectorAll(".nav button");

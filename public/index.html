@@ -130,16 +130,19 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
 
 // Função auxiliar para fetch com tratamento de erro
 async function apiFetch(url, options = {}) {
-  try {
-    const response = await fetch(`${API_URL}${url}`, {
-      ...options,
-      credentials: 'include'
-    });
-    return response;
-  } catch (error) {
-    console.error('Erro na requisição:', error);
-    throw error;
-  }
+    const API_URL = 'https://projetosemeddiariodigital-production.up.railway.app';
+    const fullUrl = url.startsWith('http') ? url : `${API_URL}${url}`;
+    
+    // Adiciona credenciais para cookies/sessão
+    options.credentials = 'include';
+    
+    try {
+        const response = await fetch(fullUrl, options);
+        return response;
+    } catch (error) {
+        console.error('Erro na requisição:', error);
+        throw error;
+    }
 }
 </script>
 
