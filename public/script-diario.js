@@ -1,3 +1,6 @@
+// ⭐⭐ ADICIONE ISSO NO TOPO DE CADA ARQUIVO .js ⭐⭐
+const API_URL = 'https://projetosemeddiariodigital-production.up.railway.app';
+
 console.log('✅ Script de Objetos de Conhecimento carregado!');
 
 let mesAtual = new Date().getMonth();

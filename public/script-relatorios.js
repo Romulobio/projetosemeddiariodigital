@@ -1,3 +1,6 @@
+// ⭐⭐ ADICIONE ISSO NO TOPO DE CADA ARQUIVO .js ⭐⭐
+const API_URL = 'https://projetosemeddiariodigital-production.up.railway.app';
+
 // script-relatorios.js - VERSÃO CORRIGIDA (SEM CÓDIGO DO SERVIDOR)
 console.log('✅ Script de relatórios carregado!');
 
