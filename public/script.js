@@ -1,5 +1,3 @@
-// ⭐⭐ ADICIONE ISSO NO TOPO DE CADA ARQUIVO .js ⭐⭐
-const API_URL = 'https://projetosemeddiariodigital-production.up.railway.app';
 
 // script.js - CONTROLE DE LOGIN E CADASTRO (PROFESSOR E ADMIN)
 
