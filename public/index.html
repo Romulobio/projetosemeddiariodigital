@@ -126,11 +126,10 @@
 // ✅ CORREÇÃO: URL automática para produção/desenvolvimento
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:3000'
-  : 'http://projetosemeddiariodigital-production.up.railway.app'; // ⚠️ SUBSTITUA pelo URL REAL do Railway depois!
+  : 'https://projetosemeddiariodigital-production.up.railway.app'; // ✅ Use HTTPS
 
 // Função auxiliar para fetch com tratamento de erro
 async function apiFetch(url, options = {}) {
-    const API_URL = 'https://projetosemeddiariodigital-production.up.railway.app';
     const fullUrl = url.startsWith('http') ? url : `${API_URL}${url}`;
     
     // Adiciona credenciais para cookies/sessão
