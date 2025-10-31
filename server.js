@@ -20,13 +20,13 @@ app.use(cors({
 }));
 
 // ========================
-// CONEXÃO COM O BANCO DE DADOS
+// CONEXÃO COM O BANCO DE DADOS RAILWAY
 // ========================
 const db = mysql.createConnection({
-  host: process.env.MYSQLHOST || 'localhost',
+  host: process.env.MYSQLHOST || 'mysql.railway.internal',
   user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQLPASSWORD || 'professorbio25',
-  database: process.env.MYSQLDATABASE || 'escola',
+  password: process.env.MYSQLPASSWORD || 'UsmVulfizfRRrMbMQgpyEcIpFvRHrPvY',
+  database: process.env.MYSQLDATABASE || 'railway',
   port: process.env.MYSQLPORT || 3306,
   charset: 'utf8mb4'
 });
@@ -44,11 +44,11 @@ db.connect(err => {
 // CONFIGURAÇÃO DA SESSÃO COM MYSQL
 // ========================
 const sessionStore = new MySQLStore({
-  host: process.env.MYSQLHOST || 'localhost',
+  host: process.env.MYSQLHOST || 'mysql.railway.internal',
   port: process.env.MYSQLPORT || 3306,
   user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQLPASSWORD || 'professorbio25',
-  database: process.env.MYSQLDATABASE || 'escola'
+  password: process.env.MYSQLPASSWORD || 'UsmVulfizfRRrMbMQgpyEcIpFvRHrPvY',
+  database: process.env.MYSQLDATABASE || 'railway'
 }, db);
 
 app.use(session({
