@@ -134,15 +134,6 @@ function verificarProfessor(req, res, next) {
 }
 
 // ========================
-// INICIALIZAÇÃO DO SERVIDOR
-// ========================
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
-});
-
-
-// ========================
 // ROTA DE CADASTRO COM VERIFICAÇÃO DE PERMISSÃO
 // ========================
 app.post('/cadastro', async (req, res) => {
