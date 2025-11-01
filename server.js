@@ -15,18 +15,24 @@ require('dotenv').config();
 // CONFIGURAÇÃO DO CORS (DEVE VIR PRIMEIRO)
 // ========================
 app.use(cors({
-  origin: true, // Permite todas as origens (ajuste para produção)
-  credentials: true
+  origin: [
+    'https://projetosemeddiariodigital.netlify.app',
+    'http://localhost:5500',
+    'http://127.0.0.1:5500'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // ========================
-// CONEXÃO COM O BANCO DE DADOS RAILWAY
+// CONEXÃO COM O BANCO DE DADOS - CORRIGIDA
 // ========================
 const db = mysql.createConnection({
-  host: process.env.MYSQLHOST || 'mysql.railway.internal',
+  host: process.env.MYSQLHOST || 'localhost',
   user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQLPASSWORD || 'UsmVulfizfRRrMbMQgpyEcIpFvRHrPvY',
-  database: process.env.MYSQLDATABASE || 'railway',
+  password: process.env.MYSQLPASSWORD || 'professorbio25',
+  database: process.env.MYSQLDATABASE || 'escola',
   port: process.env.MYSQLPORT || 3306,
   charset: 'utf8mb4'
 });
@@ -41,7 +47,7 @@ db.connect(err => {
 });
 
 // ========================
-// CONFIGURAÇÃO DA SESSÃO COM MYSQL
+// CONFIGURAÇÃO DA SESSÃO COM MYSQL - CORRIGIDA
 // ========================
 const sessionStore = new MySQLStore({
   host: process.env.MYSQLHOST || 'localhost',
@@ -53,7 +59,7 @@ const sessionStore = new MySQLStore({
 
 app.use(session({
   key: 'session_cookie_name',
-  secret: process.env.SESSION_SECRET || 'segredo_sistema_escolar',
+  secret: process.env.SESSION_SECRET || 'professor_super_secreto',
   store: sessionStore,
   resave: false,
   saveUninitialized: false,
@@ -75,24 +81,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
-const cors = require('cors');
-
-// Configurar CORS para permitir seu domínio Netlify
-app.use(cors({
-  origin: [
-    'https://projetosemeddiariodigital.netlify.app',
-    'http://localhost:5500',
-    'http://127.0.0.1:5500'
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-// Ou para permitir todos os domínios (apenas desenvolvimento)
-// app.use(cors());
-
 // ========================
 // MIDDLEWARES DE AUTENTICAÇÃO
 // ========================
