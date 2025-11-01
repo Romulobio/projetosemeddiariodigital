@@ -13,23 +13,15 @@ const crypto = require('crypto');
 require('dotenv').config();
 
 // ========================
-// CONFIGURAÇÃO CORS - ADICIONE ISSO!
+// CONFIGURAÇÃO CORS - UNIFICADA
 // ========================
-app.use((req, res, next) => {
-  // Permitir SEU domínio do Vercel
-  res.header('Access-Control-Allow-Origin', 'https://projetosemeddiariodigital.vercel.app');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, X-Requested-With, Accept');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  
-  // Responder imediatamente a preflight OPTIONS
-  if (req.method === 'OPTIONS') {
-    console.log('✅ CORS Preflight permitido');
-    return res.status(200).end();
-  }
-  
-  next();
-});
+app.use(cors({
+  origin: 'https://projetosemeddiariodigital.vercel.app',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept']
+}));
+
 // ========================
 // CONEXÃO COM O BANCO DE DADOS
 // ========================
@@ -65,12 +57,6 @@ const sessionStore = new MySQLStore({
   password: process.env.MYSQLPASSWORD || 'professorbio25',
   database: process.env.MYSQLDATABASE || 'escola'
 });
-const cors = require('cors');
-
-app.use(cors({
-  origin: 'https://projetosemediariodigital.vercel.app', // domínio do seu front
-  credentials: true
-}));
 
 app.use(session({
   key: 'session_cookie_name',
@@ -79,7 +65,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // se for usar HTTPS no futuro, mude para true
+    secure: false, // altere para true se for usar HTTPS
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
     sameSite: 'lax'
@@ -146,7 +132,6 @@ function verificarProfessor(req, res, next) {
   if (req.session?.usuario?.tipo === 'professor') return next();
   return res.status(403).json({ sucesso: false, erro: 'Acesso negado! Apenas professores.' });
 }
-
 // ========================
 // ROTA DE CADASTRO COM VERIFICAÇÃO DE PERMISSÃO
 // ========================
