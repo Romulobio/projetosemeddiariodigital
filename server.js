@@ -26,7 +26,7 @@ app.use(cors({
 }));
 
 // ========================
-// CONEXÃO COM O BANCO DE DADOS - CORRIGIDA
+// CONEXÃO COM O BANCO DE DADOS
 // ========================
 const db = mysql.createConnection({
   host: process.env.MYSQLHOST || 'localhost',
@@ -47,7 +47,7 @@ db.connect(err => {
 });
 
 // ========================
-// CONFIGURAÇÃO DA SESSÃO COM MYSQL - CORRIGIDA
+// CONFIGURAÇÃO DA SESSÃO COM MYSQL
 // ========================
 const sessionStore = new MySQLStore({
   host: process.env.MYSQLHOST || 'localhost',
@@ -77,13 +77,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Rota padrão (raiz)
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
 // ========================
-// ROTAS PÚBLICAS (ADICIONE ISSO NO INÍCIO DAS ROTAS)
+// ROTAS PÚBLICAS (PRIMEIRAS!)
 // ========================
 
 // Health check para Railway - ROTA PÚBLICA
@@ -115,7 +110,6 @@ app.get('/status', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
-
 
 // ========================
 // MIDDLEWARES DE AUTENTICAÇÃO
