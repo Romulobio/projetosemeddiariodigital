@@ -15,11 +15,19 @@ require('dotenv').config();
 // CONFIGURAÇÃO DO CORS (DEVE VIR PRIMEIRO)
 // ========================
 app.use(cors({
-  origin: [
-    'https://projetosemeddiariodigital.netlify.app',
-    'http://localhost:5500',
-    'http://127.0.0.1:5500'
-  ],
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      'https://projetosemeddiariodigital.netlify.app',
+      'http://localhost:5500',
+      'http://127.0.0.1:5500'
+    ];
+
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS não permitido para esta origem.'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -128,6 +136,14 @@ function verificarProfessor(req, res, next) {
   if (req.session?.usuario?.tipo === 'professor') return next();
   return res.status(403).json({ sucesso: false, erro: 'Acesso negado! Apenas professores.' });
 }
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://projetosemeddiariodigital.netlify.app');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  next();
+});
+
 
 // ========================
 // ROTA DE CADASTRO COM VERIFICAÇÃO DE PERMISSÃO
