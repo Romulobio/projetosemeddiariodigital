@@ -1,16 +1,9 @@
 // script.js - CONTROLE DE LOGIN E CADASTRO (PROFESSOR E ADMIN)
 
 // ------------------------
-// API_URL dinâmico (dev/prod)
+// API_URL - APENAS PRODUÇÃO
 // ------------------------
-const API_URL = (function () {
-  const host = window.location.hostname;
-  if (host === 'localhost' || host === '127.0.0.1') {
-    return 'http://localhost:3000';
-  }
-  // URL de produção (Railway) - use https
-  return 'https://projetosemeddiariodigital-production.up.railway.app';
-})();
+const API_URL = 'https://projetosemeddiariodigital-production.up.railway.app';
 
 // ------------------------
 // Função auxiliar para chamadas à API com tratamento padrão
@@ -106,9 +99,10 @@ function bloquearBotao(botaoId, bloquear = true) {
 // LOGIN DE PROFESSOR E ADMIN
 // ------------------------
 async function fazerLogin(tipo) {
+  let btnId = ''; // ← CORREÇÃO: Declarar btnId no escopo da função
+
   try {
     let body;
-    let btnId;
 
     if (tipo === 'professor') {
       const email = document.getElementById('login-professor-email').value.trim();
@@ -172,7 +166,10 @@ async function fazerLogin(tipo) {
     console.error('Erro no login:', error);
     alert('Erro na conexão ou credenciais incorretas:\n' + (error.message || error));
   } finally {
-    if (typeof bloquearBotao === 'function') bloquearBotao(btnId, false);
+    // CORREÇÃO: Usar btnId declarado no escopo da função
+    if (btnId && typeof bloquearBotao === 'function') {
+      bloquearBotao(btnId, false);
+    }
   }
 }
 
@@ -180,9 +177,10 @@ async function fazerLogin(tipo) {
 // CADASTRO DE PROFESSOR E ADMIN
 // ------------------------
 async function fazerCadastro(tipo) {
+  let btnId = ''; // ← CORREÇÃO: Declarar btnId no escopo da função
+
   try {
     let body;
-    let btnId;
 
     if (tipo === 'professor') {
       const nome = document.getElementById('cadastro-professor-nome').value.trim();
@@ -250,7 +248,10 @@ async function fazerCadastro(tipo) {
     console.error('Erro no cadastro:', error);
     alert('Erro de conexão ou validação:\n' + (error.message || error));
   } finally {
-    if (typeof bloquearBotao === 'function') bloquearBotao(btnId, false);
+    // CORREÇÃO: Usar btnId declarado no escopo da função
+    if (btnId && typeof bloquearBotao === 'function') {
+      bloquearBotao(btnId, false);
+    }
   }
 }
 
