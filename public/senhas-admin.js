@@ -1,6 +1,3 @@
-// ⭐⭐ ADICIONE ISSO NO TOPO DE CADA ARQUIVO .js ⭐⭐
-const API_URL = 'https://projetosemeddiariodigital-production.up.railway.app';
-
 // ========================
 // FUNÇÕES DE GERENCIAMENTO DE SENHAS
 // ========================
@@ -8,8 +5,8 @@ const API_URL = 'https://projetosemeddiariodigital-production.up.railway.app';
 // Verificar se é admin master e carregar usuários
 async function verificarPermissoesESenhas() {
     try {
-        const response = await fetch('/api/verificar-permissao-admin');
-        const result = await response.json();
+        // ✅ CORRIGIDO: usando apiService
+        const result = await apiService.verificarPermissaoAdmin();
         
         if (result.sucesso && result.tem_permissao) {
             document.getElementById('secaoAdminMaster').style.display = 'block';
@@ -48,19 +45,12 @@ async function alterarMinhaSenha() {
     try {
         mostrarMensagemSenha('⏳ Alterando senha...', 'info', mensagemDiv);
 
-        const response = await apiFetch('/alterar-senha', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                senha_atual: senhaAtual,
-                nova_senha: novaSenha,
-                confirmar_senha: confirmarSenha
-            })
+        // ✅ CORRIGIDO: usando apiService
+        const data = await apiService.alterarSenha({
+            senha_atual: senhaAtual,
+            nova_senha: novaSenha,
+            confirmar_senha: confirmarSenha
         });
-
-        const data = await response.json();
 
         if (data.sucesso) {
             mostrarMensagemSenha('✅ ' + data.mensagem, 'sucesso', mensagemDiv);
@@ -103,18 +93,11 @@ async function redefinirSenhaUsuario() {
     try {
         mostrarMensagemSenha('⏳ Redefinindo senha...', 'info', mensagemDiv);
 
-        const response = await apiFetch('/admin/redefinir-senha', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                usuario_id: usuarioId,
-                nova_senha: novaSenha
-            })
+        // ✅ CORRIGIDO: usando apiService
+        const data = await apiService.redefinirSenhaAdmin({
+            usuario_id: usuarioId,
+            nova_senha: novaSenha
         });
-
-        const data = await response.json();
 
         if (data.sucesso) {
             mostrarMensagemSenha('✅ ' + data.mensagem, 'sucesso', mensagemDiv);
@@ -135,8 +118,8 @@ async function carregarUsuariosParaRedefinicao() {
         const select = document.getElementById('selectUsuarioSenha');
         select.innerHTML = '<option value="">Carregando usuários...</option>';
 
-        const response = await apiFetch('/admin/usuarios');
-        const data = await response.json();
+        // ✅ CORRIGIDO: usando apiService
+        const data = await apiService.getUsuariosAdmin();
 
         if (data.sucesso) {
             select.innerHTML = '<option value="">Selecione um usuário</option>';
@@ -163,8 +146,8 @@ async function carregarUsuariosParaRedefinicao() {
 // ================== VERIFICAR PERMISSÕES DE ADMIN MASTER ==================
 async function verificarPermissoesAdminMaster() {
     try {
-        const response = await apiFetch('/api/verificar-permissao-admin');
-        const result = await response.json();
+        // ✅ CORRIGIDO: usando apiService
+        const result = await apiService.verificarPermissaoAdmin();
         
         const secaoAdminMaster = document.getElementById('secaoAdminMaster');
         

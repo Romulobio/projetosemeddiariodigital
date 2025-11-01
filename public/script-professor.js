@@ -1,6 +1,3 @@
-// ⭐⭐ ADICIONE ISSO NO TOPO DE CADA ARQUIVO .js ⭐⭐
-const API_URL = 'https://projetosemeddiariodigital-production.up.railway.app';
-
 // script-professor.js - VERSÃO CORRIGIDA
 console.log('✅ Script do professor carregado!');
 

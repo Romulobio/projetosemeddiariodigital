@@ -1,5 +1,7 @@
 // ⭐⭐ ADICIONE ISSO NO TOPO DE CADA ARQUIVO .js ⭐⭐
-const API_URL = 'https://projetosemeddiariodigital-production.up.railway.app';
+// REMOVIDO: API_URL e apiFetch - AGORA USA apiService
+
+console.log('✅ Script do admin carregado!');
 
 document.addEventListener("DOMContentLoaded", () => {
   const views = document.querySelectorAll(".view");
@@ -48,12 +50,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const data = Object.fromEntries(new FormData(form));
 
     try {
-      const res = await apiFetch("/api/turmas", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const json = await res.json();
+      // ✅ CORRIGIDO: usando apiService
+      const json = await apiService.criarTurma(data);
       alert(json.mensagem || json.erro || "Erro ao cadastrar turma");
       if (json.sucesso) {
         form.reset();
@@ -80,12 +78,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      const res = await apiFetch("/api/alunos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome, turma_id }),
-      });
-      const json = await res.json();
+      // ✅ CORRIGIDO: usando apiService
+      const json = await apiService.criarAluno({ nome, turma_id });
       if (json.sucesso) {
         alert(json.mensagem || "Aluno cadastrado com sucesso!");
         form.reset();
@@ -111,12 +105,8 @@ document.addEventListener("DOMContentLoaded", () => {
       tipo: "professor",
     };
     try {
-      const res = await apiFetch("/cadastro", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const json = await res.json();
+      // ✅ CORRIGIDO: usando apiService
+      const json = await apiService.cadastrarUsuario(data);
       msgVinculo.textContent = json.mensagem || json.erro;
       msgVinculo.className = json.sucesso ? "success" : "error";
       if (json.sucesso) {
@@ -141,12 +131,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      const res = await apiFetch("/api/vincular", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ professorId, turmaId }),
-      });
-      const json = await res.json();
+      // ✅ CORRIGIDO: usando apiService
+      const json = await apiService.vincularProfessor(professorId, turmaId);
       msgVinculo.textContent = json.message;
       msgVinculo.className = json.success ? "success" : "error";
       if (json.success) {
@@ -162,8 +148,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // ================== CARREGAR TURMAS ==================
   async function carregarTurmas() {
     try {
-      const res = await apiFetch("/api/turmas");
-      const data = await res.json();
+      // ✅ CORRIGIDO: usando apiService
+      const data = await apiService.getTurmas();
       if (!data.sucesso) throw new Error(data.erro || "Erro ao carregar turmas");
 
       const tbody = document.querySelector("#table-turmas tbody");
@@ -197,8 +183,8 @@ document.addEventListener("DOMContentLoaded", () => {
     tbody.innerHTML = '';
     
     try {
-      const res = await apiFetch('/api/alunos');
-      const data = await res.json();
+      // ✅ CORRIGIDO: usando apiService
+      const data = await apiService.getAlunos();
       
       if (data.sucesso && data.alunos.length > 0) {
         let turmaAtual = '';
@@ -248,8 +234,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!confirm('Tem certeza que deseja excluir este aluno?')) return;
     
     try {
-      const res = await apiFetch(`/api/alunos/${id}`, { method: 'DELETE' });
-      const data = await res.json();
+      // ✅ CORRIGIDO: usando apiService
+      const data = await apiService.excluirAluno(id);
       
       if (data.sucesso) {
         alert('Aluno excluído com sucesso!');
@@ -267,8 +253,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // ================== CARREGAR PROFESSORES ==================
   async function carregarProfessores() {
     try {
-      const res = await apiFetch("/api/professores");
-      const data = await res.json();
+      // ✅ CORRIGIDO: usando apiService
+      const data = await apiService.getProfessores();
       if (!data.sucesso) throw new Error(data.erro || "Erro ao carregar professores");
 
       const select = document.getElementById("select-professor");
@@ -281,8 +267,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const professoresComDisciplinas = await Promise.all(
         data.professores.map(async (prof) => {
           try {
-            const resDisciplinas = await apiFetch(`/api/disciplinas-professor/${prof.id}`);
-            const dataDisciplinas = await resDisciplinas.json();
+            // ✅ CORRIGIDO: usando apiService
+            const dataDisciplinas = await apiService.getDisciplinasProfessor(prof.id);
             return {
               ...prof,
               disciplinas: dataDisciplinas.sucesso ? dataDisciplinas.disciplinas : []
@@ -343,8 +329,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!confirm('Tem certeza que deseja excluir este professor?')) return;
     
     try {
-      const res = await apiFetch(`/api/professores/${id}`, { method: 'DELETE' });
-      const data = await res.json();
+      // ✅ CORRIGIDO: usando apiService
+      const data = await apiService.excluirProfessor(id);
       
       if (data.sucesso) {
         alert('Professor excluído com sucesso!');
@@ -365,8 +351,8 @@ window.excluirTurma = async function(id) {
   if (!confirm('Tem certeza que deseja excluir esta turma?\n\n⚠️ Esta ação não pode ser desfeita.')) return;
   
   try {
-    const res = await apiFetch(`/api/turmas/${id}`, { method: 'DELETE' });
-    const data = await res.json();
+    // ✅ CORRIGIDO: usando apiService
+    const data = await apiService.excluirTurma(id);
     
     if (data.sucesso) {
       alert('✅ Turma excluída com sucesso!');
@@ -394,8 +380,8 @@ window.excluirTurma = async function(id) {
     const selectTurmaAluno = document.getElementById("select-turma-aluno");
     const selectTurmaVinculo = document.getElementById("select-turma-vinculo");
     try {
-      const res = await apiFetch("/api/turmas");
-      const data = await res.json();
+      // ✅ CORRIGIDO: usando apiService
+      const data = await apiService.getTurmas();
       selectTurmaAluno.innerHTML = "";
       selectTurmaVinculo.innerHTML = "";
       if (data.sucesso) {
@@ -420,9 +406,9 @@ window.excluirTurma = async function(id) {
   async function atualizarContagens() {
     try {
       const [t1, t2, t3] = await Promise.all([
-        apiFetch("/api/turmas").then((r) => r.json()),
-        apiFetch("/api/professores").then((r) => r.json()),
-        apiFetch("/api/alunos").then((r) => r.json()),
+        apiService.getTurmas(),
+        apiService.getProfessores(),
+        apiService.getAlunos(),
       ]);
       document.getElementById("count-turmas").textContent = t1.turmas?.length || 0;
       document.getElementById("count-professores").textContent = t2.professores?.length || 0;
@@ -440,8 +426,8 @@ window.excluirTurma = async function(id) {
           const select = document.getElementById("select-professor-disciplina");
           select.innerHTML = "<option value=''>Carregando professores...</option>";
           
-          const response = await apiFetch("/api/professores");
-          const data = await response.json();
+          // ✅ CORRIGIDO: usando apiService
+          const data = await apiService.getProfessores();
           
           if (data.sucesso) {
               select.innerHTML = "<option value=''>Selecione um professor</option>";
@@ -463,8 +449,8 @@ window.excluirTurma = async function(id) {
   // Carregar todas as disciplinas disponíveis
   async function carregarTodasDisciplinas() {
       try {
-          const response = await apiFetch("/api/todas-disciplinas");
-          const data = await response.json();
+          // ✅ CORRIGIDO: usando apiService
+          const data = await apiService.getTodasDisciplinas();
           
           if (data.sucesso) {
               const container = document.getElementById("disciplinas-container");
@@ -505,8 +491,8 @@ window.excluirTurma = async function(id) {
       
       try {
           // Carrega disciplinas vinculadas
-          const response = await apiFetch(`/api/disciplinas-professor/${professorId}`);
-          const data = await response.json();
+          // ✅ CORRIGIDO: usando apiService
+          const data = await apiService.getDisciplinasProfessor(professorId);
           
           const listaContainer = document.getElementById("lista-disciplinas-vinculadas");
           
@@ -574,18 +560,11 @@ window.excluirTurma = async function(id) {
       }
       
       try {
-          const response = await apiFetch("/api/vincular-disciplinas", {
-              method: "POST",
-              headers: {
-                  "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                  professor_id: professorId,
-                  disciplinas: disciplinasSelecionadas.map(d => d.id)
-              })
+          // ✅ CORRIGIDO: usando apiService
+          const data = await apiService.vincularDisciplinas({
+              professor_id: professorId,
+              disciplinas: disciplinasSelecionadas.map(d => d.id)
           });
-          
-          const data = await response.json();
           
           if (data.sucesso) {
               alert("✅ Disciplinas vinculadas com sucesso!");
@@ -607,18 +586,11 @@ window.excluirTurma = async function(id) {
       }
       
       try {
-          const response = await apiFetch("/api/remover-disciplina", {
-              method: "POST",
-              headers: {
-                  "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                  professor_id: professorId,
-                  disciplina_id: disciplinaId
-              })
+          // ✅ CORRIGIDO: usando apiService
+          const data = await apiService.removerDisciplina({
+              professor_id: professorId,
+              disciplina_id: disciplinaId
           });
-          
-          const data = await response.json();
           
           if (data.sucesso) {
               alert("✅ Disciplina removida com sucesso!");
@@ -640,10 +612,8 @@ window.excluirProfessor = async function(id, nome) {
     if (!confirmacao) return;
     
     try {
-        const res = await apiFetch(`/api/professores/${id}`, { 
-            method: 'DELETE' 
-        });
-        const data = await res.json();
+        // ✅ CORRIGIDO: usando apiService
+        const data = await apiService.excluirProfessor(id);
         
         if (data.sucesso) {
             alert('✅ ' + data.mensagem);
@@ -660,7 +630,7 @@ window.excluirProfessor = async function(id, nome) {
 }
   // ================== LOGOUT ==================
   document.getElementById("btn-logout").addEventListener("click", async () => {
-    await apiFetch("/logout", { method: "POST" });
+    await apiService.logout();
     window.location.href = "/login.html";
   });
 
@@ -672,8 +642,8 @@ async function carregarAdministradores() {
         const select = document.getElementById('select-admins');
         select.innerHTML = '<option value="">Carregando administradores...</option>';
         
-        const response = await apiFetch('/api/administradores');
-        const data = await response.json();
+        // ✅ CORRIGIDO: usando apiService
+        const data = await apiService.getAdministradores();
         
         if (data.sucesso) {
             select.innerHTML = '<option value="">Selecione um administrador</option>';
@@ -764,18 +734,11 @@ async function alternarPermissaoAdmin() {
     }
     
     try {
-        const response = await apiFetch('/api/toggle-admin-permission', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                admin_id: adminId,
-                pode_criar_admin: newPermission
-            })
+        // ✅ CORRIGIDO: usando apiService
+        const data = await apiService.toggleAdminPermission({
+            admin_id: adminId,
+            pode_criar_admin: newPermission
         });
-        
-        const data = await response.json();
         
         if (data.sucesso) {
             alert(`✅ Permissões atualizadas com sucesso!`);
@@ -811,8 +774,8 @@ document.getElementById("btn-toggle-admin").addEventListener("click", alternarPe
 
 async function verificarPermissoesCadastroAdmin() {
     try {
-        const response = await apiFetch('/api/verificar-permissao-admin');
-        const result = await response.json();
+        // ✅ CORRIGIDO: usando apiService
+        const result = await apiService.verificarPermissaoAdmin();
         
         console.log('🔍 Resultado da verificação de permissão:', result);
         
@@ -864,19 +827,12 @@ async function cadastrarNovoAdmin(event) {
     try {
         mostrarMensagemCadastro('⏳ Cadastrando administrador...', 'info');
         
-        const response = await apiFetch('/cadastrar-admin', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                nome: nome,
-                email: email,
-                senha: senha
-            })
+        // ✅ CORRIGIDO: usando apiService
+        const result = await apiService.cadastrarAdmin({
+            nome: nome,
+            email: email,
+            senha: senha
         });
-        
-        const result = await response.json();
         
         console.log('📨 Resposta do cadastro:', result);
         

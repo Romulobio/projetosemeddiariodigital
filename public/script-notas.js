@@ -1,5 +1,5 @@
 // ⭐⭐ ADICIONE ISSO NO TOPO DE CADA ARQUIVO .js ⭐⭐
-const API_URL = 'https://projetosemeddiariodigital-production.up.railway.app';
+// REMOVIDO: API_URL e apiFetch - AGORA USA apiService
 
 console.log('✅ Script de notas carregado!');
 
@@ -65,16 +65,9 @@ async function carregarTurmasProfessor() {
         
         selectTurma.innerHTML = '<option value="">Carregando turmas...</option>';
         
-        // ✅ CORRIGIDO: usando apiFetch
-        const response = await apiFetch('/api/notas-turmas-professor');
-        console.log('📡 Resposta da API:', response.status);
-        
-        if (!response.ok) {
-            throw new Error(`Erro HTTP: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('📊 Dados recebidos:', data);
+        // ✅ CORRIGIDO: usando apiService
+        const data = await apiService.getTurmasNotasProfessor();
+        console.log('📡 Resposta da API:', data);
         
         if (data.sucesso) {
             selectTurma.innerHTML = '<option value="">Selecione uma turma</option>';
@@ -147,14 +140,8 @@ async function carregarNotas() {
     const turmaId = estado.alunos[0].turma_id;
     
     try {
-        // ✅ CORRIGIDO: usando apiFetch
-        const response = await apiFetch(`/api/notas-turma?turma_id=${turmaId}&unidade=${estado.unidadeSelecionada}`);
-        
-        if (!response.ok) {
-            throw new Error(`Erro HTTP: ${response.status}`);
-        }
-        
-        const data = await response.json();
+        // ✅ CORRIGIDO: usando apiService
+        const data = await apiService.getNotasTurma(turmaId, estado.unidadeSelecionada);
         
         if (data.sucesso) {
             // CORREÇÃO: Cria um novo objeto de notas apenas para a unidade atual
@@ -188,14 +175,8 @@ async function carregarMediasAnuais() {
     const turmaId = estado.alunos[0].turma_id;
     
     try {
-        // ✅ CORRIGIDO: usando apiFetch
-        const response = await apiFetch(`/api/medias-anuais?turma_id=${turmaId}`);
-        
-        if (!response.ok) {
-            throw new Error(`Erro HTTP: ${response.status}`);
-        }
-        
-        const data = await response.json();
+        // ✅ CORRIGIDO: usando apiService
+        const data = await apiService.getMediasAnuais(turmaId);
         
         if (data.sucesso) {
             estado.mediasAnuais = data.medias || [];
@@ -425,7 +406,7 @@ function criarLinhaTabela(aluno, notas, mediaUnidade, recuperacao) {
                         value="${notaRecuperacao}"
                         data-aluno="${aluno.id}" data-tipo="recuperacao"
                         placeholder="Nota recuperação"
-                        oninput="calcularMediaAluno(${aluno.id})">` : 
+                        oninput="calcularMediaAluno(${alunoId})">` : 
                 "Não"
             }
         </td>
@@ -561,20 +542,12 @@ async function salvarTodasNotas() {
     });
     
     try {
-        // ✅ CORRIGIDO: usando apiFetch
-        const response = await apiFetch('/api/salvar-notas', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                turma_id: turmaId,
-                unidade: estado.unidadeSelecionada,
-                notas: notasPorAluno
-            })
+        // ✅ CORRIGIDO: usando apiService
+        const result = await apiService.salvarNotas({
+            turma_id: turmaId,
+            unidade: estado.unidadeSelecionada,
+            notas: notasPorAluno
         });
-        
-        const result = await response.json();
         
         if (result.sucesso) {
             alert(`✅ Notas da Unidade ${estado.unidadeSelecionada} salvas com sucesso! ${result.registros} registros atualizados.`);

@@ -1,6 +1,3 @@
-// ⭐⭐ ADICIONE ISSO NO TOPO DE CADA ARQUIVO .js ⭐⭐
-const API_URL = 'https://projetosemeddiariodigital-production.up.railway.app';
-
 // script-relatorios.js - VERSÃO CORRIGIDA (SEM CÓDIGO DO SERVIDOR)
 console.log('✅ Script de relatórios carregado!');
 
@@ -49,9 +46,8 @@ function configurarFiltrosPadrao() {
 async function carregarTurmasDoProfessor() {
     console.log('🏫 Carregando turmas do professor...');
     try {
-        // ✅ CORRIGIDO: usando apiFetch
-        const response = await apiFetch('/api/alunos-turma-professor');
-        const data = await response.json();
+        // ✅ CORRIGIDO: usando apiService
+        const data = await apiService.getAlunosTurmaProfessor();
         
         if (data.sucesso && data.alunosPorTurma) {
             turmasDoProfessor = data.alunosPorTurma;
@@ -187,9 +183,8 @@ async function carregarRelatorios() {
         
         console.log(`🌐 Fazendo requisição para: /gerar-relatorio?${queryParams}`);
         
-        // ✅ CORRIGIDO: usando apiFetch
-        const response = await apiFetch(`/gerar-relatorio?${queryParams}`);
-        const data = await response.json();
+        // ✅ CORRIGIDO: usando apiService
+        const data = await apiService.gerarRelatorio(queryParams.toString());
         
         console.log('📨 Resposta recebida:', data);
 

@@ -1,5 +1,5 @@
 // ⭐⭐ ADICIONE ISSO NO TOPO DE CADA ARQUIVO .js ⭐⭐
-const API_URL = 'https://projetosemeddiariodigital-production.up.railway.app';
+// REMOVIDO: API_URL e apiFetch - AGORA USA apiService
 
 console.log('✅ Script de frequência carregado!');
 
@@ -156,16 +156,9 @@ async function carregarTurmasProfessor() {
         
         selectTurma.innerHTML = '<option value="">Carregando turmas...</option>';
         
-        // ✅ CORRIGIDO: usando apiFetch
-        const response = await apiFetch('/api/alunos-turma-professor');
-        console.log('📡 Resposta da API:', response.status);
-        
-        if (!response.ok) {
-            throw new Error(`Erro HTTP: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('📊 Dados recebidos:', data);
+        // ✅ CORRIGIDO: usando apiService
+        const data = await apiService.getAlunosTurmaProfessor();
+        console.log('📡 Resposta da API:', data);
         
         if (data.sucesso) {
             selectTurma.innerHTML = '<option value="">Selecione uma turma</option>';
@@ -356,20 +349,15 @@ async function salvarFrequencia() {
     try {
         console.log('Enviando frequências:', { dia, mes, ano, turma_id: turmaIdSelecionada, frequencias });
         
-        // ✅ CORRIGIDO: usando apiFetch
-        const response = await apiFetch('/salvar-frequencias', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                dia, 
-                mes, 
-                ano, 
-                turma_id: turmaIdSelecionada, 
-                frequencias 
-            })
+        // ✅ CORRIGIDO: usando apiService
+        const result = await apiService.salvarFrequencia({ 
+            dia, 
+            mes, 
+            ano, 
+            turma_id: turmaIdSelecionada, 
+            frequencias 
         });
         
-        const result = await response.json();
         console.log('Resposta do servidor:', result);
         
         if (result.sucesso) {
@@ -386,9 +374,8 @@ async function salvarFrequencia() {
 
 async function carregarFrequenciaServidor(dia, mes, ano, turmaId) {
     try {
-        // ✅ CORRIGIDO: usando apiFetch
-        const response = await apiFetch(`/obter-frequencia?dia=${dia}&mes=${mes}&ano=${ano}&turma_id=${turmaId}`);
-        const result = await response.json();
+        // ✅ CORRIGIDO: usando apiService
+        const result = await apiService.getFrequencia(dia, mes, ano, turmaId);
         
         if (!result.sucesso) return;
 

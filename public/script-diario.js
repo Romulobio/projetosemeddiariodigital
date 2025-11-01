@@ -1,5 +1,5 @@
 // ⭐⭐ ADICIONE ISSO NO TOPO DE CADA ARQUIVO .js ⭐⭐
-const API_URL = 'https://projetosemeddiariodigital-production.up.railway.app';
+// REMOVIDO: API_URL e apiFetch - AGORA USA apiService
 
 console.log('✅ Script de Objetos de Conhecimento carregado!');
 
@@ -44,10 +44,9 @@ document.addEventListener('DOMContentLoaded', function() {
 // FUNÇÃO NOVA PARA CARREGAR O NOME DO PROFESSOR
 async function carregarNomeProfessor() {
     try {
-        const response = await apiFetch('/api/dados-usuario');
-        if (!response.ok) throw new Error('Erro ao carregar dados');
+        // ✅ CORRIGIDO: usando apiService
+        const data = await apiService.getUsuario();
         
-        const data = await response.json();
         if (data.sucesso) {
             document.getElementById('professor-nome').textContent = data.usuario.nome;
             console.log('✅ Nome do professor carregado:', data.usuario.nome);
@@ -179,16 +178,9 @@ async function carregarTurmasProfessor() {
         const selectTurma = document.getElementById('select-turma');
         selectTurma.innerHTML = '<option value="">Carregando turmas...</option>';
         
-        // ✅ CORRIGIDO: usando apiFetch
-        const response = await apiFetch('/api/turmas-professor');
-        console.log('📡 Resposta da API turmas:', response.status);
-        
-        if (!response.ok) {
-            throw new Error(`Erro HTTP: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('📊 Dados turmas recebidos:', data);
+        // ✅ CORRIGIDO: usando apiService
+        const data = await apiService.getTurmasProfessor();
+        console.log('📡 Resposta da API turmas:', data);
         
         if (data.sucesso) {
             selectTurma.innerHTML = '<option value="">Selecione uma turma</option>';
@@ -221,14 +213,8 @@ async function carregarDisciplinasProfessor() {
     console.log('📍 Carregando disciplinas do professor...');
     
     try {
-        // ✅ CORRIGIDO: usando apiFetch
-        const response = await apiFetch('/api/disciplinas-professor');
-        
-        if (!response.ok) {
-            throw new Error(`Erro HTTP: ${response.status}`);
-        }
-        
-        const data = await response.json();
+        // ✅ CORRIGIDO: usando apiService
+        const data = await apiService.getDisciplinasProfessor();
         
         if (data.sucesso && data.disciplinas) {
             const selectDisciplina = document.getElementById('select-disciplina');
@@ -274,14 +260,8 @@ async function carregarObjetosConhecimento() {
     });
     
     try {
-        // ✅ CORRIGIDO: usando apiFetch
-        const response = await apiFetch(`/api/objetos-conhecimento?turma=${turmaSelecionada}&disciplina=${disciplinaSelecionada}&mes=${mesAtual + 1}&ano=${anoAtual}`);
-        
-        if (!response.ok) {
-            throw new Error(`Erro HTTP: ${response.status}`);
-        }
-        
-        const data = await response.json();
+        // ✅ CORRIGIDO: usando apiService
+        const data = await apiService.getObjetosConhecimento(turmaSelecionada, disciplinaSelecionada, mesAtual + 1, anoAtual);
         
         if (data.sucesso) {
             objetosCarregados = data.objetos || {};
@@ -345,27 +325,14 @@ async function salvarObjetosConhecimento() {
             return;
         }
         
-        // ✅ CORRIGIDO: usando apiFetch
-        const response = await apiFetch('/api/salvar-objetos-conhecimento', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                turma: turmaSelecionada,
-                disciplina: disciplinaSelecionada,
-                mes: mesAtual + 1, // +1 porque JavaScript usa 0-11
-                ano: anoAtual,
-                objetos: objetos
-            })
+        // ✅ CORRIGIDO: usando apiService
+        const result = await apiService.salvarObjetosConhecimento({
+            turma: turmaSelecionada,
+            disciplina: disciplinaSelecionada,
+            mes: mesAtual + 1, // +1 porque JavaScript usa 0-11
+            ano: anoAtual,
+            objetos: objetos
         });
-        
-        // Verifica se a resposta é JSON válido
-        const result = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(result.erro || `Erro HTTP: ${response.status}`);
-        }
         
         if (result.sucesso) {
             mostrarMensagem(`✅ ${result.mensagem}`, 'sucesso');

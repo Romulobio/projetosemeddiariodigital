@@ -1,48 +1,27 @@
 // script.js - CONTROLE DE LOGIN E CADASTRO (PROFESSOR E ADMIN)
 
 // ------------------------
-// API_URL - APENAS PRODUÇÃO
-// ------------------------
-const API_URL = 'prosemeddiariodigital-production.up.railway.app';
-
-// ------------------------
 // Função auxiliar para chamadas à API com tratamento padrão
 // ------------------------
 async function apiFetch(path, options = {}) {
-  const url = path.startsWith('http') ? path : `${API_URL}${path}`;
-  // enviar cookies/sessão ao backend (se o backend suportar)
-  options.credentials = options.credentials || 'include';
-  options.headers = options.headers || {};
-
   try {
-  const res = await fetch(url, options);
-
-  // Verifica se a resposta existe
-  if (!res) {
-    throw new Error('Sem resposta do servidor');
+    // ✅ CORRIGIDO: usando apiService para fazer a requisição
+    let data;
+    
+    if (options.method === 'POST') {
+      const body = JSON.parse(options.body);
+      if (path === '/login') {
+        data = await apiService.login(body);
+      } else if (path === '/cadastro') {
+        data = await apiService.cadastro(body);
+      }
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Erro no apiFetch:', error);
+    throw error;
   }
-
-  // tenta ler JSON (se o servidor retornou JSON)
-  let body = null;
-  try {
-    const text = await res.text();
-    body = text ? JSON.parse(text) : null;
-  } catch {
-    // Se falhar ao ler resposta, usa status HTTP
-    body = { erro: `HTTP ${res.status} - Não foi possível ler resposta` };
-  }
-
-  if (!res.ok) {
-    const errMsg = body && body.erro ? body.erro : 
-                   body && body.message ? body.message : 
-                   `HTTP ${res.status} - ${res.statusText}`;
-    throw new Error(errMsg);
-  }
-
-  return body;
-} catch (err) {
-  throw err;
-}
 }
 
 // ------------------------
@@ -138,11 +117,8 @@ async function fazerLogin(tipo) {
 
     bloquearBotao(btnId, true);
 
-    const data = await apiFetch('/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+    // ✅ CORRIGIDO: usando apiService diretamente
+    const data = await apiService.login(body);
 
     console.log('Resposta do servidor:', data);
 
@@ -226,11 +202,8 @@ async function fazerCadastro(tipo) {
 
     bloquearBotao(btnId, true);
 
-    const data = await apiFetch('/cadastro', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+    // ✅ CORRIGIDO: usando apiService diretamente
+    const data = await apiService.cadastro(body);
 
     if (data && data.sucesso) {
       alert('Cadastro realizado com sucesso!');
