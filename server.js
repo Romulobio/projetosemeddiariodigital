@@ -18,25 +18,34 @@ require('dotenv').config();
 // ========================
 // CONFIGURAÇÃO DO CORS
 // ========================
-const allowedOrigins = [
-  'https://prosemeddiariodigital.vercel.app',
-  'https://prosemeddiariodigital-production.up.railway.app',
-  'http://localhost:3000',
-  'http://localhost:5000',
-  'http://127.0.0.1:5500'
-];
-
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // permite requests sem origem
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    console.log('🚫 CORS bloqueado para origem:', origin);
-    callback(new Error('CORS não permitido para esta origem.'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
-}));
+// ========================
+// CONFIGURAÇÃO CORS
+// ========================
+app.use((req, res, next) => {
+  const allowedOrigins = [
+    'https://projetosemeddiariodigital.vercel.app',
+    'https://prosemeddiariodigital.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:8080',
+    'http://127.0.0.1:5500'
+  ];
+  
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Responder a preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
+});
 
 // ========================
 // CONEXÃO COM O BANCO DE DADOS
