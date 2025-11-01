@@ -13,23 +13,23 @@ const crypto = require('crypto');
 require('dotenv').config();
 
 // ========================
-// CONFIGURAÇÃO CORS - VERCEL + RAILWAY
+// CONFIGURAÇÃO CORS - ADICIONE ISSO!
 // ========================
-app.use(cors({
-  origin: 'https://projetosemediariodigital.vercel.app', // domínio do seu front
-  credentials: true, // permite envio de cookies e sessões
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // métodos permitidos
-  allowedHeaders: ['Content-Type', 'Authorization'], // cabeçalhos aceitos
-}));
-
-app.options('*', cors()); // garante resposta correta ao preflight
-
-// ========================
-// PARSERS
-// ========================
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
+app.use((req, res, next) => {
+  // Permitir SEU domínio do Vercel
+  res.header('Access-Control-Allow-Origin', 'https://projetosemeddiariodigital.vercel.app');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, X-Requested-With, Accept');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Responder imediatamente a preflight OPTIONS
+  if (req.method === 'OPTIONS') {
+    console.log('✅ CORS Preflight permitido');
+    return res.status(200).end();
+  }
+  
+  next();
+});
 // ========================
 // CONEXÃO COM O BANCO DE DADOS
 // ========================
@@ -43,16 +43,6 @@ const db = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
-});
-
-// Testa conexão inicial
-db.getConnection((err, connection) => {
-  if (err) {
-    console.error('❌ Erro ao conectar ao banco:', err);
-  } else {
-    console.log('✅ Conexão com o banco bem-sucedida!');
-    connection.release();
-  }
 });
 
 // Testa conexão inicial
@@ -89,10 +79,10 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: true,          // precisa ser true no ambiente Vercel + Railway (HTTPS)
+    secure: false, // se for usar HTTPS no futuro, mude para true
     httpOnly: true,
-    sameSite: 'none',      // ESSENCIAL para cross-domain cookies
-    maxAge: 24 * 60 * 60 * 1000
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: 'lax'
   }
 }));
 
