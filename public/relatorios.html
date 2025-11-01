@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles-relatorios.css">
     <title>Relatórios de Frequência</title>
+    <!-- ✅ ADICIONADO: Script do API Service -->
+    <script src="api-service.js"></script>
 </head>
 <body>
     
@@ -140,28 +142,6 @@
             <!-- Detalhes por data serão preenchidos pelo JavaScript -->
         </div>
     </section>
-
-    <script>
-// ✅ CORREÇÃO: URL automática para produção/desenvolvimento
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:3000'
-  : 'http://projetosemeddiariodigital-production.up.railway.app'; // ⚠️ SUBSTITUA pelo URL REAL do Railway depois!
-
-// Função auxiliar para fetch com tratamento de erro
-async function apiFetch(url, options = {}) {
-  try {
-    const response = await fetch(`${API_URL}${url}`, {
-      ...options,
-      credentials: 'include'
-    });
-    return response;
-  } catch (error) {
-    console.error('Erro na requisição:', error);
-    throw error;
-  }
-}
-</script>
-
 
     <script src="script-relatorios.js"></script>
 </body>

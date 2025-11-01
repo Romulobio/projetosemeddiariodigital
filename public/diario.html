@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles-diario.css">
     <title>Objetos de Conhecimento</title>
+    <!-- ✅ ADICIONADO: Script do API Service -->
+    <script src="api-service.js"></script>
 </head>
 <body>
     
@@ -78,12 +80,6 @@
     </section>
 
     <div id="mensagem" class="mensagem" style="display: none;"></div>
-<script>
-// ✅ CORREÇÃO: URL automática para produção/desenvolvimento
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:3000'
-  : 'http://projetosemeddiariodigital-production.up.railway.app'; // ⚠️ SUBSTITUA pelo URL REAL do Railway depois!
-</script>
 
     <script src="script-diario.js"></script>
 </body>

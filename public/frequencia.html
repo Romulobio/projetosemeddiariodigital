@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles-frequencia.css">
     <title>Controle de Frequência</title>
+    <!-- ✅ ADICIONADO: Script do API Service -->
+    <script src="api-service.js"></script>
 </head>
 <body>
     
@@ -78,71 +80,6 @@
         </div>
     </section>
 
-    <!-- ⭐⭐ BLOCO DA API_URL - DEVE VIR ANTES do script-frequencia.js ⭐⭐ -->
-    <script>
-// URL da API no Render - SUBSTITUA pelo seu URL real do Render
-
-
-    // Função para verificar se o professor está logado
-    async function verificarSessao() {
-      try {
-        const response = await fetch(`${API_URL}/api/dados-usuario`, {
-          credentials: 'include'
-        });
-        
-        if (!response.ok) {
-          throw new Error('Sessão expirada');
-        }
-        
-        const data = await response.json();
-        if (!data.sucesso || data.usuario.tipo !== 'professor') {
-          throw new Error('Acesso negado');
-        }
-        
-        return data.usuario;
-      } catch (error) {
-        console.error('Erro na verificação de sessão:', error);
-        localStorage.removeItem('usuarioLogado');
-        window.location.href = 'index.html';
-      }
-    }
-
-    // Verificar sessão quando a página carregar
-    document.addEventListener('DOMContentLoaded', async function() {
-      const usuario = await verificarSessao();
-      if (usuario) {
-        console.log('Professor logado:', usuario.nome);
-        // O script-frequencia.js continuará o carregamento das turmas
-      }
-    });
-
-    // Função para voltar para a página do professor
-    function voltarParaProfessor() {
-      window.location.href = 'pagina-professor.html';
-    }
-    </script>
-
-<script>
-// ✅ CORREÇÃO: URL automática para produção/desenvolvimento
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:3000'
-  : 'http://projetosemeddiariodigital-production.up.railway.app'; // ⚠️ SUBSTITUA pelo URL REAL do Railway depois!
-
-// Função auxiliar para fetch com tratamento de erro
-async function apiFetch(url, options = {}) {
-  try {
-    const response = await fetch(`${API_URL}${url}`, {
-      ...options,
-      credentials: 'include'
-    });
-    return response;
-  } catch (error) {
-    console.error('Erro na requisição:', error);
-    throw error;
-  }
-}
-</script>
-  
     <script src="script-frequencia.js"></script>
 </body>
 </html>

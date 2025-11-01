@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redefinir Senha - Sistema Escolar</title>
+    <!-- ✅ ADICIONADO: Script do API Service -->
+    <script src="api-service.js"></script>
     <style>
         * {
             margin: 0;
@@ -214,8 +216,8 @@
             try {
                 showLoading();
                 
-                const response = await fetch(`/validar-token/${token}`);
-                const data = await response.json();
+                // ✅ CORRIGIDO: Usando apiService
+                const data = await apiService.validarTokenRecuperacao(token);
                 
                 hideLoading();
                 
@@ -280,19 +282,12 @@
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Redefinindo...';
                 
-                const response = await fetch('/redefinir-senha-token', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        token: token,
-                        nova_senha: nova_senha,
-                        confirmar_senha: confirmar_senha
-                    })
+                // ✅ CORRIGIDO: Usando apiService
+                const data = await apiService.redefinirSenhaToken({
+                    token: token,
+                    nova_senha: nova_senha,
+                    confirmar_senha: confirmar_senha
                 });
-                
-                const data = await response.json();
                 
                 if (data.sucesso) {
                     showMessage(data.mensagem, 'success', messageDiv);
@@ -315,31 +310,11 @@
             }
         });
 
-
+        function showMessage(text, type, messageDiv) {
+            messageDiv.innerHTML = text;
+            messageDiv.className = 'message ' + type;
+            messageDiv.style.display = 'block';
+        }
     </script>
-    
-</script>
-
-<script>
-// ✅ CORREÇÃO: URL automática para produção/desenvolvimento
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:3000'
-  : 'http://projetosemeddiariodigital-production.up.railway.app'; // ⚠️ SUBSTITUA pelo URL REAL do Railway depois!
-
-// Função auxiliar para fetch com tratamento de erro
-async function apiFetch(url, options = {}) {
-  try {
-    const response = await fetch(`${API_URL}${url}`, {
-      ...options,
-      credentials: 'include'
-    });
-    return response;
-  } catch (error) {
-    console.error('Erro na requisição:', error);
-    throw error;
-  }
-}
-</script>
-
 </body>
 </html>

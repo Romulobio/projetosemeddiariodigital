@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recuperar Senha - Sistema Escolar</title>
+    <!-- ✅ ADICIONADO: Script do API Service -->
+    <script src="api-service.js"></script>
     <style>
         * {
             margin: 0;
@@ -154,7 +156,6 @@
 
         <div class="links">
              <p><a href="javascript:window.history.back()">← Voltar</a></p>
-  </div>
         </div>
     </div>
 
@@ -173,15 +174,8 @@
             try {
                 showMessage('Enviando solicitação...', 'info');
                 
-                const response = await fetch('/solicitar-recuperacao', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email })
-                });
-                
-                const data = await response.json();
+                // ✅ CORRIGIDO: Usando apiService
+                const data = await apiService.solicitarRecuperacaoSenha({ email });
                 
                 if (data.sucesso) {
                     showMessage(data.mensagem, 'success');
@@ -201,33 +195,12 @@
             }
         });
 
-       function showMessage(text, type) {
+        function showMessage(text, type) {
             const messageDiv = document.getElementById('message');
             messageDiv.innerHTML = text;
             messageDiv.className = 'message ' + type;
             messageDiv.style.display = 'block';
-        } <!-- <-- FOI ADICIONADO ESTE FECHAMENTO -->
+        }
     </script>
-    <script>
-// ✅ CORREÇÃO: URL automática para produção/desenvolvimento
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:3000'
-  : 'http://projetosemeddiariodigital-production.up.railway.app'; // ⚠️ SUBSTITUA pelo URL REAL do Railway depois!
-
-// Função auxiliar para fetch com tratamento de erro
-async function apiFetch(url, options = {}) {
-  try {
-    const response = await fetch(`${API_URL}${url}`, {
-      ...options,
-      credentials: 'include'
-    });
-    return response;
-  } catch (error) {
-    console.error('Erro na requisição:', error);
-    throw error;
-  }
-}
-</script>
-
 </body>
 </html>

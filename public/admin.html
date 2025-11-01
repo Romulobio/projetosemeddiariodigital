@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Painel Administrativo — Sistema Escolar</title>
 <link rel="stylesheet" href="styles-admin.css">
+<!-- ✅ ADICIONADO: Script do API Service -->
+<script src="api-service.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -371,8 +373,8 @@
 <script>
 async function carregarTurmas() {
   try {
-    const res = await apiFetch("/api/turmas");
-    const data = await res.json();
+    // ✅ CORRIGIDO: Usando apiService em vez de apiFetch
+    const data = await apiService.getTurmas();
     if (!data.sucesso) throw new Error(data.erro || "Erro ao carregar turmas");
 
     const tbody = document.querySelector("#table-turmas tbody");
@@ -404,8 +406,8 @@ window.excluirTurma = async function(id) {
   if (!confirm('Tem certeza que deseja excluir esta turma?')) return;
   
   try {
-    const res = await apiFetch(`/api/turmas/${id}`, { method: 'DELETE' });
-    const data = await res.json();
+    // ✅ CORRIGIDO: Usando apiService em vez de apiFetch
+    const data = await apiService.excluirTurma(id);
     
     if (data.sucesso) {
       alert('Turma excluída com sucesso!');
@@ -425,27 +427,7 @@ window.excluirTurma = async function(id) {
 window.addEventListener('DOMContentLoaded', carregarTurmas);
 </script>
 
-<!-- ✅✅✅ CORREÇÃO: COLOCAR AQUI - ANTES DO script-admin.js ✅✅✅ -->
-<script>
-// ✅ CORREÇÃO: URL automática para produção/desenvolvimento
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:3000'
-  : 'http://projetosemeddiariodigital-production.up.railway.app'; // ⚠️ SUBSTITUA pelo URL REAL do Railway depois!
-
-// Função auxiliar para fetch com tratamento de erro
-async function apiFetch(url, options = {}) {
-  try {
-    const response = await fetch(`${API_URL}${url}`, {
-      ...options,
-      credentials: 'include'
-    });
-    return response;
-  } catch (error) {
-    console.error('Erro na requisição:', error);
-    throw error;
-  }
-}
-</script>
+<!-- ✅✅✅ REMOVIDO: O bloco antigo de API_URL e apiFetch foi deletado ✅✅✅ -->
 
 <script src="/script-admin.js"></script>
 </body>

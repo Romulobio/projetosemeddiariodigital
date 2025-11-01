@@ -6,6 +6,8 @@
   <title>Portal do Professor</title>
   <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles-professor.css">
+  <!-- ✅ ADICIONADO: Script do API Service -->
+  <script src="api-service.js"></script>
 </head>
 <body>
   <!-- Cabeçalho -->
@@ -105,11 +107,9 @@ async function verificarProfessor() {
   
   // Verifica no servidor se a sessão ainda é válida
   try {
-    const response = await fetch(`${API_URL}/api/dados-usuario`, {
-      credentials: 'include' // importante para enviar a sessão
-    });
+    const data = await apiService.getUsuario();
     
-    if (!response.ok) {
+    if (!data.sucesso) {
       throw new Error('Sessão expirada');
     }
     
@@ -125,10 +125,7 @@ async function verificarProfessor() {
 // Função para fazer logout (ATUALIZADA)
 async function sair() {
   try {
-    await fetch(`${API_URL}/logout`, {
-      method: 'POST',
-      credentials: 'include'
-    });
+    await apiService.logout();
   } catch (error) {
     console.error('Erro no logout:', error);
   } finally {
@@ -139,32 +136,8 @@ async function sair() {
 
 // Substitua a função verificarProfessor existente
 document.addEventListener('DOMContentLoaded', verificarProfessor);
-
-
-</script>
-
-<script>
-// ✅ CORREÇÃO: URL automática para produção/desenvolvimento
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:3000'
-  : 'http://projetosemeddiariodigital-production.up.railway.app'; // ⚠️ SUBSTITUA pelo URL REAL do Railway depois!
-
-// Função auxiliar para fetch com tratamento de erro
-async function apiFetch(url, options = {}) {
-  try {
-    const response = await fetch(`${API_URL}${url}`, {
-      ...options,
-      credentials: 'include'
-    });
-    return response;
-  } catch (error) {
-    console.error('Erro na requisição:', error);
-    throw error;
-  }
-}
 </script>
 
 <script src="script-pagina-professor.js"></script>
-
 </body>
 </html>
