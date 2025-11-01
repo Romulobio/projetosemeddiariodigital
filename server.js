@@ -1,3 +1,6 @@
+console.log('=== DEBUG INICIO ===');
+console.log('PORT da variável ambiente:', process.env.PORT);
+console.log('=== DEBUG INICIO ===');
 // ========================
 // IMPORTAÇÕES E CONFIGURAÇÕES INICIAIS
 // ========================
@@ -19,7 +22,7 @@ const allowedOrigins = [
   'https://prosemeddiariodigital.vercel.app',
   'https://prosemeddiariodigital-production.up.railway.app',
   'http://localhost:3000',
-  'http://localhost:8080',
+  'http://localhost:5000',
   'http://127.0.0.1:5500'
 ];
 
@@ -39,10 +42,10 @@ app.use(cors({
 // CONEXÃO COM O BANCO DE DADOS
 // ========================
 const db = mysql.createPool({
-  host: process.env.MYSQLHOST || 'localhost',
-  user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQLPASSWORD || 'professorbio25',
-  database: process.env.MYSQLDATABASE || 'escola',
+  host: process.env.MYSQLHOST,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE,
   port: process.env.MYSQLPORT || 3306,
   charset: 'utf8mb4',
   waitForConnections: true,
@@ -149,6 +152,9 @@ function verificarProfessor(req, res, next) {
 // ========================
 // INICIAR SERVIDOR
 // ========================
+console.log('=== DEBUG ANTES DO LISTEN ===');
+console.log('PORT que será usada:', process.env.PORT || 8080);
+console.log('=== DEBUG ANTES DO LISTEN ===');
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
@@ -367,6 +373,15 @@ app.get('/api/dados-usuario', verificarAuth, (req, res) => {
       email: req.session.usuario.email,
       tipo: req.session.usuario.tipo
     }
+  });
+});
+// NO FINAL de todas as rotas, adicione:
+app.use('*', (req, res) => {
+  res.status(200).json({
+    message: 'API Prosemed Diário Digital - Online',
+    status: 'OK',
+    path: req.originalUrl,
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -773,7 +788,6 @@ app.post('/alterar-senha', verificarAuth, async (req, res) => {
     res.json({ sucesso: false, erro: 'Erro interno ao alterar senha!' });
   }
 });
-
 
 
 // ========================
