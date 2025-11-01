@@ -60,42 +60,42 @@ db.connect(err => {
     process.exit(1);
   } else {
     console.log('✅ Conexão com o banco bem-sucedida!');
+    
+    // ========================
+    // CONFIGURAÇÃO DE SESSÃO (DEVE ESTAR AQUI)
+    // ========================
+    const sessionStore = new MySQLStore({
+      host: process.env.MYSQLHOST || 'localhost',
+      port: process.env.MYSQLPORT || 3306,
+      user: process.env.MYSQLUSER || 'root',
+      password: process.env.MYSQLPASSWORD || 'professorbio25',
+      database: process.env.MYSQLDATABASE || 'escola'
+    }, db);
+    
+    app.use(session({
+      key: 'session_cookie_name',
+      secret: process.env.SESSION_SECRET || 'professor_super_secreto',
+      store: sessionStore,
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        secure: false,
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000,
+        sameSite: 'lax'
+      }
+    } ));
+
+    // ========================
+    // INICIAR SERVIDOR (DEVE ESTAR AQUI)
+    // ========================
+    const PORT = process.env.PORT || 8080;
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Servidor rodando na porta ${PORT}`);
+      console.log(`📧 Sistema de Email: ${process.env.EMAIL_USER ? 'Configurado' : 'Não configurado'}`);
+    });
   }
 });
-
-// ========================
-// INICIAR SERVIDOR
-// ========================
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  console.log(`📧 Sistema de Email: ${process.env.EMAIL_USER ? 'Configurado' : 'Não configurado'}`);
-});
-
-// ========================
-// CONFIGURAÇÃO DE SESSÃO
-// ========================
-const sessionStore = new MySQLStore({
-  host: process.env.MYSQLHOST || 'localhost',
-  port: process.env.MYSQLPORT || 3306,
-  user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQLPASSWORD || 'professorbio25',
-  database: process.env.MYSQLDATABASE || 'escola'
-}, db);
-
-app.use(session({
-  key: 'session_cookie_name',
-  secret: process.env.SESSION_SECRET || 'professor_super_secreto',
-  store: sessionStore,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: false,
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'lax'
-  }
-}));
 
 // ========================
 // CONFIGURAÇÃO DO EXPRESS
