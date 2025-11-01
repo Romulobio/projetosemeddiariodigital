@@ -13,22 +13,23 @@ const crypto = require('crypto');
 require('dotenv').config();
 
 // ========================
-// CONFIGURAÇÃO CORS - ADICIONE NO INÍCIO DO SEU server.js
+// CONFIGURAÇÃO CORS - ADICIONE ISSO!
 // ========================
 app.use((req, res, next) => {
-  // Permitir TODOS os domínios (para teste)
-  res.header('Access-Control-Allow-Origin', '*');
+  // Permitir SEU domínio do Vercel
+  res.header('Access-Control-Allow-Origin', 'https://projetosemeddiariodigital.vercel.app');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, X-Requested-With, Accept');
+  res.header('Access-Control-Allow-Credentials', 'true');
   
-  // Responder a preflight requests
+  // Responder imediatamente a preflight OPTIONS
   if (req.method === 'OPTIONS') {
+    console.log('✅ CORS Preflight permitido');
     return res.status(200).end();
   }
   
   next();
 });
-
 // ========================
 // CONEXÃO COM O BANCO DE DADOS
 // ========================
