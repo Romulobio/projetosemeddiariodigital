@@ -1,6 +1,3 @@
-console.log('=== DEBUG INICIO ===');
-console.log('PORT da variável ambiente:', process.env.PORT);
-console.log('=== DEBUG INICIO ===');
 // ========================
 // IMPORTAÇÕES E CONFIGURAÇÕES INICIAIS
 // ========================
@@ -16,25 +13,13 @@ const crypto = require('crypto');
 require('dotenv').config();
 
 // ========================
-// CONFIGURAÇÃO CORS
+// CONFIGURAÇÃO CORS - ADICIONE NO INÍCIO DO SEU server.js
 // ========================
 app.use((req, res, next) => {
-  const allowedOrigins = [
-    'https://projetosemeddiariodigital.vercel.app',
-    'https://projetosemeddiariodigital-production.up.railway.app',
-    'http://localhost:3000',
-    'http://localhost:8080',
-    'http://127.0.0.1:5500'
-  ];
-  
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
-  
+  // Permitir TODOS os domínios (para teste)
+  res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, X-Requested-With, Accept');
   
   // Responder a preflight requests
   if (req.method === 'OPTIONS') {
