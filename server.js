@@ -8,6 +8,7 @@ const session = require('express-session');
 const MySQLStore = require('express-mysql-session')(session);
 const path = require('path');
 const mysql = require('mysql2');
+const connection = mysql.createConnection(process.env.DATABASE_URL);
 const cors = require('cors');
 const crypto = require('crypto');
 require('dotenv').config();
@@ -785,12 +786,7 @@ app.use((req, res) => {
 // ========================
 // INICIAR SERVIDOR - ADICIONE ISSO!
 // ========================
-const PORT = process.env.PORT || 8080;
-
-console.log('🔍 DEBUG - Variável PORT do ambiente:', process.env.PORT);
-console.log('🔍 DEBUG - Porta que SERÁ usada:', PORT);
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  console.log(`📧 Sistema de Email: Não configurado`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
