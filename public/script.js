@@ -1,5 +1,6 @@
 
 // script.js - CONTROLE DE LOGIN E CADASTRO (PROFESSOR E ADMIN)
+const API_URL = 'https://projetosemeddiariodigital-production.up.railway.app';
 
 // ========================
 // FUNÇÕES DE MOSTRAR/OCULTAR CONTAINERS
