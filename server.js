@@ -346,15 +346,6 @@ app.get('/api/dados-usuario', verificarAuth, (req, res) => {
     }
   });
 });
-// NO FINAL de todas as rotas, adicione:
-app.use('*', (req, res) => {
-  res.status(200).json({
-    message: 'API Prosemed Diário Digital - Online',
-    status: 'OK',
-    path: req.originalUrl,
-    timestamp: new Date().toISOString()
-  });
-});
 
 // ========================
 // ROTAS DE TURMAS (ADMIN)
@@ -772,7 +763,17 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
   res.status(404).json({ sucesso: false, erro: 'Rota não encontrada' });
 });
-
+// ========================
+// ROTA 404 - NO FINAL DO ARQUIVO
+// ========================
+app.use('*', (req, res) => {
+  res.status(404).json({
+    sucesso: false,
+    erro: 'Rota não encontrada',
+    path: req.originalUrl,
+    timestamp: new Date().toISOString()
+  });
+});
 // ========================
 // INICIAR SERVIDOR - ADICIONE ISSO!
 // ========================
