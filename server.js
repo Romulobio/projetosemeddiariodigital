@@ -15,11 +15,8 @@ require('dotenv').config();
 // ========================
 // CONFIGURAÇÃO DO CORS
 // ========================
-// ========================
-// CONFIGURAÇÃO DO CORS PARA VERCEL
-// ========================
 const allowedOrigins = [
-  'https://prosemeddiariodigital.vercel.app', // Seu futuro domínio Vercel
+  'https://prosemeddiariodigital-production.up.railway.app', // domínio Vercel
   'http://localhost:3000',
   'http://localhost:8080',
   'http://127.0.0.1:5500'
@@ -27,15 +24,10 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permite requests sem origin (como mobile apps)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log('🚫 CORS bloqueado para origem:', origin);
-      callback(new Error('CORS não permitido para esta origem.'));
-    }
+    if (!origin) return callback(null, true); // permite requests sem origem
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    console.log('🚫 CORS bloqueado para origem:', origin);
+    callback(new Error('CORS não permitido para esta origem.'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -45,57 +37,52 @@ app.use(cors({
 // ========================
 // CONEXÃO COM O BANCO DE DADOS
 // ========================
-const db = mysql.createConnection({
+const db = mysql.createPool({
   host: process.env.MYSQLHOST || 'localhost',
   user: process.env.MYSQLUSER || 'root',
   password: process.env.MYSQLPASSWORD || 'professorbio25',
   database: process.env.MYSQLDATABASE || 'escola',
   port: process.env.MYSQLPORT || 3306,
-  charset: 'utf8mb4'
+  charset: 'utf8mb4',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
-db.connect(err => {
+// Testa conexão inicial
+db.getConnection((err, connection) => {
   if (err) {
     console.error('❌ Erro ao conectar ao banco:', err);
-    process.exit(1);
   } else {
     console.log('✅ Conexão com o banco bem-sucedida!');
-    
-    // ========================
-    // CONFIGURAÇÃO DE SESSÃO (DEVE ESTAR AQUI)
-    // ========================
-    const sessionStore = new MySQLStore({
-      host: process.env.MYSQLHOST || 'localhost',
-      port: process.env.MYSQLPORT || 3306,
-      user: process.env.MYSQLUSER || 'root',
-      password: process.env.MYSQLPASSWORD || 'professorbio25',
-      database: process.env.MYSQLDATABASE || 'escola'
-    }, db);
-    
-    app.use(session({
-      key: 'session_cookie_name',
-      secret: process.env.SESSION_SECRET || 'professor_super_secreto',
-      store: sessionStore,
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        secure: false,
-        httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000,
-        sameSite: 'lax'
-      }
-    } ));
-
-    // ========================
-    // INICIAR SERVIDOR (DEVE ESTAR AQUI)
-    // ========================
-    const PORT = process.env.PORT || 8080;
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Servidor rodando na porta ${PORT}`);
-      console.log(`📧 Sistema de Email: ${process.env.EMAIL_USER ? 'Configurado' : 'Não configurado'}`);
-    });
+    connection.release();
   }
 });
+
+// ========================
+// CONFIGURAÇÃO DE SESSÃO
+// ========================
+const sessionStore = new MySQLStore({
+  host: process.env.MYSQLHOST || 'localhost',
+  port: process.env.MYSQLPORT || 3306,
+  user: process.env.MYSQLUSER || 'root',
+  password: process.env.MYSQLPASSWORD || 'professorbio25',
+  database: process.env.MYSQLDATABASE || 'escola'
+});
+
+app.use(session({
+  key: 'session_cookie_name',
+  secret: process.env.SESSION_SECRET || 'professor_super_secreto',
+  store: sessionStore,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // se for usar HTTPS no futuro, mude para true
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: 'lax'
+  }
+}));
 
 // ========================
 // CONFIGURAÇÃO DO EXPRESS
@@ -117,10 +104,16 @@ app.get('/', (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'healthy',
-    database: 'connected',
-    timestamp: new Date().toISOString()
+  db.query('SELECT 1', (err) => {
+    if (err) {
+      res.status(500).json({ status: 'unhealthy', database: 'disconnected' });
+    } else {
+      res.status(200).json({
+        status: 'healthy',
+        database: 'connected',
+        timestamp: new Date().toISOString()
+      });
+    }
   });
 });
 
@@ -151,6 +144,15 @@ function verificarProfessor(req, res, next) {
   if (req.session?.usuario?.tipo === 'professor') return next();
   return res.status(403).json({ sucesso: false, erro: 'Acesso negado! Apenas professores.' });
 }
+
+// ========================
+// INICIAR SERVIDOR
+// ========================
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+  console.log(`📧 Sistema de Email: ${process.env.EMAIL_USER ? 'Configurado' : 'Não configurado'}`);
+});
 
 // ========================
 // ROTA DE CADASTRO COM VERIFICAÇÃO DE PERMISSÃO
