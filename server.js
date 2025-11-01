@@ -8,7 +8,6 @@ const session = require('express-session');
 const MySQLStore = require('express-mysql-session')(session);
 const path = require('path');
 const mysql = require('mysql2');
-const connection = mysql.createConnection(process.env.DATABASE_URL);
 const cors = require('cors');
 const crypto = require('crypto');
 require('dotenv').config();
