@@ -15,29 +15,34 @@ async function apiFetch(path, options = {}) {
   options.headers = options.headers || {};
 
   try {
-    const res = await fetch(url, options);
+  const res = await fetch(url, options);
 
-    // tenta ler JSON (se o servidor retornou JSON)
-    let body = null;
-    const text = await res.text().catch(() => null);
-    try {
-      body = text ? JSON.parse(text) : null;
-    } catch {
-      // não JSON
-      body = text;
-    }
-
-    if (!res.ok) {
-      // res.status >= 400
-      const errMsg = body && body.erro ? body.erro : (body && body.message ? body.message : `HTTP ${res.status}`);
-      throw new Error(errMsg);
-    }
-
-    return body;
-  } catch (err) {
-    // Propaga erro para o chamador tratar
-    throw err;
+  // Verifica se a resposta existe
+  if (!res) {
+    throw new Error('Sem resposta do servidor');
   }
+
+  // tenta ler JSON (se o servidor retornou JSON)
+  let body = null;
+  try {
+    const text = await res.text();
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    // Se falhar ao ler resposta, usa status HTTP
+    body = { erro: `HTTP ${res.status} - Não foi possível ler resposta` };
+  }
+
+  if (!res.ok) {
+    const errMsg = body && body.erro ? body.erro : 
+                   body && body.message ? body.message : 
+                   `HTTP ${res.status} - ${res.statusText}`;
+    throw new Error(errMsg);
+  }
+
+  return body;
+} catch (err) {
+  throw err;
+}
 }
 
 // ------------------------
