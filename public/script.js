@@ -3,7 +3,7 @@
 // ------------------------
 // API_URL - APENAS PRODUÇÃO
 // ------------------------
-const API_URL = 'https://projetosemeddiariodigital.vercel.app';
+const API_URL = 'https://projetosemeddiariodigital-production.up.railway.app';
 
 // ------------------------
 // Função auxiliar para chamadas à API com tratamento padrão
