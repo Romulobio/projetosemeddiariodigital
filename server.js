@@ -16,15 +16,12 @@ const crypto = require('crypto');
 require('dotenv').config();
 
 // ========================
-// CONFIGURAÇÃO DO CORS
-// ========================
-// ========================
 // CONFIGURAÇÃO CORS
 // ========================
 app.use((req, res, next) => {
   const allowedOrigins = [
-    'https://projetosemeddiariodigital.vercel.app',
     'https://prosemeddiariodigital.vercel.app',
+    'prosemeddiariodigital-production.up.railway.app',
     'http://localhost:3000',
     'http://localhost:8080',
     'http://127.0.0.1:5500'
