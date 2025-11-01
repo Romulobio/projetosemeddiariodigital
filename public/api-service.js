@@ -1,4 +1,4 @@
-// api-service.js - VERSÃO CORRIGIDA CORS
+// api-service.js - VERSÃO CORRIGIDA DEFINITIVA
 class ApiService {
   constructor() {
     this.baseURL = 'https://prosemeddiariodigital-production.up.railway.app';
@@ -9,8 +9,7 @@ class ApiService {
     
     const config = {
       mode: 'cors',
-      // 🔥 REMOVER credentials para evitar CORS pré-flight
-      // credentials: 'include',
+      credentials: 'include', // 🔥 IMPORTANTE para sessões
       headers: {
         'Content-Type': 'application/json',
         ...options.headers
@@ -23,7 +22,7 @@ class ApiService {
     }
 
     try {
-      console.log(`🌐 Fazendo requisição para: ${url}`, config);
+      console.log(`🌐 Fazendo requisição para: ${url}`);
       const response = await fetch(url, config);
       
       if (!response.ok) {
@@ -35,6 +34,15 @@ class ApiService {
       return data;
     } catch (error) {
       console.error('❌ Erro na requisição:', error);
+      
+      // Mensagem mais específica para CORS
+      if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
+        return { 
+          sucesso: false, 
+          erro: 'Erro de CORS. O servidor precisa ser configurado para permitir requisições do Vercel.' 
+        };
+      }
+      
       return { 
         sucesso: false, 
         erro: 'Erro de conexão: ' + error.message 

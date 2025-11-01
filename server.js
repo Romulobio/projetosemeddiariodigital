@@ -16,10 +16,14 @@ require('dotenv').config();
 // CONFIGURAÇÃO CORS - UNIFICADA
 // ========================
 app.use(cors({
-  origin: 'https://projetosemeddiariodigital.vercel.app',
+  origin: [
+    'https://projetosemeddiariodigital.vercel.app',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
 
 // ========================
@@ -71,6 +75,9 @@ app.use(session({
     sameSite: 'lax'
   }
 }));
+
+// 🔥 Lidar com preflight requests
+app.options('*', cors());
 
 // ========================
 // CONFIGURAÇÃO DO EXPRESS
