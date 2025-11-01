@@ -81,6 +81,42 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
+// ========================
+// ROTAS PÚBLICAS (ADICIONE ISSO NO INÍCIO DAS ROTAS)
+// ========================
+
+// Health check para Railway - ROTA PÚBLICA
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'API Prosemed Diário Digital - Online',
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0'
+  });
+});
+
+// Health check específico para monitoramento
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'healthy',
+    database: 'connected',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Rota de status do sistema
+app.get('/status', (req, res) => {
+  res.json({
+    app: 'Prosemed Diário Digital',
+    status: 'operacional',
+    environment: process.env.NODE_ENV || 'development',
+    port: process.env.PORT || 8080,
+    timestamp: new Date().toISOString()
+  });
+});
+
+
 // ========================
 // MIDDLEWARES DE AUTENTICAÇÃO
 // ========================
