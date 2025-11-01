@@ -13,23 +13,23 @@ const crypto = require('crypto');
 require('dotenv').config();
 
 // ========================
-// CONFIGURAÇÃO CORS - ADICIONE ISSO!
+// CONFIGURAÇÃO CORS - VERCEL + RAILWAY
 // ========================
-app.use((req, res, next) => {
-  // Permitir SEU domínio do Vercel
-  res.header('Access-Control-Allow-Origin', 'https://projetosemeddiariodigital.vercel.app');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, X-Requested-With, Accept');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  
-  // Responder imediatamente a preflight OPTIONS
-  if (req.method === 'OPTIONS') {
-    console.log('✅ CORS Preflight permitido');
-    return res.status(200).end();
-  }
-  
-  next();
-});
+app.use(cors({
+  origin: 'https://projetosemediariodigital.vercel.app', // domínio do seu front
+  credentials: true, // permite envio de cookies e sessões
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // métodos permitidos
+  allowedHeaders: ['Content-Type', 'Authorization'], // cabeçalhos aceitos
+}));
+
+app.options('*', cors()); // garante resposta correta ao preflight
+
+// ========================
+// PARSERS
+// ========================
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // ========================
 // CONEXÃO COM O BANCO DE DADOS
 // ========================
@@ -55,6 +55,16 @@ db.getConnection((err, connection) => {
   }
 });
 
+// Testa conexão inicial
+db.getConnection((err, connection) => {
+  if (err) {
+    console.error('❌ Erro ao conectar ao banco:', err);
+  } else {
+    console.log('✅ Conexão com o banco bem-sucedida!');
+    connection.release();
+  }
+});
+
 // ========================
 // CONFIGURAÇÃO DE SESSÃO
 // ========================
@@ -65,6 +75,12 @@ const sessionStore = new MySQLStore({
   password: process.env.MYSQLPASSWORD || 'professorbio25',
   database: process.env.MYSQLDATABASE || 'escola'
 });
+const cors = require('cors');
+
+app.use(cors({
+  origin: 'https://projetosemediariodigital.vercel.app', // domínio do seu front
+  credentials: true
+}));
 
 app.use(session({
   key: 'session_cookie_name',
@@ -73,10 +89,10 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // se for usar HTTPS no futuro, mude para true
+    secure: true,          // precisa ser true no ambiente Vercel + Railway (HTTPS)
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'lax'
+    sameSite: 'none',      // ESSENCIAL para cross-domain cookies
+    maxAge: 24 * 60 * 60 * 1000
   }
 }));
 
