@@ -64,6 +64,15 @@ db.connect(err => {
 });
 
 // ========================
+// INICIAR SERVIDOR
+// ========================
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+  console.log(`📧 Sistema de Email: ${process.env.EMAIL_USER ? 'Configurado' : 'Não configurado'}`);
+});
+
+// ========================
 // CONFIGURAÇÃO DE SESSÃO
 // ========================
 const sessionStore = new MySQLStore({
@@ -762,14 +771,7 @@ app.post('/alterar-senha', verificarAuth, async (req, res) => {
   }
 });
 
-// ========================
-// INICIAR SERVIDOR
-// ========================
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  console.log(`📧 Sistema de Email: ${process.env.EMAIL_USER ? 'Configurado' : 'Não configurado'}`);
-});
+
 
 // ========================
 // TRATAMENTO DE ERROS
