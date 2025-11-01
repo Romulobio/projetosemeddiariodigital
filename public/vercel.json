@@ -4,9 +4,17 @@
     {
       "src": "index.html",
       "use": "@vercel/static"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build"
     }
   ],
   "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "https://prosemeddiariodigital-production.up.railway.app/api/$1"
+    },
     {
       "src": "/(.*)",
       "dest": "/index.html"
