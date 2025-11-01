@@ -9,7 +9,7 @@ const API_URL = (function () {
     return 'http://localhost:3000';
   }
   // URL de produção (Railway) - use https
-  return 'https://prosemeddiariodigital-production.up.railway.app';
+  return 'https://projetosemeddiariodigital-production.up.railway.app';
 })();
 
 // ------------------------
