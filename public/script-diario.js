@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // FUNÇÃO NOVA PARA CARREGAR O NOME DO PROFESSOR
 async function carregarNomeProfessor() {
     try {
-        const response = await fetch('/api/dados-usuario');
+        const response = await apiFetch('/api/dados-usuario');
         if (!response.ok) throw new Error('Erro ao carregar dados');
         
         const data = await response.json();
@@ -179,8 +179,8 @@ async function carregarTurmasProfessor() {
         const selectTurma = document.getElementById('select-turma');
         selectTurma.innerHTML = '<option value="">Carregando turmas...</option>';
         
-        // MUDEI A ROTA PARA A NOVA
-        const response = await fetch('/api/turmas-professor');
+        // ✅ CORRIGIDO: usando apiFetch
+        const response = await apiFetch('/api/turmas-professor');
         console.log('📡 Resposta da API turmas:', response.status);
         
         if (!response.ok) {
@@ -221,7 +221,8 @@ async function carregarDisciplinasProfessor() {
     console.log('📍 Carregando disciplinas do professor...');
     
     try {
-        const response = await fetch('/api/disciplinas-professor');
+        // ✅ CORRIGIDO: usando apiFetch
+        const response = await apiFetch('/api/disciplinas-professor');
         
         if (!response.ok) {
             throw new Error(`Erro HTTP: ${response.status}`);
@@ -273,7 +274,8 @@ async function carregarObjetosConhecimento() {
     });
     
     try {
-        const response = await fetch(`/api/objetos-conhecimento?turma=${turmaSelecionada}&disciplina=${disciplinaSelecionada}&mes=${mesAtual + 1}&ano=${anoAtual}`);
+        // ✅ CORRIGIDO: usando apiFetch
+        const response = await apiFetch(`/api/objetos-conhecimento?turma=${turmaSelecionada}&disciplina=${disciplinaSelecionada}&mes=${mesAtual + 1}&ano=${anoAtual}`);
         
         if (!response.ok) {
             throw new Error(`Erro HTTP: ${response.status}`);
@@ -343,7 +345,8 @@ async function salvarObjetosConhecimento() {
             return;
         }
         
-        const response = await fetch('/api/salvar-objetos-conhecimento', {
+        // ✅ CORRIGIDO: usando apiFetch
+        const response = await apiFetch('/api/salvar-objetos-conhecimento', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -390,7 +393,6 @@ async function salvarObjetosConhecimento() {
         btnSalvar.innerHTML = textoOriginal;
     }
 }
-
 
 function limparCampos() {
     if (!confirm('Tem certeza que deseja limpar todos os campos deste mês?')) {

@@ -65,7 +65,8 @@ async function carregarTurmasProfessor() {
         
         selectTurma.innerHTML = '<option value="">Carregando turmas...</option>';
         
-        const response = await fetch(`${API_URL}/api/notas-turmas-professor`);
+        // ✅ CORRIGIDO: usando apiFetch
+        const response = await apiFetch('/api/notas-turmas-professor');
         console.log('📡 Resposta da API:', response.status);
         
         if (!response.ok) {
@@ -146,7 +147,8 @@ async function carregarNotas() {
     const turmaId = estado.alunos[0].turma_id;
     
     try {
-        const response = await fetch(`${API_URL}/api/notas-turma?turma_id=${turmaId}&unidade=${estado.unidadeSelecionada}`);
+        // ✅ CORRIGIDO: usando apiFetch
+        const response = await apiFetch(`/api/notas-turma?turma_id=${turmaId}&unidade=${estado.unidadeSelecionada}`);
         
         if (!response.ok) {
             throw new Error(`Erro HTTP: ${response.status}`);
@@ -186,7 +188,8 @@ async function carregarMediasAnuais() {
     const turmaId = estado.alunos[0].turma_id;
     
     try {
-        const response = await fetch(`${API_URL}/api/medias-anuais?turma_id=${turmaId}`);
+        // ✅ CORRIGIDO: usando apiFetch
+        const response = await apiFetch(`/api/medias-anuais?turma_id=${turmaId}`);
         
         if (!response.ok) {
             throw new Error(`Erro HTTP: ${response.status}`);
@@ -422,7 +425,7 @@ function criarLinhaTabela(aluno, notas, mediaUnidade, recuperacao) {
                         value="${notaRecuperacao}"
                         data-aluno="${aluno.id}" data-tipo="recuperacao"
                         placeholder="Nota recuperação"
-                        oninput="calcularMediaAluno(${alunoId})">` : 
+                        oninput="calcularMediaAluno(${aluno.id})">` : 
                 "Não"
             }
         </td>
@@ -558,7 +561,8 @@ async function salvarTodasNotas() {
     });
     
     try {
-        const response = await fetch(`${API_URL}/api/salvar-notas`, {
+        // ✅ CORRIGIDO: usando apiFetch
+        const response = await apiFetch('/api/salvar-notas', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -49,7 +49,8 @@ function configurarFiltrosPadrao() {
 async function carregarTurmasDoProfessor() {
     console.log('🏫 Carregando turmas do professor...');
     try {
-        const response = await fetch(`${API_URL}/api/alunos-turma-professor`);
+        // ✅ CORRIGIDO: usando apiFetch
+        const response = await apiFetch('/api/alunos-turma-professor');
         const data = await response.json();
         
         if (data.sucesso && data.alunosPorTurma) {
@@ -184,9 +185,10 @@ async function carregarRelatorios() {
             queryParams.append('aluno', aluno);
         }
         
-        console.log(`🌐 Fazendo requisição para: ${API_URL}/gerar-relatorio?${queryParams}`);
+        console.log(`🌐 Fazendo requisição para: /gerar-relatorio?${queryParams}`);
         
-        const response = await fetch(`${API_URL}/gerar-relatorio?${queryParams}`);
+        // ✅ CORRIGIDO: usando apiFetch
+        const response = await apiFetch(`/gerar-relatorio?${queryParams}`);
         const data = await response.json();
         
         console.log('📨 Resposta recebida:', data);

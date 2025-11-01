@@ -9,7 +9,8 @@ async function verificarAutenticacao() {
     try {
         console.log('🔐 Verificando autenticação...');
         
-        const response = await fetch('/check-auth');
+        // ✅ CORRIGIDO: usando apiFetch
+        const response = await apiFetch('/check-auth');
         const data = await response.json();
         
         console.log('📊 Resposta da autenticação:', data);
@@ -85,22 +86,22 @@ document.addEventListener('click', function(event) {
 // Funções das funcionalidades
 function abrirFrequencia() {
     console.log('📊 Abrindo frequência...');
-    alert('Sistema de Frequência - Em desenvolvimento');
+    window.location.href = 'frequencia.html';
 }
 
 function abrirRelatorios() {
     console.log('📈 Abrindo relatórios...');
-    alert('Sistema de Relatórios - Em desenvolvimento');
+    window.location.href = 'relatorios.html';
 }
 
 function abrirDiario() {
     console.log('📖 Abrindo diário digital...');
-    alert('Diário Digital - Em desenvolvimento');
+    window.location.href = 'diario.html';
 }
 
 function abrirNotas() {
     console.log('📝 Abrindo sistema de notas...');
-    alert('Sistema de Notas - Em desenvolvimento');
+    window.location.href = 'notas.html';
 }
 
 // Funções do menu
@@ -120,7 +121,9 @@ function faleConosco() {
 async function sair() {
     try {
         console.log('🚪 Saindo do sistema...');
-        const response = await fetch('/logout', { 
+        
+        // ✅ CORRIGIDO: usando apiFetch
+        const response = await apiFetch('/logout', { 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

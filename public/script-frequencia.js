@@ -156,7 +156,8 @@ async function carregarTurmasProfessor() {
         
         selectTurma.innerHTML = '<option value="">Carregando turmas...</option>';
         
-        const response = await fetch(`${API_URL}/api/alunos-turma-professor`);
+        // ✅ CORRIGIDO: usando apiFetch
+        const response = await apiFetch('/api/alunos-turma-professor');
         console.log('📡 Resposta da API:', response.status);
         
         if (!response.ok) {
@@ -355,7 +356,8 @@ async function salvarFrequencia() {
     try {
         console.log('Enviando frequências:', { dia, mes, ano, turma_id: turmaIdSelecionada, frequencias });
         
-        const response = await fetch(`${API_URL}/salvar-frequencias`, {
+        // ✅ CORRIGIDO: usando apiFetch
+        const response = await apiFetch('/salvar-frequencias', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -384,7 +386,8 @@ async function salvarFrequencia() {
 
 async function carregarFrequenciaServidor(dia, mes, ano, turmaId) {
     try {
-        const response = await fetch(`${API_URL}/obter-frequencia?dia=${dia}&mes=${mes}&ano=${ano}&turma_id=${turmaId}`);
+        // ✅ CORRIGIDO: usando apiFetch
+        const response = await apiFetch(`/obter-frequencia?dia=${dia}&mes=${mes}&ano=${ano}&turma_id=${turmaId}`);
         const result = await response.json();
         
         if (!result.sucesso) return;
