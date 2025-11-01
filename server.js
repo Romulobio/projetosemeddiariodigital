@@ -9,190 +9,138 @@ const MySQLStore = require('express-mysql-session')(session);
 const path = require('path');
 const mysql = require('mysql2');
 const cors = require('cors');
+const crypto = require('crypto');
 require('dotenv').config();
 
 // ========================
-// CONFIGURAÇÃO CORS - CORRIGIDA!
+// CONFIGURAÇÃO CORS - ADICIONE ISSO!
 // ========================
-const allowedOrigins = [
-  'https://projetosemeddiariodigital.vercel.app',
-  'http://localhost:3000',
-  'http://localhost:5173' // Vite
-];
-
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  
-  if (allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
-  
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, X-Requested-With, Accept, X-CSRF-Token');
+  // Permitir SEU domínio do Vercel
+  res.header('Access-Control-Allow-Origin', 'https://projetosemeddiariodigital.vercel.app');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, X-Requested-With, Accept');
   res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Expose-Headers', 'Set-Cookie');
   
+  // Responder imediatamente a preflight OPTIONS
   if (req.method === 'OPTIONS') {
-    console.log('✅ CORS Preflight permitido para:', origin);
+    console.log('✅ CORS Preflight permitido');
     return res.status(200).end();
   }
   
   next();
 });
-
 // ========================
-// CONEXÃO COM O BANCO DE DADOS - CORRIGIDA!
+// CONEXÃO COM O BANCO DE DADOS
 // ========================
-const dbConfig = {
-  host: process.env.MYSQLHOST || 'localhost',
-  user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQLPASSWORD || 'professorbio25',
-  database: process.env.MYSQLDATABASE || 'escola',
+const db = mysql.createPool({
+  host: process.env.MYSQLHOST,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE,
   port: process.env.MYSQLPORT || 3306,
   charset: 'utf8mb4',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
-  acquireTimeout: 60000,
-  timeout: 60000,
-  reconnect: true
-};
-
-console.log('🔧 Configuração do Banco:', {
-  host: dbConfig.host,
-  port: dbConfig.port,
-  database: dbConfig.database,
-  user: dbConfig.user
+  queueLimit: 0
 });
 
-const db = mysql.createPool(dbConfig);
-
-// Testa conexão inicial com retry
-const testConnection = (retries = 3) => {
-  db.getConnection((err, connection) => {
-    if (err) {
-      console.error('❌ Erro ao conectar ao banco:', err.message);
-      
-      if (retries > 0) {
-        console.log(`🔄 Tentando reconectar... (${retries} tentativas restantes)`);
-        setTimeout(() => testConnection(retries - 1), 5000);
-      } else {
-        console.error('💥 Falha crítica: Não foi possível conectar ao banco após várias tentativas');
-      }
-    } else {
-      console.log('✅ Conexão com o banco bem-sucedida!');
-      connection.release();
-    }
-  });
-};
-
-testConnection();
+// Testa conexão inicial
+db.getConnection((err, connection) => {
+  if (err) {
+    console.error('❌ Erro ao conectar ao banco:', err);
+  } else {
+    console.log('✅ Conexão com o banco bem-sucedida!');
+    connection.release();
+  }
+});
 
 // ========================
-// CONFIGURAÇÃO DE SESSÃO - CORRIGIDA!
+// CONFIGURAÇÃO DE SESSÃO
 // ========================
-let sessionStore;
-
-try {
-  sessionStore = new MySQLStore({
-    host: dbConfig.host,
-    port: dbConfig.port,
-    user: dbConfig.user,
-    password: dbConfig.password,
-    database: dbConfig.database,
-    createDatabaseTable: true,
-    schema: {
-      tableName: 'sessions',
-      columnNames: {
-        session_id: 'session_id',
-        expires: 'expires',
-        data: 'data'
-      }
-    }
-  });
-
-  console.log('✅ Session Store configurado');
-} catch (error) {
-  console.error('❌ Erro ao configurar Session Store:', error);
-}
+const sessionStore = new MySQLStore({
+  host: process.env.MYSQLHOST || 'localhost',
+  port: process.env.MYSQLPORT || 3306,
+  user: process.env.MYSQLUSER || 'root',
+  password: process.env.MYSQLPASSWORD || 'professorbio25',
+  database: process.env.MYSQLDATABASE || 'escola'
+});
 
 app.use(session({
-  key: 'prosemed_session',
-  secret: process.env.SESSION_SECRET || 'chave_secreta_fallback_2024',
+  key: 'session_cookie_name',
+  secret: process.env.SESSION_SECRET || 'professor_super_secreto',
   store: sessionStore,
   resave: false,
   saveUninitialized: false,
-  rolling: true,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // TRUE no Railway
+    secure: false, // se for usar HTTPS no futuro, mude para true
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 24 horas
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : undefined
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: 'lax'
   }
 }));
-
-// Middleware para log de sessões
-app.use((req, res, next) => {
-  console.log('🔐 Sessão:', {
-    sessionId: req.sessionID ? 'PRESENTE' : 'AUSENTE',
-    usuario: req.session.usuario ? req.session.usuario.email : 'NÃO LOGADO'
-  });
-  next();
-});
 
 // ========================
 // CONFIGURAÇÃO DO EXPRESS
 // ========================
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ========================
-// ROTAS PÚBLICAS - ATUALIZADAS
+// ROTAS PÚBLICAS
 // ========================
 app.get('/', (req, res) => {
   res.json({
-    message: 'API Prosemed Diário Digital - Online ✅',
+    message: 'API Prosemed Diário Digital - Online',
     status: 'OK',
-    environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString(),
     version: '1.0.0'
   });
 });
 
 app.get('/health', (req, res) => {
-  db.query('SELECT 1 as test', (err, results) => {
+  db.query('SELECT 1', (err) => {
     if (err) {
-      console.error('❌ Health Check - Banco:', err.message);
-      return res.status(500).json({ 
-        status: 'unhealthy', 
-        database: 'disconnected',
-        error: err.message 
+      res.status(500).json({ status: 'unhealthy', database: 'disconnected' });
+    } else {
+      res.status(200).json({
+        status: 'healthy',
+        database: 'connected',
+        timestamp: new Date().toISOString()
       });
     }
-    
-    res.status(200).json({
-      status: 'healthy',
-      database: 'connected',
-      session: req.sessionID ? 'active' : 'inactive',
-      timestamp: new Date().toISOString()
-    });
   });
 });
 
-app.get('/debug-env', (req, res) => {
+app.get('/status', (req, res) => {
   res.json({
-    mysqlHost: process.env.MYSQLHOST || 'NÃO CONFIGURADO',
-    mysqlPort: process.env.MYSQLPORT || 'NÃO CONFIGURADO',
-    mysqlDatabase: process.env.MYSQLDATABASE || 'NÃO CONFIGURADO',
-    mysqlUser: process.env.MYSQLUSER || 'NÃO CONFIGURADO',
-    nodeEnv: process.env.NODE_ENV || 'development',
-    hasSessionSecret: !!process.env.SESSION_SECRET
+    app: 'Prosemed Diário Digital',
+    status: 'operacional',
+    environment: process.env.NODE_ENV || 'development',
+    port: process.env.PORT || 8080,
+    timestamp: new Date().toISOString()
   });
 });
 
-// CONTINUA... (o resto do seu código permanece igual)
+// ========================
+// MIDDLEWARES DE AUTENTICAÇÃO
+// ========================
+function verificarAuth(req, res, next) {
+  if (req.session && req.session.usuario) return next();
+  return res.status(403).json({ sucesso: false, erro: 'Acesso negado! Faça login primeiro.' });
+}
+
+function verificarAdmin(req, res, next) {
+  if (req.session?.usuario?.tipo === 'administrador') return next();
+  return res.status(403).json({ sucesso: false, erro: 'Acesso negado! Apenas administradores.' });
+}
+
+function verificarProfessor(req, res, next) {
+  if (req.session?.usuario?.tipo === 'professor') return next();
+  return res.status(403).json({ sucesso: false, erro: 'Acesso negado! Apenas professores.' });
+}
+
 // ========================
 // ROTA DE CADASTRO COM VERIFICAÇÃO DE PERMISSÃO
 // ========================
