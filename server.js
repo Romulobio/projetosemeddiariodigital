@@ -15,21 +15,31 @@ require('dotenv').config();
 // ========================
 // CONFIGURAÇÃO DO CORS
 // ========================
+// ========================
+// CONFIGURAÇÃO DO CORS PARA VERCEL
+// ========================
 const allowedOrigins = [
-  'https://projetosemeddiariodigital.netlify.app',
-  'http://localhost:5500',
+  'https://prosemeddiariodigital.vercel.app', // Seu futuro domínio Vercel
+  'http://localhost:3000',
+  'http://localhost:8080',
   'http://127.0.0.1:5500'
 ];
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Permite requests sem origin (como mobile apps)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.log('🚫 CORS bloqueado para origem:', origin);
       callback(new Error('CORS não permitido para esta origem.'));
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
 
 // ========================
