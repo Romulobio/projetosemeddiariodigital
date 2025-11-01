@@ -781,6 +781,14 @@ app.use('*', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// ========================
+// ROTA RAIZ (TESTE SERVIDOR)
+// ========================
+app.get('/', (req, res) => {
+  res.send('🚀 Servidor rodando corretamente no Railway!');
+});
+
 // ========================
 // INICIAR SERVIDOR - ADICIONE ISSO!
 // ========================
