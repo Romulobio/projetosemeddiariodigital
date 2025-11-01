@@ -1,3 +1,6 @@
+// ========================
+// IMPORTAÇÕES E CONFIGURAÇÕES INICIAIS
+// ========================
 const express = require('express');
 const app = express();
 const bcrypt = require('bcryptjs');
@@ -7,30 +10,26 @@ const path = require('path');
 const mysql = require('mysql2');
 const cors = require('cors');
 const crypto = require('crypto');
-
-// Carrega variáveis de ambiente
 require('dotenv').config();
 
 // ========================
-// CONFIGURAÇÃO DO CORS (DEVE VIR PRIMEIRO)
+// CONFIGURAÇÃO DO CORS
 // ========================
+const allowedOrigins = [
+  'https://projetosemeddiariodigital.netlify.app',
+  'http://localhost:5500',
+  'http://127.0.0.1:5500'
+];
+
 app.use(cors({
   origin: (origin, callback) => {
-    const allowedOrigins = [
-      'https://projetosemeddiariodigital.netlify.app',
-      'http://localhost:5500',
-      'http://127.0.0.1:5500'
-    ];
-
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('CORS não permitido para esta origem.'));
     }
   },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  credentials: true
 }));
 
 // ========================
@@ -55,7 +54,7 @@ db.connect(err => {
 });
 
 // ========================
-// CONFIGURAÇÃO DA SESSÃO COM MYSQL
+// CONFIGURAÇÃO DE SESSÃO
 // ========================
 const sessionStore = new MySQLStore({
   host: process.env.MYSQLHOST || 'localhost',
@@ -71,27 +70,26 @@ app.use(session({
   store: sessionStore,
   resave: false,
   saveUninitialized: false,
-  cookie: { 
-    secure: false, 
-    maxAge: 24 * 60 * 60 * 1000, 
-    sameSite: 'lax' 
+  cookie: {
+    secure: false,
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: 'lax'
   }
 }));
 
 // ========================
-// CONFIGURAÇÃO DO APP
+// CONFIGURAÇÃO DO EXPRESS
 // ========================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ========================
-// ROTAS PÚBLICAS (PRIMEIRAS!)
+// ROTAS PÚBLICAS
 // ========================
-
-// Health check para Railway - ROTA PÚBLICA
 app.get('/', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'API Prosemed Diário Digital - Online',
     status: 'OK',
     timestamp: new Date().toISOString(),
@@ -99,16 +97,14 @@ app.get('/', (req, res) => {
   });
 });
 
-// Health check específico para monitoramento
 app.get('/health', (req, res) => {
-  res.status(200).json({ 
+  res.status(200).json({
     status: 'healthy',
     database: 'connected',
     timestamp: new Date().toISOString()
   });
 });
 
-// Rota de status do sistema
 app.get('/status', (req, res) => {
   res.json({
     app: 'Prosemed Diário Digital',
@@ -136,12 +132,13 @@ function verificarProfessor(req, res, next) {
   if (req.session?.usuario?.tipo === 'professor') return next();
   return res.status(403).json({ sucesso: false, erro: 'Acesso negado! Apenas professores.' });
 }
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://projetosemeddiariodigital.netlify.app');
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  next();
+
+// ========================
+// INICIALIZAÇÃO DO SERVIDOR
+// ========================
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
 
 
