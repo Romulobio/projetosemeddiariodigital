@@ -141,18 +141,6 @@ function verificarProfessor(req, res, next) {
 }
 
 // ========================
-// INICIAR SERVIDOR
-// ========================
-console.log('=== DEBUG ANTES DO LISTEN ===');
-console.log('PORT que será usada:', process.env.PORT || 8080);
-console.log('=== DEBUG ANTES DO LISTEN ===');
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  console.log(`📧 Sistema de Email: ${process.env.EMAIL_USER ? 'Configurado' : 'Não configurado'}`);
-});
-
-// ========================
 // ROTA DE CADASTRO COM VERIFICAÇÃO DE PERMISSÃO
 // ========================
 app.post('/cadastro', async (req, res) => {
@@ -791,4 +779,17 @@ app.use((err, req, res, next) => {
 
 app.use((req, res) => {
   res.status(404).json({ sucesso: false, erro: 'Rota não encontrada' });
+});
+
+// ========================
+// INICIAR SERVIDOR - ADICIONE ISSO!
+// ========================
+const PORT = process.env.PORT || 8080;
+
+console.log('🔍 DEBUG - Variável PORT do ambiente:', process.env.PORT);
+console.log('🔍 DEBUG - Porta que SERÁ usada:', PORT);
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+  console.log(`📧 Sistema de Email: Não configurado`);
 });
