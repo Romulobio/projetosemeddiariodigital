@@ -1,4 +1,4 @@
-// api-service.js - VERSÃO CORRIGIDA PARA CORS
+// api-service.js - VERSÃO CORRIGIDA CORS
 class ApiService {
   constructor() {
     this.baseURL = 'https://prosemeddiariodigital-production.up.railway.app';
@@ -8,8 +8,9 @@ class ApiService {
     const url = `${this.baseURL}${endpoint}`;
     
     const config = {
-      mode: 'cors', // 🔥 ADICIONE ESTA LINHA
-      credentials: 'include',
+      mode: 'cors',
+      // 🔥 REMOVER credentials para evitar CORS pré-flight
+      // credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...options.headers
@@ -22,7 +23,7 @@ class ApiService {
     }
 
     try {
-      console.log(`🌐 Fazendo requisição para: ${url}`);
+      console.log(`🌐 Fazendo requisição para: ${url}`, config);
       const response = await fetch(url, config);
       
       if (!response.ok) {
@@ -36,7 +37,7 @@ class ApiService {
       console.error('❌ Erro na requisição:', error);
       return { 
         sucesso: false, 
-        erro: 'Erro de conexão. Verifique se o servidor está online.' 
+        erro: 'Erro de conexão: ' + error.message 
       };
     }
   }
