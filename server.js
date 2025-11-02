@@ -13,19 +13,32 @@ const crypto = require('crypto');
 require('dotenv').config();
 
 // ========================
-// CONFIGURAÇÃO CORS - UNIFICADA
+// CONFIGURAÇÃO DO CORS
 // ========================
+const cors = require('cors');
+
+const allowedOrigins = [
+  'https://prosemeddiariodigital.vercel.app', // 🌐 seu domínio Vercel
+  'http://localhost:3000' // para testes locais
+];
+
 app.use(cors({
-  origin: [
-    'https://projetosemeddiariodigital.vercel.app',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000'
-  ],
-  credentials: true,
+  origin: function (origin, callback) {
+    // Permite requisições sem origem (como apps mobile, Postman etc)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('CORS não permitido para esta origem'));
+    }
+  },
+  credentials: true, // se estiver usando cookies ou sessões
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// 🔥 Lidar com preflight requests (importante)
+app.options('*', cors());
 // ========================
 // CONEXÃO COM O BANCO DE DADOS
 // ========================
