@@ -80,8 +80,6 @@ app.use(session({
   }
 }));
 
-// 🔥 Lidar com preflight requests
-app.options('*', cors());
 
 // ========================
 // CONFIGURAÇÃO DO EXPRESS
