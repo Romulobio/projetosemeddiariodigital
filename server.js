@@ -30,36 +30,38 @@ app.use(cors({
 // CONEXÃO COM O BANCO DE DADOS
 // ========================
 const db = mysql.createPool({
-  host: process.env.MYSQLHOST,
-  user: process.env.MYSQLUSER,
+  host: process.env.MYSQLHOST || 'mysql.railway.internal',
+  user: process.env.MYSQLUSER || 'root',
   password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE,
-  port: process.env.MYSQLPORT || 3306,
+  database: process.env.MYSQLDATABASE || 'railway',
+  port: process.env.MYSQLPORT ? Number(process.env.MYSQLPORT) : 3306,
   charset: 'utf8mb4',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 });
 
-// Testa conexão inicial
+// Teste de conexão
 db.getConnection((err, connection) => {
   if (err) {
-    console.error('❌ Erro ao conectar ao banco:', err);
+    console.error('❌ Erro ao conectar no MySQL:', err.message);
   } else {
-    console.log('✅ Conexão com o banco bem-sucedida!');
+    console.log('✅ Conectado ao MySQL com sucesso!');
     connection.release();
   }
 });
 
+module.exports = db;
 // ========================
-// CONFIGURAÇÃO DE SESSÃO
+// CONFIGURAÇÃO DE SESSÃO (RAILWAY)
 // ========================
 const sessionStore = new MySQLStore({
-  host: process.env.MYSQLHOST || 'localhost',
-  port: process.env.MYSQLPORT || 3306,
+  host: process.env.MYSQLHOST || 'mysql.railway.internal',
+  port: process.env.MYSQLPORT ? Number(process.env.MYSQLPORT) : 3306,
   user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQLPASSWORD || 'professorbio25',
-  database: process.env.MYSQLDATABASE || 'escola'
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE || 'railway',
+  charset: 'utf8mb4'
 });
 
 app.use(session({
@@ -69,7 +71,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // altere para true se for usar HTTPS
+    secure: process.env.NODE_ENV === 'production', // true em produção
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
     sameSite: 'lax'
