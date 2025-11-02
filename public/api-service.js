@@ -1,7 +1,7 @@
 // api-service.js - VERSÃO CORRIGIDA DEFINITIVA
 class ApiService {
   constructor() {
-    this.baseURL = 'https://prosemeddiariodigital-production.up.railway.app';
+    this.baseURL = 'https://projetosemeddiariodigital-production.up.railway.app';
   }
 
   async request(endpoint, options = {}) {
