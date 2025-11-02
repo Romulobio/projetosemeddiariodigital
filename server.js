@@ -38,7 +38,11 @@ const db = mysql.createPool({
   charset: 'utf8mb4',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  // Configuração SSL mais robusta para o Railway
+  ssl: process.env.NODE_ENV === 'production' ? {
+    rejectUnauthorized: false // Permite a conexão mesmo que o certificado não seja verificado (comum em ambientes de hospedagem)
+  } : false
 });
 
 // Testa conexão inicial
