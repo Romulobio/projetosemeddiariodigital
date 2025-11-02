@@ -12,6 +12,11 @@ const cors = require('cors');
 const crypto = require('crypto');
 require('dotenv').config();
 
+// Determina se deve usar SSL/TLS e se está em produção
+const isProduction = process.env.NODE_ENV === 'production';
+// Configuração SSL mais robusta para Railway (Correção do Erro de Conexão)
+const sslConfig = isProduction ? { rejectUnauthorized: false } : false;
+
 // ========================
 // CONFIGURAÇÃO CORS - UNIFICADA
 // ========================
@@ -24,7 +29,7 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
-}));
+} ));
 
 // ========================
 // CONEXÃO COM O BANCO DE DADOS
@@ -39,16 +44,18 @@ const db = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  // Configuração SSL mais robusta para o Railway
-  ssl: process.env.NODE_ENV === 'production' ? {
-    rejectUnauthorized: false // Permite a conexão mesmo que o certificado não seja verificado (comum em ambientes de hospedagem)
-  } : false
+  ssl: sslConfig // Correção 1: SSL para o Pool
 });
 
 // Testa conexão inicial
 db.getConnection((err, connection) => {
   if (err) {
     console.error('❌ Erro ao conectar ao banco:', err);
+    // Se a conexão com o banco falhar em produção, o servidor deve parar
+    if (isProduction) {
+        console.error('Servidor encerrado devido a falha crítica de conexão com o banco de dados.');
+        process.exit(1); 
+    }
   } else {
     console.log('✅ Conexão com o banco bem-sucedida!');
     connection.release();
@@ -59,26 +66,28 @@ db.getConnection((err, connection) => {
 // CONFIGURAÇÃO DE SESSÃO
 // ========================
 const sessionStore = new MySQLStore({
-  host: process.env.MYSQLHOST || 'localhost',
-  port: process.env.MYSQLPORT || 3306,
-  user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQLPASSWORD || 'professorbio25',
-  database: process.env.MYSQLDATABASE || 'escola'
+  host: process.env.MYSQLHOST, // Correção 2: Removendo defaults
+  port: process.env.MYSQLPORT || 3306, // Correção 2: Removendo defaults
+  user: process.env.MYSQLUSER, // Correção 2: Removendo defaults
+  password: process.env.MYSQLPASSWORD, // Correção 2: Removendo defaults
+  database: process.env.MYSQLDATABASE, // Correção 2: Removendo defaults
+  ssl: sslConfig // Correção 1: SSL para o Session Store
 });
 
 app.use(session({
   key: 'session_cookie_name',
-  secret: process.env.SESSION_SECRET || 'professor_super_secreto',
+  // Correção 3: Secret mais seguro
+  secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'), 
   store: sessionStore,
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // altere para true se for usar HTTPS
+    secure: isProduction, // Correção 3: Usar HTTPS em produção
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
     sameSite: 'lax'
   }
-}));
+} ));
 
 // 🔥 Lidar com preflight requests
 app.options('*', cors());
@@ -800,5 +809,5 @@ const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  console.log(`📡 Ambiente: ${process.env.NODE_ENV}`);
+  console.log(`📡 Ambiente: ${process.env.NODE_ENV || 'desenvolvimento'}`);
 });
