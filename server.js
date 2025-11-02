@@ -41,16 +41,15 @@ const db = mysql.createPool({
   queueLimit: 0
 });
 
+// Testa conexão inicial
 db.getConnection((err, connection) => {
   if (err) {
-    console.error('❌ Erro ao conectar no MySQL:', err.message);
+    console.error('❌ Erro ao conectar ao banco:', err);
   } else {
-    console.log('✅ Conectado ao MySQL com sucesso!');
+    console.log('✅ Conexão com o banco bem-sucedida!');
     connection.release();
   }
 });
-
-module.exports = db;
 
 // ========================
 // CONFIGURAÇÃO DE SESSÃO
