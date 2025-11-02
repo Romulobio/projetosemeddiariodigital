@@ -24,12 +24,7 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
-} ));
-
-// Determina se deve usar SSL/TLS para a conexão com o banco de dados
-// O Railway exige SSL/TLS para conexões externas.
-const isProduction = process.env.NODE_ENV === 'production';
-const sslConfig = isProduction ? { rejectUnauthorized: true } : false;
+}));
 
 // ========================
 // CONEXÃO COM O BANCO DE DADOS
@@ -43,19 +38,13 @@ const db = mysql.createPool({
   charset: 'utf8mb4',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
-  ssl: sslConfig // APLICAÇÃO DA CORREÇÃO 1: Adicionar SSL
+  queueLimit: 0
 });
 
 // Testa conexão inicial
 db.getConnection((err, connection) => {
   if (err) {
     console.error('❌ Erro ao conectar ao banco:', err);
-    // Em produção, é vital que o servidor não inicie sem o banco
-    if (isProduction) {
-        console.error('Servidor encerrado devido a falha crítica de conexão com o banco de dados.');
-        process.exit(1);
-    }
   } else {
     console.log('✅ Conexão com o banco bem-sucedida!');
     connection.release();
@@ -66,28 +55,26 @@ db.getConnection((err, connection) => {
 // CONFIGURAÇÃO DE SESSÃO
 // ========================
 const sessionStore = new MySQLStore({
-  host: process.env.MYSQLHOST,
+  host: process.env.MYSQLHOST || 'localhost',
   port: process.env.MYSQLPORT || 3306,
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE,
-  // APLICAÇÃO DA CORREÇÃO 2: Remover defaults e adicionar SSL
-  ssl: sslConfig
+  user: process.env.MYSQLUSER || 'root',
+  password: process.env.MYSQLPASSWORD || 'professorbio25',
+  database: process.env.MYSQLDATABASE || 'escola'
 });
 
 app.use(session({
   key: 'session_cookie_name',
-  secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'), // Melhorar o default secret
+  secret: process.env.SESSION_SECRET || 'professor_super_secreto',
   store: sessionStore,
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: isProduction, // Altera para true automaticamente em produção (HTTPS)
+    secure: false, // altere para true se for usar HTTPS
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
     sameSite: 'lax'
   }
-} ));
+}));
 
 // 🔥 Lidar com preflight requests
 app.options('*', cors());
@@ -98,7 +85,6 @@ app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
-
 
 // ========================
 // ROTAS PÚBLICAS
