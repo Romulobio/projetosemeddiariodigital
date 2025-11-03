@@ -7,10 +7,28 @@ const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const MySQLStore = require('express-mysql-session')(session);
 const path = require('path');
-const mysql = require('mysql2');
 const cors = require('cors');
 const crypto = require('crypto');
 require('dotenv').config();
+const mysql = require('mysql2/promise');
+
+// ========================
+// CONEXÃO COM O BANCO DE DADOS (Railway)
+// ========================
+const db = mysql.createPool({
+  host: process.env.MYSQLHOST,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE,
+  port: process.env.MYSQLPORT,
+  charset: 'utf8mb4',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
 
 // ========================
 // CONFIGURAÇÃO CORS
@@ -25,20 +43,6 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
-
-// ========================
-// CONEXÃO COM O BANCO DE DADOS (Railway)
-// ========================
-const db = mysql.createPool({
-  uri: process.env.DATABASE_URL, // usa a URL completa do Railway
-  charset: 'utf8mb4',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  ssl: {
-    rejectUnauthorized: false
-  }
-});
 
 // Testa conexão inicial
 db.getConnection((err, connection) => {
