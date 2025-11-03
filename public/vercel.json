@@ -2,22 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "index.html",
+      "src": "public/**",
       "use": "@vercel/static"
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build"
     }
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "https://prosemeddiariodigital-production.up.railway.app/api/$1"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/public/$1"
     }
   ]
 }
