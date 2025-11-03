@@ -13,7 +13,7 @@ const crypto = require('crypto');
 require('dotenv').config();
 
 // ========================
-// CONFIGURAÇÃO CORS - UNIFICADA
+// CONFIGURAÇÃO CORS
 // ========================
 app.use(cors({
   origin: [
@@ -27,22 +27,17 @@ app.use(cors({
 }));
 
 // ========================
-// CONEXÃO COM O BANCO DE DADOS
+// CONEXÃO COM O BANCO DE DADOS (Railway)
 // ========================
 const db = mysql.createPool({
-  host: process.env.MYSQLHOST,
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE,
-  port: process.env.MYSQLPORT || 3306,
+  uri: process.env.DATABASE_URL, // usa a URL completa do Railway
   charset: 'utf8mb4',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  // Configuração SSL mais robusta para o Railway
-  ssl: process.env.NODE_ENV === 'production' ? {
-    rejectUnauthorized: false // Permite a conexão mesmo que o certificado não seja verificado (comum em ambientes de hospedagem)
-  } : false
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 // Testa conexão inicial
@@ -56,14 +51,13 @@ db.getConnection((err, connection) => {
 });
 
 // ========================
-// CONFIGURAÇÃO DE SESSÃO
+// CONFIGURAÇÃO DE SESSÃO (usando a mesma DATABASE_URL)
 // ========================
 const sessionStore = new MySQLStore({
-  host: process.env.MYSQLHOST || 'localhost',
-  port: process.env.MYSQLPORT || 3306,
-  user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQLPASSWORD || 'professorbio25',
-  database: process.env.MYSQLDATABASE || 'escola'
+  uri: process.env.DATABASE_URL,
+  clearExpired: true,
+  checkExpirationInterval: 900000, // 15 minutos
+  expiration: 86400000 // 1 dia
 });
 
 app.use(session({
@@ -73,9 +67,9 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // altere para true se for usar HTTPS
+    secure: process.env.NODE_ENV === 'production', // true em produção (HTTPS)
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
+    maxAge: 24 * 60 * 60 * 1000, // 1 dia
     sameSite: 'lax'
   }
 }));
