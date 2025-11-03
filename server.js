@@ -59,10 +59,11 @@ db.getConnection((err, connection) => {
 // CONFIGURAÇÃO DE SESSÃO (usando a mesma DATABASE_URL)
 // ========================
 const sessionStore = new MySQLStore({
-  uri: process.env.DATABASE_URL,
-  clearExpired: true,
-  checkExpirationInterval: 900000, // 15 minutos
-  expiration: 86400000 // 1 dia
+  host: process.env.MYSQLHOST, // REMOVIDO O DEFAULT 'localhost'
+  port: process.env.MYSQLPORT || 3306,
+  user: process.env.MYSQLUSER, // REMOVIDO O DEFAULT 'root'
+  password: process.env.MYSQLPASSWORD, // REMOVIDO O DEFAULT
+  database: process.env.MYSQLDATABASE, // REMOVIDO O DEFAULT 'escola'
 });
 
 app.use(session({
