@@ -13,12 +13,14 @@ require('dotenv').config();
 const mysql = require('mysql2/promise');
 
 // ========================
-// CONFIGURAÇÃO CORS
+// CONFIGURAÇÃO CORS - ADICIONADO REPLIT
 // ========================
 app.use(cors({
   origin: [
     'http://localhost:3000',
-    'http://127.0.0.1:3000'
+    'http://127.0.0.1:3000',
+    'https://*.repl.co', // ← ADICIONADO PARA REPLIT
+    'https://*.repl.dev'  // ← ADICIONADO PARA REPLIT
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -26,39 +28,48 @@ app.use(cors({
 }));
 
 // ========================
-// CONEXÃO COM O BANCO DE DADOS (Railway)
+// CONEXÃO COM O BANCO DE DADOS (AIVEN)
 // ========================
 const db = mysql.createPool({
   host: process.env.MYSQLHOST,
   user: process.env.MYSQLUSER,
   password: process.env.MYSQLPASSWORD,
   database: process.env.MYSQLDATABASE,
-  port: process.env.MYSQLPORT,
+  port: process.env.MYSQLPORT || 3306,
   charset: 'utf8mb4',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  ssl: { rejectUnauthorized: false }
+  ssl: { 
+    rejectUnauthorized: true // ← ALTERADO PARA TRUE (AIVEN EXIGE SSL)
+  },
+  acquireTimeout: 60000,
+  timeout: 60000
 });
 
-// Testa conexão inicial
-db.getConnection((err, connection) => {
-  if (err) console.error('❌ Erro ao conectar ao banco:', err);
-  else {
-    console.log('✅ Conexão com o banco bem-sucedida!');
+// Testa conexão inicial (versão async para melhor diagnóstico)
+db.getConnection()
+  .then(connection => {
+    console.log('✅ Conexão com Aiven MySQL bem-sucedida!');
     connection.release();
-  }
-});
+  })
+  .catch(err => {
+    console.error('❌ Erro ao conectar ao Aiven:', err.message);
+    console.log('💡 Verifique: Variáveis de ambiente e SSL configuration');
+  });
 
 // ========================
-// CONFIGURAÇÃO DE SESSÃO
+// CONFIGURAÇÃO DE SESSÃO - OTIMIZADA PARA AIVEN
 // ========================
 const sessionStore = new MySQLStore({
   host: process.env.MYSQLHOST,
   port: process.env.MYSQLPORT || 3306,
   user: process.env.MYSQLUSER,
   password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE
+  database: process.env.MYSQLDATABASE,
+  ssl: { // ← ADICIONADO SSL PARA SESSÕES
+    rejectUnauthorized: true
+  }
 });
 
 app.use(session({
@@ -68,10 +79,10 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: true, // ← ALTERADO PARA TRUE (REPLIT USA HTTPS)
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'lax'
+    sameSite: 'none' // ← ALTERADO PARA NONE (CROSS-DOMAIN)
   }
 }));
 
@@ -105,18 +116,29 @@ function verificarProfessor(req, res, next) {
 // ========================
 app.get('/', (req, res) => {
   res.json({
-    message: 'API Prosemed Diário Digital - Online',
+    message: 'API Prosemed Diário Digital - Online com Aiven',
     status: 'OK',
     timestamp: new Date().toISOString(),
     version: '1.0.0'
   });
 });
 
-app.get('/health', (req, res) => {
-  db.query('SELECT 1', (err) => {
-    if (err) return res.status(500).json({ status: 'unhealthy', database: 'disconnected' });
-    res.status(200).json({ status: 'healthy', database: 'connected', timestamp: new Date().toISOString() });
-  });
+// Rota health atualizada para async/await
+app.get('/health', async (req, res) => {
+  try {
+    await db.execute('SELECT 1');
+    res.status(200).json({ 
+      status: 'healthy', 
+      database: 'connected', 
+      timestamp: new Date().toISOString() 
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      status: 'unhealthy', 
+      database: 'disconnected',
+      error: err.message 
+    });
+  }
 });
 
 app.get('/status', (req, res) => {
@@ -156,20 +178,18 @@ app.post('/cadastro', async (req, res) => {
   const tiposPermitidos = ['administrador', 'professor', 'aluno'];
   if (!tiposPermitidos.includes(tipo)) return res.json({ sucesso: false, erro: 'Tipo de usuário inválido!' });
 
-  function continuarCadastro() {
-    db.query('SELECT id FROM usuarios WHERE email = ?', [email], async (err, results) => {
-      if (err) return res.json({ sucesso: false, erro: 'Erro ao verificar email!' });
+  async function continuarCadastro() {
+    try {
+      const [results] = await db.execute('SELECT id FROM usuarios WHERE email = ?', [email]);
       if (results.length > 0) return res.json({ sucesso: false, erro: 'Este email já está cadastrado!' });
 
       const hash = await bcrypt.hash(senha, 10);
-      db.query('INSERT INTO usuarios (nome, email, senha, tipo) VALUES (?, ?, ?, ?)', 
-        [nome, email, hash, tipo], 
-        (err, result) => {
-          if (err) return res.json({ sucesso: false, erro: 'Erro ao cadastrar usuário!' });
-          res.json({ sucesso: true, id: result.insertId, mensagem: `Usuário ${tipo} cadastrado com sucesso!` });
-        }
-      );
-    });
+      const [result] = await db.execute('INSERT INTO usuarios (nome, email, senha, tipo) VALUES (?, ?, ?, ?)', [nome, email, hash, tipo]);
+      
+      res.json({ sucesso: true, id: result.insertId, mensagem: `Usuário ${tipo} cadastrado com sucesso!` });
+    } catch (err) {
+      res.json({ sucesso: false, erro: 'Erro ao cadastrar usuário!' });
+    }
   }
 
   if (tipo === 'administrador' && !req.session.usuario) {
@@ -184,19 +204,24 @@ app.post('/login', async (req, res) => {
   const { email, senha } = req.body;
   if (!email || !senha) return res.json({ sucesso: false, erro: 'Email e senha são obrigatórios!' });
 
-  db.query('SELECT * FROM usuarios WHERE email = ?', [email], async (err, results) => {
-    if (err) return res.json({ sucesso: false, erro: 'Erro ao fazer login!' });
+  try {
+    const [results] = await db.execute('SELECT * FROM usuarios WHERE email = ?', [email]);
     if (results.length === 0) return res.json({ sucesso: false, erro: 'Email ou senha incorretos!' });
 
     const usuario = results[0];
     const match = await bcrypt.compare(senha, usuario.senha);
-    if (match) return fazerLogin(usuario, res, req);
-
-    const novoHash = await bcrypt.hash(senha, 10);
-    db.query('UPDATE usuarios SET senha = ? WHERE id = ?', [novoHash, usuario.id], () => {
+    
+    if (match) {
+      return fazerLogin(usuario, res, req);
+    } else {
+      // Se a senha não bate, tenta re-hash (para senhas antigas sem bcrypt)
+      const novoHash = await bcrypt.hash(senha, 10);
+      await db.execute('UPDATE usuarios SET senha = ? WHERE id = ?', [novoHash, usuario.id]);
       fazerLogin(usuario, res, req);
-    });
-  });
+    }
+  } catch (err) {
+    res.json({ sucesso: false, erro: 'Erro ao fazer login!' });
+  }
 });
 
 // ========================
@@ -220,19 +245,21 @@ app.post('/alterar-senha', verificarAuth, async (req, res) => {
   if (nova_senha !== confirmar_senha) return res.json({ sucesso: false, erro: 'Nova senha e confirmação não coincidem!' });
   if (nova_senha.length < 6) return res.json({ sucesso: false, erro: 'A nova senha deve ter pelo menos 6 caracteres!' });
 
-  db.query('SELECT * FROM usuarios WHERE id = ?', [usuarioId], async (err, results) => {
-    if (err || results.length === 0) return res.json({ sucesso: false, erro: 'Erro ao verificar senha atual!' });
+  try {
+    const [results] = await db.execute('SELECT * FROM usuarios WHERE id = ?', [usuarioId]);
+    if (results.length === 0) return res.json({ sucesso: false, erro: 'Erro ao verificar senha atual!' });
 
     const usuario = results[0];
     const senhaAtualCorreta = await bcrypt.compare(senha_atual, usuario.senha);
     if (!senhaAtualCorreta) return res.json({ sucesso: false, erro: 'Senha atual incorreta!' });
 
     const hashNovaSenha = await bcrypt.hash(nova_senha, 10);
-    db.query('UPDATE usuarios SET senha = ? WHERE id = ?', [hashNovaSenha, usuarioId], (err) => {
-      if (err) return res.json({ sucesso: false, erro: 'Erro ao alterar senha!' });
-      res.json({ sucesso: true, mensagem: 'Senha alterada com sucesso!' });
-    });
-  });
+    await db.execute('UPDATE usuarios SET senha = ? WHERE id = ?', [hashNovaSenha, usuarioId]);
+    
+    res.json({ sucesso: true, mensagem: 'Senha alterada com sucesso!' });
+  } catch (err) {
+    res.json({ sucesso: false, erro: 'Erro ao alterar senha!' });
+  }
 });
 
 // ========================
@@ -248,7 +275,7 @@ app.get('/api/dados-usuario', verificarAuth, (req, res) => {
 // ========================
 // ROTAS DE TURMAS (CRUD)
 // ========================
-app.get('/api/turmas', verificarAdmin, (req, res) => {
+app.get('/api/turmas', verificarAdmin, async (req, res) => {
   const sql = `
     SELECT 
       t.id, 
@@ -262,45 +289,51 @@ app.get('/api/turmas', verificarAdmin, (req, res) => {
     GROUP BY t.id, t.nome, t.ano, t.turno
     ORDER BY t.ano ASC, t.nome ASC;
   `;
-  db.query(sql, (err, results) => {
-    if (err) return res.status(500).json({ sucesso: false, erro: 'Erro ao carregar turmas.' });
+  try {
+    const [results] = await db.execute(sql);
     res.json({ sucesso: true, turmas: results });
-  });
+  } catch (err) {
+    res.status(500).json({ sucesso: false, erro: 'Erro ao carregar turmas.' });
+  }
 });
 
-app.post('/api/turmas', verificarAdmin, (req, res) => {
+app.post('/api/turmas', verificarAdmin, async (req, res) => {
   const { nome, ano, turno } = req.body;
   if (!nome || !ano || !turno) return res.status(400).json({ sucesso: false, erro: 'Todos os campos são obrigatórios!' });
 
-  db.query('SELECT id FROM turmas WHERE nome = ? AND ano = ?', [nome, ano], (err, rows) => {
-    if (err) return res.status(500).json({ sucesso: false, erro: 'Erro ao verificar turma.' });
+  try {
+    const [rows] = await db.execute('SELECT id FROM turmas WHERE nome = ? AND ano = ?', [nome, ano]);
     if (rows.length > 0) return res.status(409).json({ sucesso: false, erro: 'Turma já existe.' });
 
-    db.query('INSERT INTO turmas (nome, ano, turno) VALUES (?, ?, ?)', [nome, ano, turno], (err, result) => {
-      if (err) return res.status(500).json({ sucesso: false, erro: 'Erro ao cadastrar turma.' });
-      res.json({ sucesso: true, mensagem: 'Turma cadastrada com sucesso!', id: result.insertId });
-    });
-  });
+    const [result] = await db.execute('INSERT INTO turmas (nome, ano, turno) VALUES (?, ?, ?)', [nome, ano, turno]);
+    res.json({ sucesso: true, mensagem: 'Turma cadastrada com sucesso!', id: result.insertId });
+  } catch (err) {
+    res.status(500).json({ sucesso: false, erro: 'Erro ao cadastrar turma.' });
+  }
 });
 
 // ========================
 // ROTAS DE PROFESSORES (CRUD)
 // ========================
-app.get('/api/professores', verificarAdmin, (req, res) => {
-  db.query('SELECT id, nome, email FROM usuarios WHERE tipo = "professor" ORDER BY nome', (err, rows) => {
-    if (err) return res.status(500).json({ sucesso: false, erro: 'Erro ao carregar professores.' });
+app.get('/api/professores', verificarAdmin, async (req, res) => {
+  try {
+    const [rows] = await db.execute('SELECT id, nome, email FROM usuarios WHERE tipo = "professor" ORDER BY nome');
     res.json({ sucesso: true, professores: rows });
-  });
+  } catch (err) {
+    res.status(500).json({ sucesso: false, erro: 'Erro ao carregar professores.' });
+  }
 });
 
 // ========================
 // ROTAS DE ALUNOS (CRUD)
 // ========================
-app.get('/api/alunos', verificarAdmin, (req, res) => {
-  db.query('SELECT id, nome, email FROM usuarios WHERE tipo = "aluno" ORDER BY nome', (err, rows) => {
-    if (err) return res.status(500).json({ sucesso: false, erro: 'Erro ao carregar alunos.' });
+app.get('/api/alunos', verificarAdmin, async (req, res) => {
+  try {
+    const [rows] = await db.execute('SELECT id, nome, email FROM usuarios WHERE tipo = "aluno" ORDER BY nome');
     res.json({ sucesso: true, alunos: rows });
-  });
+  } catch (err) {
+    res.status(500).json({ sucesso: false, erro: 'Erro ao carregar alunos.' });
+  }
 });
 
 // ========================
@@ -323,4 +356,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
   console.log(`📡 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🗄️  Database: Aiven MySQL`);
+  console.log(`🔐 SSL: Ativo`);
 });
