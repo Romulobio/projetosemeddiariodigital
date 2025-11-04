@@ -35,7 +35,7 @@ const db = mysql.createPool({
   user: process.env.MYSQLUSER,
   password: process.env.MYSQLPASSWORD,
   database: process.env.MYSQLDATABASE,
-  port: process.env.MYSQLPORT || 19131,
+  port: process.env.MYSQLPORT,
   charset: 'utf8mb4',
   waitForConnections: true,
   connectionLimit: 10,
@@ -63,7 +63,7 @@ db.getConnection()
 // ========================
 const sessionStore = new MySQLStore({
   host: process.env.MYSQLHOST,
-  port: process.env.MYSQLPORT || 19131,
+  port: process.env.MYSQLPORT,
   user: process.env.MYSQLUSER,
   password: process.env.MYSQLPASSWORD,
   database: process.env.MYSQLDATABASE,
