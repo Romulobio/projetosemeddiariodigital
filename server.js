@@ -335,6 +335,61 @@ app.get('/api/alunos', verificarAdmin, async (req, res) => {
     res.status(500).json({ sucesso: false, erro: 'Erro ao carregar alunos.' });
   }
 });
+// ========================
+// ROTAS DE DEBUG - VISUALIZAR DADOS (ADICIONAR ESTE BLOCO)
+// ========================
+
+// Ver todas as tabelas
+app.get('/debug/tables', async (req, res) => {
+  try {
+    const [tables] = await db.execute('SHOW TABLES');
+    res.json({ sucesso: true, tabelas: tables });
+  } catch (err) {
+    res.status(500).json({ sucesso: false, erro: err.message });
+  }
+});
+
+// Ver usuários
+app.get('/debug/usuarios', async (req, res) => {
+  try {
+    const [usuarios] = await db.execute('SELECT * FROM usuarios');
+    res.json({ sucesso: true, usuarios: usuarios });
+  } catch (err) {
+    res.status(500).json({ sucesso: false, erro: err.message });
+  }
+});
+
+// Ver turmas
+app.get('/debug/turmas', async (req, res) => {
+  try {
+    const [turmas] = await db.execute('SELECT * FROM turmas');
+    res.json({ sucesso: true, turmas: turmas });
+  } catch (err) {
+    res.status(500).json({ sucesso: false, erro: err.message });
+  }
+});
+
+// Ver estrutura da tabela usuarios
+app.get('/debug/estrutura/usuarios', async (req, res) => {
+  try {
+    const [estrutura] = await db.execute('DESCRIBE usuarios');
+    res.json({ sucesso: true, estrutura: estrutura });
+  } catch (err) {
+    res.status(500).json({ sucesso: false, erro: err.message });
+  }
+});
+
+// ========================
+// TRATAMENTO DE ERROS (ISSO JÁ DEVE EXISTIR NO SEU CÓDIGO)
+// ========================
+app.use((err, req, res, next) => {
+  console.error('Middleware de erro:', err.stack || err);
+  res.status(500).json({ sucesso: false, erro: 'Erro interno do servidor' });
+});
+
+app.use((req, res) => {
+  res.status(404).json({ sucesso: false, erro: 'Rota não encontrada' });
+});
 
 // ========================
 // TRATAMENTO DE ERROS
