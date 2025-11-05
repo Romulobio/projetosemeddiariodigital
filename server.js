@@ -1,121 +1,85 @@
-// ========================
+
 // IMPORTAÇÕES E CONFIGURAÇÕES INICIAIS
 // ========================
-import express from 'express';
-import bcrypt from 'bcryptjs';
-import session from 'express-session';
-import MySQLStoreImport from 'express-mysql-session';
-import path from 'path';
-import mysql from 'mysql2/promise';
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-
-dotenv.config();
+const express = require('express');
 const app = express();
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const MySQLStore = MySQLStoreImport(session);
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+const bcrypt = require('bcryptjs');
+const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session);
+const path = require('path');
+const cors = require('cors');
+const crypto = require('crypto');
+require('dotenv').config();
+const mysql = require('mysql2');
 
 // ========================
-// CONEXÃO COM O BANCO DE DADOS (RAILWAY)
+// CONFIGURAÇÃO CORS - ADICIONADO REPLIT
 // ========================
-const db = mysql.createPool({
-  host: process.env.MYSQLHOST,
-  port: process.env.MYSQLPORT,
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+     ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+}));
+
+// ========================
+// CONEXÃO COM O BANCO DE DADOS (AIVEN)
+// ========================
+const connection = mysql.createConnection({
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME
 });
 
-(async () => {
-  try {
-    await db.query('SELECT 1');
-    console.log('🗄️ Conectado ao MySQL Railway com sucesso!');
-  } catch (err) {
-    console.error('❌ Erro ao conectar ao MySQL Railway:', err.message);
+connection.connect((err) => {
+  if (err) {
+    console.error('❌ Erro ao conectar ao MySQL Railway:', err);
+  } else {
+    console.log('✅ Conectado ao MySQL Railway (rede interna)');
   }
-})();
+});
+
+module.exports = connection;
 
 // ========================
-// CONFIGURAÇÃO DE SESSÃO
+// CONFIGURAÇÃO DE SESSÃO - OTIMIZADA PARA AIVEN
 // ========================
 const sessionStore = new MySQLStore({
   host: process.env.MYSQLHOST,
   port: process.env.MYSQLPORT,
   user: process.env.MYSQLUSER,
   password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE
+  database: process.env.MYSQLDATABASE,
+  ssl: { // ← ADICIONADO SSL PARA SESSÕES
+    rejectUnauthorized: true
+  }
 });
 
 app.use(session({
   key: 'session_cookie_name',
-  secret: process.env.SESSION_SECRET || 'segredo_super_seguro',
+  secret: process.env.SESSION_SECRET || 'professor_super_secreto',
   store: sessionStore,
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: true,
+    secure: true, // ← ALTERADO PARA TRUE (REPLIT USA HTTPS)
     httpOnly: true,
-    sameSite: 'none',
-    maxAge: 24 * 60 * 60 * 1000 // 1 dia
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: 'none' // ← ALTERADO PARA NONE (CROSS-DOMAIN)
   }
 }));
 
 // ========================
-// SERVE O FRONTEND LOCAL (caso exista pasta /public)
+// CONFIGURAÇÃO DO EXPRESS
 // ========================
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// ========================
-// ROTAS DE TESTE
-// ========================
-app.get('/health', async (req, res) => {
-  try {
-    await db.query('SELECT 1');
-    res.status(200).json({ status: 'ok', database: 'connected' });
-  } catch (err) {
-    res.status(500).json({ status: 'error', message: err.message });
-  }
-});
-
-// ========================
-// EXEMPLO DE CADASTRO
-// ========================
-app.post('/cadastro', async (req, res) => {
-  const { nome, email, senha, tipo } = req.body;
-  if (!nome || !email || !senha || !tipo)
-    return res.json({ sucesso: false, erro: 'Todos os campos são obrigatórios!' });
-
-  try {
-    const [exist] = await db.query('SELECT id FROM usuarios WHERE email = ?', [email]);
-    if (exist.length > 0)
-      return res.json({ sucesso: false, erro: 'Este e-mail já está cadastrado!' });
-
-    const hash = await bcrypt.hash(senha, 10);
-    const [result] = await db.query(
-      'INSERT INTO usuarios (nome, email, senha, tipo) VALUES (?, ?, ?, ?)',
-      [nome, email, hash, tipo]
-    );
-
-    res.json({ sucesso: true, id: result.insertId });
-  } catch (err) {
-    res.status(500).json({ sucesso: false, erro: err.message });
-  }
-});
-
-// ========================
-// INICIALIZA O SERVIDOR
-// ========================
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`🚀 Servidor rodando na porta ${PORT}`));
 
 // ========================
 // MIDDLEWARES DE AUTENTICAÇÃO
@@ -123,6 +87,70 @@ app.listen(PORT, () => console.log(`🚀 Servidor rodando na porta ${PORT}`));
 function verificarAuth(req, res, next) {
   if (req.session && req.session.usuario) return next();
   return res.status(403).json({ sucesso: false, erro: 'Acesso negado! Faça login primeiro.' });
+}
+
+function verificarAdmin(req, res, next) {
+  if (req.session?.usuario?.tipo === 'administrador') return next();
+  return res.status(403).json({ sucesso: false, erro: 'Acesso negado! Apenas administradores.' });
+}
+
+function verificarProfessor(req, res, next) {
+  if (req.session?.usuario?.tipo === 'professor') return next();
+  return res.status(403).json({ sucesso: false, erro: 'Acesso negado! Apenas professores.' });
+}
+
+// ========================
+// ROTAS PÚBLICAS
+// ========================
+app.get('/', (req, res) => {
+  res.json({
+    message: 'API Prosemed Diário Digital - Online com Aiven',
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0'
+  });
+});
+
+// Rota health atualizada para async/await
+app.get('/health', async (req, res) => {
+  try {
+    await db.execute('SELECT 1');
+    res.status(200).json({ 
+      status: 'healthy', 
+      database: 'connected', 
+      timestamp: new Date().toISOString() 
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      status: 'unhealthy', 
+      database: 'disconnected',
+      error: err.message 
+    });
+  }
+});
+
+app.get('/status', (req, res) => {
+  res.json({
+    app: 'Prosemed Diário Digital',
+    status: 'operacional',
+    environment: process.env.NODE_ENV || 'development',
+    port: process.env.PORT || 8080,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// ========================
+// FUNÇÕES AUXILIARES LOGIN
+// ========================
+function fazerLogin(usuario, res, req) {
+  req.session.usuario = { 
+    id: usuario.id, 
+    nome: usuario.nome, 
+    email: usuario.email, 
+    tipo: usuario.tipo.toLowerCase(),
+    pode_criar_admin: Boolean(usuario.pode_criar_admin)
+  };
+  res.json({ sucesso: true, mensagem: 'Login realizado com sucesso!', usuario: req.session.usuario });
 }
 
 // ========================
@@ -352,13 +380,25 @@ app.use((req, res) => {
 });
 
 // ========================
-// TRATAMENTO DE ERROS (apenas 1x)
+// TRATAMENTO DE ERROS
 // ========================
 app.use((err, req, res, next) => {
-  console.error('Erro interno:', err.stack || err);
+  console.error('Middleware de erro:', err.stack || err);
   res.status(500).json({ sucesso: false, erro: 'Erro interno do servidor' });
 });
 
 app.use((req, res) => {
   res.status(404).json({ sucesso: false, erro: 'Rota não encontrada' });
+});
+
+// ========================
+// INICIAR SERVIDOR
+// ========================
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+  console.log(`📡 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🗄️  Database: Aiven MySQL`);
+  console.log(`🔐 SSL: Ativo`);
 });
