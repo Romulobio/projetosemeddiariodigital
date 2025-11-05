@@ -1,4 +1,4 @@
-// api-service.js - VERSÃO CORRIGIDA PARA RAILWAY
+// api-service.js - VERSÃO ES MODULES PARA RAILWAY
 class ApiService {
   constructor() {
     // ⚠️ CONFIGURADO PARA SEU BACKEND NO RAILWAY
@@ -115,10 +115,10 @@ class ApiService {
   }
 }
 
-// Tornar global para uso no frontend
+// Para uso no navegador
 if (typeof window !== 'undefined') {
   window.apiService = new ApiService();
 }
 
-// Para módulos ES6
+// Export para ES modules
 export default ApiService;

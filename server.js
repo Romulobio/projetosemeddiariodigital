@@ -1,16 +1,22 @@
 // ========================
-// IMPORTAÇÕES E CONFIGURAÇÕES INICIAIS
+// IMPORTAÇÕES E CONFIGURAÇÕES INICIAIS (ES MODULES)
 // ========================
-const express = require('express');
+import express from 'express';
+import bcrypt from 'bcryptjs';
+import session from 'express-session';
+import MySQLStoreImport from 'express-mysql-session';
+import path from 'path';
+import cors from 'cors';
+import crypto from 'crypto';
+import mysql from 'mysql2/promise';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
 const app = express();
-const bcrypt = require('bcryptjs');
-const session = require('express-session');
-const MySQLStore = require('express-mysql-session')(session);
-const path = require('path');
-const cors = require('cors');
-const crypto = require('crypto');
-require('dotenv').config();
-const mysql = require('mysql2/promise');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const MySQLStore = MySQLStoreImport(session);
 
 // ========================
 // CONFIGURAÇÃO CORS PARA RAILWAY
@@ -474,3 +480,5 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`   POST /login           - Login de usuário`);
   console.log(`   POST /cadastro        - Cadastro de usuário`);
 });
+
+export default app;
