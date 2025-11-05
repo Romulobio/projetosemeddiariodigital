@@ -25,15 +25,14 @@ console.log('🔧 Configurando conexão com MySQL (serviços separados)...');
 
 // CONFIGURAÇÃO PARA SERVIÇOS EM PROJETOS DIFERENTES
 const dbConfig = {
-  host: process.env.MYSQLHOST || 'caboose.proxy.rlwy.net',
-  port: process.env.MYSQLPORT || 29311,
-  user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQLPASSWORD || 'UsmVulfizfRRrMbMQgpyEcIpFvRHrPvY',
-  database: process.env.MYSQLDATABASE || 'railway',
+  host: process.env.MYSQLHOST,        // Vem das variáveis Railway
+  port: process.env.MYSQLPORT,        // Vem das variáveis Railway  
+  user: process.env.MYSQLUSER,        // Vem das variáveis Railway
+  password: process.env.MYSQLPASSWORD, // Vem das variáveis Railway
+  database: process.env.MYSQLDATABASE, // Vem das variáveis Railway
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
-  // REMOVIDAS: acquireTimeout, timeout, reconnect (não são suportadas)
 };
 
 console.log('📊 Configuração do banco (projetos separados):', {
@@ -78,7 +77,7 @@ const db = mysql.createPool(dbConfig);
 // ========================
 const sessionStore = new MySQLStore({
   host: process.env.MYSQLHOST,
-  port: process.env.MYSQLPORT || 29311,
+  port: process.env.MYSQLPORT,
   user: process.env.MYSQLUSER,
   password: process.env.MYSQLPASSWORD,
   database: process.env.MYSQLDATABASE,
