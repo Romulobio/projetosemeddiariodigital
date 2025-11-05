@@ -24,7 +24,7 @@ const MySQLStore = MySQLStoreImport(session);
 // Se o frontend estiver na pasta /public, você pode remover.
 app.use(cors({
   origin: [
-    'https://SEU_FRONTEND.railway.app', // substitua se tiver outro frontend
+    'https://prosemeddiariodigital-production.up.railway.app', // substitua se tiver outro frontend
     'http://localhost:3000' // útil para testes locais
   ],
   credentials: true
