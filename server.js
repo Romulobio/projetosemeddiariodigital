@@ -6,8 +6,6 @@ import bcrypt from 'bcryptjs';
 import session from 'express-session';
 import MySQLStoreImport from 'express-mysql-session';
 import path from 'path';
-import cors from 'cors';
-import crypto from 'crypto';
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
@@ -17,19 +15,6 @@ const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MySQLStore = MySQLStoreImport(session);
 
-// ========================
-// CONFIGURAÇÃO DO CORS (opcional)
-// ========================
-// Se o frontend estiver em outro domínio Railway, mantenha isso.
-// Se o frontend estiver na pasta /public, você pode remover.
-app.use(cors({
-  origin: [
-    'https://prosemeddiariodigital-production.up.railway.app', // substitua se tiver outro frontend
-    'http://localhost:3000' // útil para testes locais
-  ],
-  credentials: true
-}));
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -37,11 +22,11 @@ app.use(express.urlencoded({ extended: true }));
 // CONEXÃO COM O BANCO DE DADOS (RAILWAY)
 // ========================
 const db = mysql.createPool({
-  host: process.env.MYSQLHOST || 'caboose.proxy.rlwy.net',
-  port: process.env.MYSQLPORT || 3306,
-  user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQLPASSWORD || '',
-  database: process.env.MYSQLDATABASE || 'railway',
+  host: process.env.MYSQLHOST,
+  port: process.env.MYSQLPORT,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -60,29 +45,29 @@ const db = mysql.createPool({
 // CONFIGURAÇÃO DE SESSÃO
 // ========================
 const sessionStore = new MySQLStore({
-  host: process.env.MYSQLHOST || 'caboose.proxy.rlwy.net',
-  port: process.env.MYSQLPORT || 3306,
-  user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQLPASSWORD || '',
-  database: process.env.MYSQLDATABASE || 'railway'
+  host: process.env.MYSQLHOST,
+  port: process.env.MYSQLPORT,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE
 });
 
 app.use(session({
   key: 'session_cookie_name',
-  secret: process.env.SESSION_SECRET || 'professor_super_secreto',
+  secret: process.env.SESSION_SECRET || 'segredo_super_seguro',
   store: sessionStore,
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: true,
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    sameSite: 'none',
+    maxAge: 24 * 60 * 60 * 1000 // 1 dia
   }
 }));
 
 // ========================
-// SERVE O FRONTEND LOCAL (public/)
+// SERVE O FRONTEND LOCAL (caso exista pasta /public)
 // ========================
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => {
@@ -90,55 +75,19 @@ app.get('/', (req, res) => {
 });
 
 // ========================
-// MIDDLEWARES DE AUTENTICAÇÃO
-// ========================
-function verificarAuth(req, res, next) {
-  if (req.session && req.session.usuario) return next();
-  return res.status(403).json({ sucesso: false, erro: 'Acesso negado! Faça login primeiro.' });
-}
-
-function verificarAdmin(req, res, next) {
-  if (req.session?.usuario?.tipo === 'administrador') return next();
-  return res.status(403).json({ sucesso: false, erro: 'Acesso negado! Apenas administradores.' });
-}
-
-function verificarProfessor(req, res, next) {
-  if (req.session?.usuario?.tipo === 'professor') return next();
-  return res.status(403).json({ sucesso: false, erro: 'Acesso negado! Apenas professores.' });
-}
-
-// ========================
-// ROTAS DE STATUS E DEBUG
+// ROTAS DE TESTE
 // ========================
 app.get('/health', async (req, res) => {
   try {
     await db.query('SELECT 1');
-    res.status(200).json({ status: 'healthy', database: 'connected' });
+    res.status(200).json({ status: 'ok', database: 'connected' });
   } catch (err) {
-    res.status(500).json({ status: 'unhealthy', error: err.message });
-  }
-});
-
-app.get('/status', (req, res) => {
-  res.json({
-    app: 'Prosemed Diário Digital',
-    status: 'operacional',
-    environment: process.env.NODE_ENV || 'development',
-    port: process.env.PORT || 8080
-  });
-});
-
-app.get('/debug/tables', async (req, res) => {
-  try {
-    const [tables] = await db.query('SHOW TABLES');
-    res.json({ sucesso: true, tabelas: tables });
-  } catch (err) {
-    res.status(500).json({ sucesso: false, erro: err.message });
+    res.status(500).json({ status: 'error', message: err.message });
   }
 });
 
 // ========================
-// EXEMPLO DE CADASTRO DE USUÁRIO
+// EXEMPLO DE CADASTRO
 // ========================
 app.post('/cadastro', async (req, res) => {
   const { nome, email, senha, tipo } = req.body;
@@ -148,15 +97,15 @@ app.post('/cadastro', async (req, res) => {
   try {
     const [exist] = await db.query('SELECT id FROM usuarios WHERE email = ?', [email]);
     if (exist.length > 0)
-      return res.json({ sucesso: false, erro: 'Este email já está cadastrado!' });
+      return res.json({ sucesso: false, erro: 'Este e-mail já está cadastrado!' });
 
     const hash = await bcrypt.hash(senha, 10);
     const [result] = await db.query(
       'INSERT INTO usuarios (nome, email, senha, tipo) VALUES (?, ?, ?, ?)',
-      [nome.trim(), email.toLowerCase(), hash, tipo.toLowerCase()]
+      [nome, email, hash, tipo]
     );
 
-    res.json({ sucesso: true, id: result.insertId, mensagem: 'Usuário cadastrado com sucesso!' });
+    res.json({ sucesso: true, id: result.insertId });
   } catch (err) {
     res.status(500).json({ sucesso: false, erro: err.message });
   }
@@ -165,10 +114,9 @@ app.post('/cadastro', async (req, res) => {
 // ========================
 // INICIALIZA O SERVIDOR
 // ========================
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
-});
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => console.log(`🚀 Servidor rodando na porta ${PORT}`));
+
 
 // ========================
 // ROTAS DE CADASTRO
