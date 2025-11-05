@@ -9,26 +9,33 @@ const MySQLStore = require('express-mysql-session')(session);
 const path = require('path');
 const cors = require('cors');
 const crypto = require('crypto');
+const mysql = require('mysql2/promise'); // ✅ usa promise para melhor controle
 require('dotenv').config();
-const mysql = require('mysql2/promise'); // ✅ melhor usar o modo promise
 
 // ========================
-// CONFIGURAÇÃO CORS
+// CONFIGURAÇÃO DO CORS
 // ========================
+// Substitua pelo domínio real do seu frontend Railway (ex: https://meuprojeto-front-production.up.railway.app)
 app.use(cors({
-  origin: ['https://SEU_FRONTEND.railway.app'], // domínio do frontend
+  origin: [
+    'https://SEU_FRONTEND.railway.app',
+    'http://localhost:3000' // opcional para testes locais
+  ],
   credentials: true
 }));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // ========================
 // CONEXÃO COM O BANCO DE DADOS (RAILWAY)
 // ========================
 const db = mysql.createPool({
-  host: process.env.DB_HOST || 'mysql.railway.internal',
-  port: process.env.DB_PORT || 3306,
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME || 'railway',
+  host: process.env.MYSQLHOST || 'caboose.proxy.rlwy.net', // 🔹 host público do Railway
+  port: process.env.MYSQLPORT || 3306,
+  user: process.env.MYSQLUSER || 'root',
+  password: process.env.MYSQLPASSWORD || '',
+  database: process.env.MYSQLDATABASE || 'railway',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -37,9 +44,9 @@ const db = mysql.createPool({
 (async () => {
   try {
     await db.query('SELECT 1');
-    console.log('✅ Conectado ao MySQL Railway (rede interna)');
+    console.log('🗄️ Conectado ao MySQL Railway com sucesso!');
   } catch (err) {
-    console.error('❌ Erro ao conectar ao MySQL Railway:', err);
+    console.error('❌ Erro ao conectar ao MySQL Railway:', err.message);
   }
 })();
 
@@ -47,11 +54,11 @@ const db = mysql.createPool({
 // CONFIGURAÇÃO DE SESSÃO
 // ========================
 const sessionStore = new MySQLStore({
-  host: process.env.DB_HOST || 'mysql.railway.internal',
-  port: process.env.DB_PORT || 3306,
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME || 'railway'
+  host: process.env.MYSQLHOST || 'caboose.proxy.rlwy.net',
+  port: process.env.MYSQLPORT || 3306,
+  user: process.env.MYSQLUSER || 'root',
+  password: process.env.MYSQLPASSWORD || '',
+  database: process.env.MYSQLDATABASE || 'railway'
 });
 
 app.use(session({
@@ -61,12 +68,24 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // true em produção
+    secure: process.env.NODE_ENV === 'production', // 🔒 true no Railway
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
+    maxAge: 24 * 60 * 60 * 1000, // 1 dia
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   }
 }));
+
+// ========================
+// TESTE DE ROTA
+// ========================
+app.get('/', (req, res) => {
+  res.send('🚀 Servidor e Banco de Dados Railway funcionando!');
+});
+
+// ========================
+// EXPORTAÇÃO DO DB E APP (caso precise em outros arquivos)
+// ========================
+module.exports = { app, db };
 
 // ========================
 // CONFIGURAÇÃO EXPRESS
