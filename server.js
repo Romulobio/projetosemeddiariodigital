@@ -117,6 +117,13 @@ app.post('/cadastro', async (req, res) => {
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`🚀 Servidor rodando na porta ${PORT}`));
 
+// ========================
+// MIDDLEWARES DE AUTENTICAÇÃO
+// ========================
+function verificarAuth(req, res, next) {
+  if (req.session && req.session.usuario) return next();
+  return res.status(403).json({ sucesso: false, erro: 'Acesso negado! Faça login primeiro.' });
+}
 
 // ========================
 // ROTAS DE CADASTRO
