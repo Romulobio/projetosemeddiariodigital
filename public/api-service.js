@@ -1,7 +1,8 @@
-// api-service.js - VERSÃO CORRIGIDA DEFINITIVA
+// api-service.js - VERSÃO CORRIGIDA PARA RAILWAY
 class ApiService {
   constructor() {
-    this.baseURL = '';
+    // ⚠️ CONFIGURADO PARA SEU BACKEND NO RAILWAY
+    this.baseURL = 'https://projetosemeddiariodigital-production.up.railway.app';
   }
 
   async request(endpoint, options = {}) {
@@ -9,7 +10,7 @@ class ApiService {
     
     const config = {
       mode: 'cors',
-      credentials: 'include', // 🔥 IMPORTANTE para sessões
+      credentials: 'include', // 🔥 CRÍTICO para sessions
       headers: {
         'Content-Type': 'application/json',
         ...options.headers
@@ -17,7 +18,9 @@ class ApiService {
       ...options
     };
 
-    if (options.body) {
+    if (options.body && typeof options.body !== 'string') {
+      config.body = JSON.stringify(options.body);
+    } else if (options.body) {
       config.body = options.body;
     }
 
@@ -25,8 +28,10 @@ class ApiService {
       console.log(`🌐 Fazendo requisição para: ${url}`);
       const response = await fetch(url, config);
       
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // Verificar se a resposta é JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error(`Resposta não é JSON: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
@@ -34,14 +39,6 @@ class ApiService {
       return data;
     } catch (error) {
       console.error('❌ Erro na requisição:', error);
-      
-      // Mensagem mais específica para CORS
-      if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
-        return { 
-          sucesso: false, 
-          erro: 'Erro de CORS. O servidor precisa ser configurado para permitir requisições do Vercel.' 
-        };
-      }
       
       return { 
         sucesso: false, 
@@ -54,14 +51,14 @@ class ApiService {
   async login(credenciais) {
     return this.request('/login', {
       method: 'POST',
-      body: JSON.stringify(credenciais)
+      body: credenciais
     });
   }
 
   async cadastro(dados) {
     return this.request('/cadastro', {
       method: 'POST',
-      body: JSON.stringify(dados)
+      body: dados
     });
   }
 
@@ -76,7 +73,7 @@ class ApiService {
   async alterarSenha(dados) {
     return this.request('/alterar-senha', {
       method: 'POST',
-      body: JSON.stringify(dados)
+      body: dados
     });
   }
 
@@ -92,13 +89,7 @@ class ApiService {
   async criarTurma(dados) {
     return this.request('/api/turmas', {
       method: 'POST',
-      body: JSON.stringify(dados)
-    });
-  }
-
-  async excluirTurma(id) {
-    return this.request(`/api/turmas/${id}`, {
-      method: 'DELETE'
+      body: dados
     });
   }
 
@@ -110,171 +101,24 @@ class ApiService {
     return this.request('/api/alunos');
   }
 
-  async criarAluno(dados) {
-    return this.request('/api/alunos', {
-      method: 'POST',
-      body: JSON.stringify(dados)
-    });
+  // ==================== DEBUG ====================
+  async getDebugTables() {
+    return this.request('/debug/tables');
   }
 
-  async excluirAluno(id) {
-    return this.request(`/api/alunos/${id}`, {
-      method: 'DELETE'
-    });
+  async getDebugUsuarios() {
+    return this.request('/debug/usuarios');
   }
 
-  async excluirProfessor(id) {
-    return this.request(`/api/professores/${id}`, {
-      method: 'DELETE'
-    });
-  }
-
-  async vincularProfessor(professorId, turmaId) {
-    return this.request('/api/vincular-professor', {
-      method: 'POST',
-      body: JSON.stringify({ professor_id: professorId, turma_id: turmaId })
-    });
-  }
-
-  // ==================== ADMIN - CONFIGURAÇÕES ====================
-  async getUsuariosAdmin() {
-    return this.request('/admin/usuarios');
-  }
-
-  async getAdministradores() {
-    return this.request('/admin/administradores');
-  }
-
-  async cadastrarAdmin(dados) {
-    return this.request('/admin/cadastrar-admin', {
-      method: 'POST',
-      body: JSON.stringify(dados)
-    });
-  }
-
-  async redefinirSenhaAdmin(dados) {
-    return this.request('/admin/redefinir-senha', {
-      method: 'POST',
-      body: JSON.stringify(dados)
-    });
-  }
-
-  async verificarPermissaoAdmin() {
-    return this.request('/api/verificar-permissao-admin');
-  }
-
-  async toggleAdminPermission(dados) {
-    return this.request('/admin/toggle-permission', {
-      method: 'POST',
-      body: JSON.stringify(dados)
-    });
-  }
-
-  // ==================== ADMIN - DISCIPLINAS ====================
-  async getTodasDisciplinas() {
-    return this.request('/api/disciplinas');
-  }
-
-  async getDisciplinasProfessor(professorId) {
-    return this.request(`/api/professor/${professorId}/disciplinas`);
-  }
-
-  async vincularDisciplinas(dados) {
-    return this.request('/api/vincular-disciplinas', {
-      method: 'POST',
-      body: JSON.stringify(dados)
-    });
-  }
-
-  async removerDisciplina(dados) {
-    return this.request('/api/remover-disciplina', {
-      method: 'POST',
-      body: JSON.stringify(dados)
-    });
-  }
-
-  // ==================== PROFESSOR ====================
-  async getTurmasProfessor() {
-    return this.request('/api/turmas-professor');
-  }
-
-  async getAlunosTurmaProfessor() {
-    return this.request('/api/alunos-turma-professor');
-  }
-
-  async getTurmasNotasProfessor() {
-    return this.request('/api/notas-turmas-professor');
-  }
-
-  // ==================== FREQUÊNCIA ====================
-  async salvarFrequencia(dados) {
-    return this.request('/api/frequencia', {
-      method: 'POST',
-      body: JSON.stringify(dados)
-    });
-  }
-
-  async getFrequencia(dia, mes, ano, turmaId) {
-    return this.request(`/api/frequencia/${dia}/${mes}/${ano}/${turmaId}`);
-  }
-
-  // ==================== NOTAS ====================
-  async getNotasTurma(turmaId, unidade) {
-    return this.request(`/api/notas/${turmaId}/${unidade}`);
-  }
-
-  async salvarNotas(dados) {
-    return this.request('/api/notas', {
-      method: 'POST',
-      body: JSON.stringify(dados)
-    });
-  }
-
-  async getMediasAnuais(turmaId) {
-    return this.request(`/api/medias-anuais/${turmaId}`);
-  }
-
-  // ==================== OBJETOS DE CONHECIMENTO ====================
-  async getObjetosConhecimento(turmaId, disciplinaId, mes, ano) {
-    return this.request(`/api/objetos-conhecimento/${turmaId}/${disciplinaId}/${mes}/${ano}`);
-  }
-
-  async salvarObjetosConhecimento(dados) {
-    return this.request('/api/objetos-conhecimento', {
-      method: 'POST',
-      body: JSON.stringify(dados)
-    });
-  }
-
-  // ==================== RELATÓRIOS ====================
-  async gerarRelatorio(queryParams) {
-    return this.request(`/gerar-relatorio?${queryParams}`);
-  }
-
-  // ==================== DIÁRIO/AULAS ====================
-  async getAulasTurma(turmaId, data) {
-    return this.request(`/api/aulas/${turmaId}/${data}`);
-  }
-
-  async salvarAula(dados) {
-    return this.request('/api/aulas', {
-      method: 'POST',
-      body: JSON.stringify(dados)
-    });
-  }
-
-  async atualizarAula(aulaId, dados) {
-    return this.request(`/api/aulas/${aulaId}`, {
-      method: 'PUT',
-      body: JSON.stringify(dados)
-    });
-  }
-
-  async excluirAula(aulaId) {
-    return this.request(`/api/aulas/${aulaId}`, {
-      method: 'DELETE'
-    });
+  async getHealth() {
+    return this.request('/health');
   }
 }
 
-window.apiService = new ApiService();
+// Tornar global para uso no frontend
+if (typeof window !== 'undefined') {
+  window.apiService = new ApiService();
+}
+
+// Para módulos ES6
+export default ApiService;
