@@ -10,66 +10,48 @@ const path = require('path');
 const cors = require('cors');
 const crypto = require('crypto');
 require('dotenv').config();
-const mysql = require('mysql2/promise');
+const mysql = require('mysql2/promise'); // ✅ melhor usar o modo promise
 
 // ========================
-// CONFIGURAÇÃO CORS - ADICIONADO REPLIT
+// CONFIGURAÇÃO CORS
 // ========================
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'https://*.repl.co', // ← ADICIONADO PARA REPLIT
-    'https://*.repl.dev'  // ← ADICIONADO PARA REPLIT
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+  origin: ['https://SEU_FRONTEND.railway.app'], // domínio do frontend
+  credentials: true
 }));
 
 // ========================
-// CONEXÃO COM O BANCO DE DADOS (AIVEN)
+// CONEXÃO COM O BANCO DE DADOS (RAILWAY)
 // ========================
 const db = mysql.createPool({
-  host: process.env.MYSQLHOST,
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE,
-  port: process.env.MYSQLPORT,
-  charset: 'utf8mb4',
+  host: process.env.DB_HOST || 'mysql.railway.internal',
+  port: process.env.DB_PORT || 3306,
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME || 'railway',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
-  ssl: { 
-    rejectUnauthorized: true // ← ALTERADO PARA TRUE (AIVEN EXIGE SSL)
-  },
-  acquireTimeout: 60000,
-  timeout: 60000
+  queueLimit: 0
 });
 
-// Testa conexão inicial (versão async para melhor diagnóstico)
-db.getConnection()
-  .then(connection => {
-    console.log('✅ Conexão com Aiven MySQL bem-sucedida!');
-    connection.release();
-  })
-  .catch(err => {
-    console.error('❌ Erro ao conectar ao Aiven:', err.message);
-    console.log('💡 Verifique: Variáveis de ambiente e SSL configuration');
-  });
+(async () => {
+  try {
+    await db.query('SELECT 1');
+    console.log('✅ Conectado ao MySQL Railway (rede interna)');
+  } catch (err) {
+    console.error('❌ Erro ao conectar ao MySQL Railway:', err);
+  }
+})();
 
 // ========================
-// CONFIGURAÇÃO DE SESSÃO - OTIMIZADA PARA AIVEN
+// CONFIGURAÇÃO DE SESSÃO
 // ========================
 const sessionStore = new MySQLStore({
-  host: process.env.MYSQLHOST,
-  port: process.env.MYSQLPORT,
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE,
-  ssl: { // ← ADICIONADO SSL PARA SESSÕES
-    rejectUnauthorized: true
-  }
+  host: process.env.DB_HOST || 'mysql.railway.internal',
+  port: process.env.DB_PORT || 3306,
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME || 'railway'
 });
 
 app.use(session({
@@ -79,15 +61,15 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: true, // ← ALTERADO PARA TRUE (REPLIT USA HTTPS)
+    secure: process.env.NODE_ENV === 'production', // true em produção
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'none' // ← ALTERADO PARA NONE (CROSS-DOMAIN)
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   }
 }));
 
 // ========================
-// CONFIGURAÇÃO DO EXPRESS
+// CONFIGURAÇÃO EXPRESS
 // ========================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -112,32 +94,23 @@ function verificarProfessor(req, res, next) {
 }
 
 // ========================
-// ROTAS PÚBLICAS
+// ROTAS BÁSICAS E DEBUG
 // ========================
 app.get('/', (req, res) => {
   res.json({
-    message: 'API Prosemed Diário Digital - Online com Aiven',
+    message: '✅ API Prosemed Diário Digital - Online com Railway',
     status: 'OK',
     timestamp: new Date().toISOString(),
     version: '1.0.0'
   });
 });
 
-// Rota health atualizada para async/await
 app.get('/health', async (req, res) => {
   try {
-    await db.execute('SELECT 1');
-    res.status(200).json({ 
-      status: 'healthy', 
-      database: 'connected', 
-      timestamp: new Date().toISOString() 
-    });
+    await db.query('SELECT 1');
+    res.status(200).json({ status: 'healthy', database: 'connected' });
   } catch (err) {
-    res.status(500).json({ 
-      status: 'unhealthy', 
-      database: 'disconnected',
-      error: err.message 
-    });
+    res.status(500).json({ status: 'unhealthy', error: err.message });
   }
 });
 
@@ -146,24 +119,48 @@ app.get('/status', (req, res) => {
     app: 'Prosemed Diário Digital',
     status: 'operacional',
     environment: process.env.NODE_ENV || 'development',
-    port: process.env.PORT || 8080,
-    timestamp: new Date().toISOString()
+    port: process.env.PORT || 8080
   });
 });
 
 // ========================
-// FUNÇÕES AUXILIARES LOGIN
+// FUNÇÕES DE LOGIN E CRUD (mantidas iguais)
 // ========================
-function fazerLogin(usuario, res, req) {
-  req.session.usuario = { 
-    id: usuario.id, 
-    nome: usuario.nome, 
-    email: usuario.email, 
-    tipo: usuario.tipo.toLowerCase(),
-    pode_criar_admin: Boolean(usuario.pode_criar_admin)
-  };
-  res.json({ sucesso: true, mensagem: 'Login realizado com sucesso!', usuario: req.session.usuario });
-}
+// 🔹 use db.query(...) no lugar de db.execute(...), ambos funcionam com mysql2/promise
+// 🔹 exemplo:
+app.post('/cadastro', async (req, res) => {
+  const { nome, email, senha, tipo } = req.body;
+  if (!nome || !email || !senha || !tipo)
+    return res.json({ sucesso: false, erro: 'Todos os campos são obrigatórios!' });
+
+  try {
+    const [exist] = await db.query('SELECT id FROM usuarios WHERE email = ?', [email]);
+    if (exist.length > 0)
+      return res.json({ sucesso: false, erro: 'Este email já está cadastrado!' });
+
+    const hash = await bcrypt.hash(senha, 10);
+    const [result] = await db.query(
+      'INSERT INTO usuarios (nome, email, senha, tipo) VALUES (?, ?, ?, ?)',
+      [nome.trim(), email.toLowerCase(), hash, tipo.toLowerCase()]
+    );
+
+    res.json({ sucesso: true, id: result.insertId, mensagem: 'Usuário cadastrado com sucesso!' });
+  } catch (err) {
+    res.status(500).json({ sucesso: false, erro: err.message });
+  }
+});
+
+// ========================
+// ROTAS DE DEBUG (mantidas)
+// ========================
+app.get('/debug/tables', async (req, res) => {
+  try {
+    const [tables] = await db.query('SHOW TABLES');
+    res.json({ sucesso: true, tabelas: tables });
+  } catch (err) {
+    res.status(500).json({ sucesso: false, erro: err.message });
+  }
+});
 
 // ========================
 // ROTAS DE CADASTRO
@@ -392,10 +389,10 @@ app.use((req, res) => {
 });
 
 // ========================
-// TRATAMENTO DE ERROS
+// TRATAMENTO DE ERROS (apenas 1x)
 // ========================
 app.use((err, req, res, next) => {
-  console.error('Middleware de erro:', err.stack || err);
+  console.error('Erro interno:', err.stack || err);
   res.status(500).json({ sucesso: false, erro: 'Erro interno do servidor' });
 });
 
@@ -407,10 +404,8 @@ app.use((req, res) => {
 // INICIAR SERVIDOR
 // ========================
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
   console.log(`📡 Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🗄️  Database: Aiven MySQL`);
-  console.log(`🔐 SSL: Ativo`);
+  console.log(`🗄️  Database: Railway MySQL`);
 });

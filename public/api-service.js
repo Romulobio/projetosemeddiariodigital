@@ -1,7 +1,7 @@
 // api-service.js - VERSÃO CORRIGIDA DEFINITIVA
 class ApiService {
   constructor() {
-    this.baseURL = 'https://321ec165-91bd-41c4-adcc-e4cee0f89276-00-12j3p6t1oyu6i.riker.replit.dev';
+    this.baseURL = '';
   }
 
   async request(endpoint, options = {}) {
