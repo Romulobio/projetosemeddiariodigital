@@ -467,6 +467,14 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
   res.status(404).json({ sucesso: false, erro: 'Rota não encontrada' });
 });
+// ========================
+// SERVIR FRONTEND (HTML, CSS, JS)
+// ========================
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // ========================
 // INICIAR SERVIDOR
