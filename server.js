@@ -19,44 +19,29 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MySQLStore = MySQLStoreImport(session);
 
 // ========================
-// CONFIGURAÇÃO CORS PARA RAILWAY
+// CONEXÃO COM O BANCO DE DADOS (SERVIÇOS SEPARADOS)
 // ========================
-app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'https://projetosemeddiariodigital-production.up.railway.app',
-    'https://*.railway.app'
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With']
-}));
+console.log('🔧 Configurando conexão com MySQL (serviços separados)...');
 
-// ========================
-// CONEXÃO COM O BANCO DE DADOS (RAILWAY)
-// ========================
-console.log('🔧 Configurando conexão com MySQL...');
-console.log('📊 Variáveis de ambiente:', {
-  host: process.env.MYSQLHOST ? '✅ Configurado' : '❌ Faltando',
-  port: process.env.MYSQLPORT ? '✅ Configurado' : '❌ Faltando',
-  user: process.env.MYSQLUSER ? '✅ Configurado' : '❌ Faltando',
-  database: process.env.MYSQLDATABASE ? '✅ Configurado' : '❌ Faltando'
-});
-
+// CONFIGURAÇÃO PARA SERVIÇOS EM PROJETOS DIFERENTES
 const dbConfig = {
-  host: process.env.MYSQLHOST,
-  port: process.env.MYSQLPORT || 3306,
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE,
+  host: process.env.MYSQLHOST || 'caboose.proxy.rlwy.net',
+  port: process.env.MYSQLPORT || 29311,
+  user: process.env.MYSQLUSER || 'root',
+  password: process.env.MYSQLPASSWORD || 'UsmVulfizfRRrMbMQgpyEcIpFvRHrPvY',
+  database: process.env.MYSQLDATABASE || 'railway',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
-  acquireTimeout: 60000,
-  timeout: 60000,
-  reconnect: true
+  queueLimit: 0
+  // REMOVIDAS: acquireTimeout, timeout, reconnect (não são suportadas)
 };
+
+console.log('📊 Configuração do banco (projetos separados):', {
+  host: dbConfig.host,
+  port: dbConfig.port,
+  user: dbConfig.user,
+  database: dbConfig.database
+});
 
 // Criar pool de conexão
 const db = mysql.createPool(dbConfig);
@@ -65,19 +50,26 @@ const db = mysql.createPool(dbConfig);
 (async () => {
   try {
     const connection = await db.getConnection();
-    console.log('✅ Conectado ao MySQL Railway com sucesso!');
-    connection.release();
+    console.log('✅ Conectado ao MySQL Railway com sucesso! (projetos separados)');
     
-    // Testar query
-    const [result] = await db.execute('SELECT 1 + 1 AS test');
+    // Testar query básica
+    const [result] = await connection.execute('SELECT 1 + 1 AS test');
     console.log('✅ Query teste executada:', result[0].test);
+    
+    connection.release();
   } catch (err) {
-    console.error('❌ ERRO GRAVE ao conectar ao MySQL Railway:');
+    console.error('❌ ERRO ao conectar ao MySQL Railway:');
     console.error('   Código:', err.code);
     console.error('   Mensagem:', err.message);
-    console.error('   Host:', process.env.MYSQLHOST);
-    console.error('   Port:', process.env.MYSQLPORT);
-    console.error('   Database:', process.env.MYSQLDATABASE);
+    console.error('   Host:', dbConfig.host);
+    console.error('   Port:', dbConfig.port);
+    
+    if (err.code === 'ENOTFOUND') {
+      console.error('\n💡 ERRO CRÍTICO: Host não encontrado.');
+      console.error('   Verifique se as variáveis no Railway estão CORRETAS:');
+      console.error('   - MYSQLHOST deve ser: caboose.proxy.rlwy.net');
+      console.error('   - MYSQLPORT deve ser: 29311');
+    }
   }
 })();
 
@@ -86,7 +78,7 @@ const db = mysql.createPool(dbConfig);
 // ========================
 const sessionStore = new MySQLStore({
   host: process.env.MYSQLHOST,
-  port: process.env.MYSQLPORT || 3306,
+  port: process.env.MYSQLPORT || 29311,
   user: process.env.MYSQLUSER,
   password: process.env.MYSQLPASSWORD,
   database: process.env.MYSQLDATABASE,
