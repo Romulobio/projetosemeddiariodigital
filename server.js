@@ -1,25 +1,31 @@
 // ========================
 // IMPORTAÇÕES E CONFIGURAÇÕES INICIAIS
 // ========================
-const express = require('express');
+import express from 'express';
+import bcrypt from 'bcryptjs';
+import session from 'express-session';
+import MySQLStoreImport from 'express-mysql-session';
+import path from 'path';
+import cors from 'cors';
+import crypto from 'crypto';
+import mysql from 'mysql2/promise';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+
+dotenv.config();
 const app = express();
-const bcrypt = require('bcryptjs');
-const session = require('express-session');
-const MySQLStore = require('express-mysql-session')(session);
-const path = require('path');
-const cors = require('cors');
-const crypto = require('crypto');
-const mysql = require('mysql2/promise'); // ✅ usa promise para melhor controle
-require('dotenv').config();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const MySQLStore = MySQLStoreImport(session);
 
 // ========================
-// CONFIGURAÇÃO DO CORS
+// CONFIGURAÇÃO DO CORS (opcional)
 // ========================
-// Substitua pelo domínio real do seu frontend Railway (ex: https://meuprojeto-front-production.up.railway.app)
+// Se o frontend estiver em outro domínio Railway, mantenha isso.
+// Se o frontend estiver na pasta /public, você pode remover.
 app.use(cors({
   origin: [
-    'https://SEU_FRONTEND.railway.app',
-    'http://localhost:3000' // opcional para testes locais
+    'https://SEU_FRONTEND.railway.app', // substitua se tiver outro frontend
+    'http://localhost:3000' // útil para testes locais
   ],
   credentials: true
 }));
@@ -31,7 +37,7 @@ app.use(express.urlencoded({ extended: true }));
 // CONEXÃO COM O BANCO DE DADOS (RAILWAY)
 // ========================
 const db = mysql.createPool({
-  host: process.env.MYSQLHOST || 'caboose.proxy.rlwy.net', // 🔹 host público do Railway
+  host: process.env.MYSQLHOST || 'caboose.proxy.rlwy.net',
   port: process.env.MYSQLPORT || 3306,
   user: process.env.MYSQLUSER || 'root',
   password: process.env.MYSQLPASSWORD || '',
@@ -68,31 +74,20 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // 🔒 true no Railway
+    secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 1 dia
+    maxAge: 24 * 60 * 60 * 1000,
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   }
 }));
 
 // ========================
-// TESTE DE ROTA
+// SERVE O FRONTEND LOCAL (public/)
 // ========================
-app.get('/', (req, res) => {
-  res.send('🚀 Servidor e Banco de Dados Railway funcionando!');
-});
-
-// ========================
-// EXPORTAÇÃO DO DB E APP (caso precise em outros arquivos)
-// ========================
-module.exports = { app, db };
-
-// ========================
-// CONFIGURAÇÃO EXPRESS
-// ========================
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // ========================
 // MIDDLEWARES DE AUTENTICAÇÃO
@@ -113,17 +108,8 @@ function verificarProfessor(req, res, next) {
 }
 
 // ========================
-// ROTAS BÁSICAS E DEBUG
+// ROTAS DE STATUS E DEBUG
 // ========================
-app.get('/', (req, res) => {
-  res.json({
-    message: '✅ API Prosemed Diário Digital - Online com Railway',
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0'
-  });
-});
-
 app.get('/health', async (req, res) => {
   try {
     await db.query('SELECT 1');
@@ -142,11 +128,18 @@ app.get('/status', (req, res) => {
   });
 });
 
+app.get('/debug/tables', async (req, res) => {
+  try {
+    const [tables] = await db.query('SHOW TABLES');
+    res.json({ sucesso: true, tabelas: tables });
+  } catch (err) {
+    res.status(500).json({ sucesso: false, erro: err.message });
+  }
+});
+
 // ========================
-// FUNÇÕES DE LOGIN E CRUD (mantidas iguais)
+// EXEMPLO DE CADASTRO DE USUÁRIO
 // ========================
-// 🔹 use db.query(...) no lugar de db.execute(...), ambos funcionam com mysql2/promise
-// 🔹 exemplo:
 app.post('/cadastro', async (req, res) => {
   const { nome, email, senha, tipo } = req.body;
   if (!nome || !email || !senha || !tipo)
@@ -170,15 +163,11 @@ app.post('/cadastro', async (req, res) => {
 });
 
 // ========================
-// ROTAS DE DEBUG (mantidas)
+// INICIALIZA O SERVIDOR
 // ========================
-app.get('/debug/tables', async (req, res) => {
-  try {
-    const [tables] = await db.query('SHOW TABLES');
-    res.json({ sucesso: true, tabelas: tables });
-  } catch (err) {
-    res.status(500).json({ sucesso: false, erro: err.message });
-  }
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
 
 // ========================
@@ -417,14 +406,4 @@ app.use((err, req, res, next) => {
 
 app.use((req, res) => {
   res.status(404).json({ sucesso: false, erro: 'Rota não encontrada' });
-});
-
-// ========================
-// INICIAR SERVIDOR
-// ========================
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  console.log(`📡 Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🗄️  Database: Railway MySQL`);
 });
