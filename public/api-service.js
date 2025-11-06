@@ -1,53 +1,61 @@
-// api-service.js - VERSÃO ES MODULES PARA RAILWAY
+// ================================
+// api-service.js
+// Versão ES Modules (compatível com import/export)
+// ================================
+
 class ApiService {
   constructor() {
-    // ⚠️ CONFIGURADO PARA SEU BACKEND NO RAILWAY
+    // ⚙️ Base URL do seu backend no Railway
     this.baseURL = 'https://projetosemeddiariodigital-production.up.railway.app';
   }
 
+  // ============================
+  // Método genérico de requisição
+  // ============================
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     const config = {
+      method: options.method || 'GET',
       mode: 'cors',
-      credentials: 'include', // 🔥 CRÍTICO para sessions
+      credentials: 'include', // 🔥 importante p/ cookies de sessão
       headers: {
         'Content-Type': 'application/json',
-        ...options.headers
+        ...(options.headers || {})
       },
-      ...options
+      body: options.body
+        ? typeof options.body === 'string'
+          ? options.body
+          : JSON.stringify(options.body)
+        : undefined
     };
 
-    if (options.body && typeof options.body !== 'string') {
-      config.body = JSON.stringify(options.body);
-    } else if (options.body) {
-      config.body = options.body;
-    }
-
     try {
-      console.log(`🌐 Fazendo requisição para: ${url}`);
+      console.log(`🌐 Requisição: ${url}`, config);
+
       const response = await fetch(url, config);
-      
-      // Verificar se a resposta é JSON
       const contentType = response.headers.get('content-type');
+
       if (!contentType || !contentType.includes('application/json')) {
-        throw new Error(`Resposta não é JSON: ${response.status} ${response.statusText}`);
+        throw new Error(`Resposta não é JSON (${response.status} ${response.statusText})`);
       }
-      
+
       const data = await response.json();
       console.log('📨 Resposta recebida:', data);
       return data;
+
     } catch (error) {
       console.error('❌ Erro na requisição:', error);
-      
-      return { 
-        sucesso: false, 
-        erro: 'Erro de conexão: ' + error.message 
+      return {
+        sucesso: false,
+        erro: 'Erro de conexão: ' + error.message
       };
     }
   }
 
-  // ==================== AUTENTICAÇÃO ====================
+  // ============================
+  // ROTAS DE AUTENTICAÇÃO
+  // ============================
   async login(credenciais) {
     return this.request('/login', {
       method: 'POST',
@@ -81,7 +89,9 @@ class ApiService {
     return this.request('/check-auth');
   }
 
-  // ==================== ADMIN - GERAL ====================
+  // ============================
+  // ROTAS ADMINISTRATIVAS
+  // ============================
   async getTurmas() {
     return this.request('/api/turmas');
   }
@@ -101,7 +111,9 @@ class ApiService {
     return this.request('/api/alunos');
   }
 
-  // ==================== DEBUG ====================
+  // ============================
+  // ROTAS DE DEPURAÇÃO
+  // ============================
   async getDebugTables() {
     return this.request('/debug/tables');
   }
@@ -115,7 +127,12 @@ class ApiService {
   }
 }
 
-// Para uso no navegador
+// ====================================================
+// Exporta para uso com "import { apiService } from './api-service.js'"
+// ====================================================
+export const apiService = new ApiService();
+
+// Também deixa disponível no navegador (uso global opcional)
 if (typeof window !== 'undefined') {
-  window.apiService = new ApiService();
+  window.apiService = apiService;
 }
