@@ -6,7 +6,7 @@
 class ApiService {
   constructor() {
     // ⚙️ Base URL do seu backend no Railway
-    this.baseURL = 'https://projetosemeddiariodigital-production.up.railway.app';
+    this.baseURL = 'https://divine-tranquility-production.up.railway.app';
   }
 
   // ============================

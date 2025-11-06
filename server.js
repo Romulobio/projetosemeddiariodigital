@@ -18,20 +18,25 @@ const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MySQLStore = MySQLStoreImport(session);
 // ========================
-// CORS PARA DESENVOLVIMENTO LOCAL
+// CORS PARA DESENVOLVIMENTO E PRODUÇÃO
 // ========================
+import cors from "cors";
+
 app.use(cors({
   origin: [
-    'http://localhost:3000',      // React dev server
-    'http://127.0.0.1:3000',      // React dev server
-    'http://localhost:5173',      // Vite dev server
-    'http://127.0.0.1:5173',      // Vite dev server  
-    'https://projetosemeddiariodigital-production.up.railway.app' // Backend
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'https://projetosemeddiariodigital-production.up.railway.app', // antigo (se ainda usa)
+    'https://divine-tranquility-production.up.railway.app',        // novo backend
+    'https://seu-frontend.vercel.app'                              // substitua pelo domínio do seu front-end
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With']
 }));
+
 // ========================
 // CONEXÃO COM O BANCO DE DADOS (SERVIÇOS SEPARADOS)
 // ========================
