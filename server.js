@@ -22,13 +22,21 @@ const MySQLStore = MySQLStoreImport(session);
 
 import cors from 'cors';
 
+import cors from 'cors';
+
 const corsOptions = {
-  origin: ['https://divine-tranquility-production.up.railway.app'],
+  origin: [
+    'https://divine-tranquility-production.up.railway.app', // frontend no Railway
+    'https://prosemeddiariodigital-production.up.railway.app', // backend
+    'http://localhost:5500', // se testar localmente
+    'http://127.0.0.1:5500'
+  ],
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 };
 
 app.use(cors(corsOptions));
-
 // ========================
 // CONEXÃO COM O BANCO DE DADOS (SERVIÇOS SEPARADOS)
 // ========================
