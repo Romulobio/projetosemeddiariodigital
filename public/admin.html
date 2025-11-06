@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Painel Administrativo — Sistema Escolar</title>
 <link rel="stylesheet" href="styles-admin.css">
-<!-- ✅ ADICIONADO: Script do API Service -->
-<script src="api-service.js"></script>
+
 </head>
 <body>
 <div class="wrap">
@@ -429,6 +428,9 @@ window.addEventListener('DOMContentLoaded', carregarTurmas);
 
 <!-- ✅✅✅ REMOVIDO: O bloco antigo de API_URL e apiFetch foi deletado ✅✅✅ -->
 
-<script src="/script-admin.js"></script>
+<script type="module">
+  import { apiService } from './api-service.js';
+  import './script-admin.js';  // ou script correspondente à página
+</script>
 </body>
 </html>

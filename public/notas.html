@@ -8,8 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles-notas.css">
     <title>Sistema de Notas - Professor</title>
-    <!-- ✅ ADICIONADO: Script do API Service -->
-    <script src="api-service.js"></script>
+   
 </head>
 <body>
    
@@ -99,6 +98,9 @@
         </section>
     </main>
 
-    <script src="script-notas.js"></script>
+    <script type="module">
+  import { apiService } from './api-service.js';
+  import './script-notas.js';  // ou script correspondente à página
+</script>
 </body>
 </html>

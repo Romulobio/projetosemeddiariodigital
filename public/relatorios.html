@@ -8,8 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles-relatorios.css">
     <title>Relatórios de Frequência</title>
-    <!-- ✅ ADICIONADO: Script do API Service -->
-    <script src="api-service.js"></script>
+ 
 </head>
 <body>
     
@@ -143,6 +142,9 @@
         </div>
     </section>
 
-    <script src="script-relatorios.js"></script>
+  <script type="module">
+  import { apiService } from './api-service.js';
+  import './script-relatorios.js';  // ou script correspondente à página
+</script>
 </body>
 </html>

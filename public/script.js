@@ -1,8 +1,15 @@
-// ===============================
-// script.js - CONTROLE DE LOGIN E CADASTRO (PROFESSOR E ADMIN)
-// ===============================
+// script-login.js
 
-// ------------------------
+document.addEventListener('DOMContentLoaded', () => {
+  if (!window.apiService) {
+    console.error('❌ apiService não carregado! Verifique se api-service.js está antes deste script no HTML.');
+    return;
+  }
+
+  console.log('✅ Script de Login e Cadastro carregado!');
+  voltarSelecao();
+});
+
 // Função auxiliar para chamadas à API com tratamento padrão
 // ------------------------
 async function apiFetch(path, options = {}) {

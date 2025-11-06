@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recuperar Senha - Sistema Escolar</title>
-    <!-- ✅ ADICIONADO: Script do API Service -->
-    <script src="api-service.js"></script>
+  
     <style>
         * {
             margin: 0;
@@ -202,5 +201,9 @@
             messageDiv.style.display = 'block';
         }
     </script>
+    <script type="module">
+  import { apiService } from './api-service.js';
+  import './script-senha.js';  // ou script correspondente à página
+</script>
 </body>
 </html>

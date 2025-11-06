@@ -6,8 +6,7 @@
   <title>Portal do Professor</title>
   <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles-professor.css">
-  <!-- ✅ ADICIONADO: Script do API Service -->
-  <script src="api-service.js"></script>
+
 </head>
 <body>
   <!-- Cabeçalho -->
@@ -138,6 +137,9 @@ async function sair() {
 document.addEventListener('DOMContentLoaded', verificarProfessor);
 </script>
 
-<script src="script-pagina-professor.js"></script>
+<script type="module">
+  import { apiService } from './api-service.js';
+  import './script-pagina-professor.js';  // ou script correspondente à página
+</script>
 </body>
 </html>
