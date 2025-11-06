@@ -6,7 +6,6 @@ import bcrypt from 'bcryptjs';
 import session from 'express-session';
 import MySQLStoreImport from 'express-mysql-session';
 import path from 'path';
-import cors from 'cors';
 import crypto from 'crypto';
 import mysql from 'mysql2/promise';
 import { fileURLToPath } from 'url';
@@ -20,19 +19,15 @@ const MySQLStore = MySQLStoreImport(session);
 // ========================
 // CORS PARA DESENVOLVIMENTO E PRODUÇÃO
 // ========================
-import cors from "cors";
 
-app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'https://prosemeddiariodigital-production.up.railway.app',        // novo backend
-    'https://divine-tranquility-production.up.railway.app'                              // substitua pelo domínio do seu front-end
-  ],
+import cors from 'cors';
+
+const corsOptions = {
+  origin: ['https://divine-tranquility-production.up.railway.app'],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With']
-}));
+};
+
+app.use(cors(corsOptions));
 
 // ========================
 // CONEXÃO COM O BANCO DE DADOS (SERVIÇOS SEPARADOS)
@@ -109,10 +104,10 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: true, // Railway usa HTTPS
+    secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'none'
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   }
 }));
 
@@ -199,7 +194,7 @@ app.get('/status', (req, res) => {
 // ========================
 // ROTAS DE AUTENTICAÇÃO
 // ========================
-app.post('/cadastro', async (req, res) => {
+app.post('/api/cadastro', async (req, res) => {
   let { nome, email, senha, tipo } = req.body;
   
   if (!nome || !email || !senha || !tipo) {
@@ -247,7 +242,7 @@ app.post('/cadastro', async (req, res) => {
   }
 });
 
-app.post('/login', async (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { email, senha } = req.body;
   
   if (!email || !senha) {
