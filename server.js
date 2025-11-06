@@ -24,13 +24,10 @@ import cors from "cors";
 
 app.use(cors({
   origin: [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
     'http://localhost:5173',
     'http://127.0.0.1:5173',
-    'https://projetosemeddiariodigital-production.up.railway.app', // antigo (se ainda usa)
-    'https://divine-tranquility-production.up.railway.app',        // novo backend
-    'https://seu-frontend.vercel.app'                              // substitua pelo domínio do seu front-end
+    'https://prosemeddiariodigital-production.up.railway.app',        // novo backend
+    'https://divine-tranquility-production.up.railway.app'                              // substitua pelo domínio do seu front-end
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
