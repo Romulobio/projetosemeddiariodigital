@@ -119,6 +119,3 @@ class ApiService {
 if (typeof window !== 'undefined') {
   window.apiService = new ApiService();
 }
-
-// Export para ES modules
-export default ApiService;
