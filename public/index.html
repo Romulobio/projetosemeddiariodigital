@@ -125,10 +125,11 @@
 
   <!-- Scripts -->
  <script type="module">
-  import { apiService } from './api-service.js';
-  import './script.js';  // ou script correspondente à página
-     // Disponibiliza a função globalmente (para o botão funcionar)
-    window.fazerLogin = fazerLogin;
+  import apiService from './api-service.js';
+  import './script-login.js';
+
+  // Expõe o serviço globalmente (para o script-login.js reconhecer)
+  window.apiService = apiService;
 </script>
 </body>
 </html>
