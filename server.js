@@ -20,9 +20,7 @@ const MySQLStore = MySQLStoreImport(session);
 // CORS PARA DESENVOLVIMENTO E PRODUÇÃO
 // ========================
 
-import cors from 'cors';
-
-import cors from 'cors';
+git import cors from 'cors';
 
 const corsOptions = {
   origin: [
