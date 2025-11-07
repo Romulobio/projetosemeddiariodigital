@@ -89,6 +89,21 @@ function bloquearBotao(botaoId, bloquear = true) {
     btn.textContent = btn.dataset.originalText || btn.textContent;
   }
 }
+// Função para alternar entre os tipos de login
+function mostrarLogin(tipo) {
+  // Esconde todas as seções de login
+  document.querySelectorAll('.login-section').forEach(sec => {
+    sec.style.display = 'none';
+  });
+
+  // Mostra apenas a seção do tipo escolhido
+  const section = document.getElementById(`login-${tipo}`);
+  if (section) {
+    section.style.display = 'block';
+  } else {
+    console.error(`Seção de login não encontrada: login-${tipo}`);
+  }
+}
 
 // ======================================
 // LOGIN
