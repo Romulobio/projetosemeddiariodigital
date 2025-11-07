@@ -50,18 +50,20 @@ function esconderTodos() {
     if (el) el.hidden = true;
   });
 }
-
-// ✅ Função global: mostrar tela de login
+// ==================================================
+// Torna funções acessíveis ao HTML (escopo global)
+// ==================================================
 window.mostrarLogin = function (tipo) {
-  esconderTodos();
-  const el = document.getElementById(`login-${tipo}-container`);
-  if (el) {
-    el.hidden = false;
-    const email = document.getElementById(`login-${tipo}-email`);
-    const senha = document.getElementById(`login-${tipo}-senha`);
-    if (email) email.value = '';
-    if (senha) senha.value = '';
-  }
+  document.getElementById("tipo-login-container").hidden = true;
+  document.getElementById(`login-${tipo}-container`).hidden = false;
+};
+
+window.voltarSelecao = function () {
+  document.getElementById("login-professor-container").hidden = true;
+  document.getElementById("login-admin-container").hidden = true;
+  document.getElementById("cadastro-professor-container").hidden = true;
+  document.getElementById("cadastro-admin-container").hidden = true;
+  document.getElementById("tipo-login-container").hidden = false;
 };
 
 // ✅ Função global: mostrar tela de cadastro
