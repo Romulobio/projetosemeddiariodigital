@@ -60,8 +60,11 @@ function mostrarTela(telaId) {
 }
 
 // Torna as funções de UI acessíveis globalmente para o HTML
-window.mostrarLogin = function (tipo) {
-  mostrarTela(`login-${tipo}-container`);
+window.mostrarLogin = window.mostrarLogin || function(tipo) {
+  // sua implementação (ex: esconderTodos(); mostrar container)
+  esconderTodos();
+  const el = document.getElementById(`login-${tipo}-container`);
+  if (el) el.hidden = false;
 };
 
 window.mostrarCadastro = function (tipo) {
@@ -75,9 +78,14 @@ window.mostrarCadastro = function (tipo) {
   }
 };
 
-window.voltarSelecao = function () {
-  mostrarTela('tipo-login-container');
+window.voltarSelecao = window.voltarSelecao || function() {
+  esconderTodos();
+  const t = document.getElementById('tipo-login-container');
+  if (t) t.hidden = false;
 };
+window.fazerLogin = window.fazerLogin || fazerLogin;       // se você já tem function fazerLogin() {...}
+window.fazerCadastro = window.fazerCadastro || fazerCadastro; // idem
+window.mostrarCadastro = window.mostrarCadastro || function(tipo){ /*...*/ };
 
 /**
  * Bloqueia ou desbloqueia um botão para evitar cliques duplos.
@@ -177,5 +185,33 @@ window.fazerCadastro = async function (tipo) {
 document.addEventListener('DOMContentLoaded', () => {
   console.log('✅ Sistema de login carregado e pronto.');
   // Garante que a tela inicial de seleção seja sempre a primeira a ser exibida
-  window.voltarSelecao();
+  // --- garantir funções visíveis no escopo global (para onclick inline)
+window.mostrarLogin = function(tipo) {
+  esconderTodos();
+  const el = document.getElementById(`login-${tipo}-container`);
+  if (el) el.hidden = false;
+};
+
+window.mostrarCadastro = function(tipo) {
+  esconderTodos();
+  const el = document.getElementById(`cadastro-${tipo}-container`);
+  if (el) el.hidden = false;
+};
+
+window.voltarSelecao = function() {
+  esconderTodos();
+  const t = document.getElementById('tipo-login-container');
+  if (t) t.hidden = false;
+};
+
+// Se você escreveu funções fazerLogin/fazerCadastro como "function fazerLogin() { }",
+// torne-as globais também:
+if (typeof window.fazerLogin === 'undefined' && typeof fazerLogin === 'function') {
+  window.fazerLogin = fazerLogin;
+}
+if (typeof window.fazerCadastro === 'undefined' && typeof fazerCadastro === 'function') {
+  window.fazerCadastro = fazerCadastro;
+}
+
+  
 });
