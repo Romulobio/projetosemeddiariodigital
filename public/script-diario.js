@@ -1,8 +1,53 @@
-// ⭐⭐ ADICIONE ISSO NO TOPO DE CADA ARQUIVO .js ⭐⭐
-// REMOVIDO: API_URL e apiFetch - AGORA USA apiService
-
+// script-diario.js - VERSÃO SEM API-SERVICE
 console.log('✅ Script de Objetos de Conhecimento carregado!');
 
+// URL base do backend (Railway) - MESMA DO script-login.js
+const BASE_URL = 'https://prosemeddiariodigital-production.up.railway.app';
+
+// Função genérica de requisição à API (MESMA DO script-login.js)
+async function apiFetch(endpoint, data) {
+  try {
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      credentials: 'include',
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Erro na comunicação com o servidor:', error);
+    alert('Erro ao conectar ao servidor.');
+    throw error;
+  }
+}
+
+// Funções específicas para GET
+async function apiGet(endpoint) {
+  try {
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Erro na comunicação com o servidor:', error);
+    alert('Erro ao conectar ao servidor.');
+    throw error;
+  }
+}
+
+// Variáveis globais
 let mesAtual = new Date().getMonth();
 let anoAtual = new Date().getFullYear();
 let turmaSelecionada = null;
@@ -14,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ DOM completamente carregado');
     console.log('📍 Iniciando funções...');
     
-    carregarNomeProfessor(); // ← CARREGA O NOME DO PROFESSOR
+    carregarNomeProfessor();
     atualizarDataHora();
     carregarTurmasProfessor();
     carregarDisciplinasProfessor();
@@ -41,11 +86,10 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(atualizarDataHora, 1000);
 });
 
-// FUNÇÃO NOVA PARA CARREGAR O NOME DO PROFESSOR
+// FUNÇÃO PARA CARREGAR O NOME DO PROFESSOR
 async function carregarNomeProfessor() {
     try {
-        // ✅ CORRIGIDO: usando apiService
-        const data = await apiService.getUsuario();
+        const data = await apiGet('/api/dados-usuario');
         
         if (data.sucesso) {
             document.getElementById('professor-nome').textContent = data.usuario.nome;
@@ -178,8 +222,7 @@ async function carregarTurmasProfessor() {
         const selectTurma = document.getElementById('select-turma');
         selectTurma.innerHTML = '<option value="">Carregando turmas...</option>';
         
-        // ✅ CORRIGIDO: usando apiService
-        const data = await apiService.getTurmasProfessor();
+        const data = await apiGet('/api/professor/turmas');
         console.log('📡 Resposta da API turmas:', data);
         
         if (data.sucesso) {
@@ -188,7 +231,7 @@ async function carregarTurmasProfessor() {
             if (data.turmas && data.turmas.length > 0) {
                 data.turmas.forEach(turma => {
                     const option = document.createElement('option');
-                    option.value = turma.id; // USA O ID
+                    option.value = turma.id;
                     option.textContent = turma.nome;
                     selectTurma.appendChild(option);
                 });
@@ -213,8 +256,7 @@ async function carregarDisciplinasProfessor() {
     console.log('📍 Carregando disciplinas do professor...');
     
     try {
-        // ✅ CORRIGIDO: usando apiService
-        const data = await apiService.getDisciplinasProfessor();
+        const data = await apiGet('/api/professor/disciplinas');
         
         if (data.sucesso && data.disciplinas) {
             const selectDisciplina = document.getElementById('select-disciplina');
@@ -260,8 +302,7 @@ async function carregarObjetosConhecimento() {
     });
     
     try {
-        // ✅ CORRIGIDO: usando apiService
-        const data = await apiService.getObjetosConhecimento(turmaSelecionada, disciplinaSelecionada, mesAtual + 1, anoAtual);
+        const data = await apiGet(`/api/objetos-conhecimento?turma=${turmaSelecionada}&disciplina=${disciplinaSelecionada}&mes=${mesAtual + 1}&ano=${anoAtual}`);
         
         if (data.sucesso) {
             objetosCarregados = data.objetos || {};
@@ -325,8 +366,7 @@ async function salvarObjetosConhecimento() {
             return;
         }
         
-        // ✅ CORRIGIDO: usando apiService
-        const result = await apiService.salvarObjetosConhecimento({
+        const result = await apiFetch('/api/objetos-conhecimento', {
             turma: turmaSelecionada,
             disciplina: disciplinaSelecionada,
             mes: mesAtual + 1, // +1 porque JavaScript usa 0-11

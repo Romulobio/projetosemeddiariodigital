@@ -1,8 +1,53 @@
-// ⭐⭐ ADICIONE ISSO NO TOPO DE CADA ARQUIVO .js ⭐⭐
-// REMOVIDO: API_URL e apiFetch - AGORA USA apiService
-
+// script-frequencia.js - VERSÃO SEM API-SERVICE
 console.log('✅ Script de frequência carregado!');
 
+// URL base do backend (Railway) - MESMA DO script-login.js
+const BASE_URL = 'https://prosemeddiariodigital-production.up.railway.app';
+
+// Função genérica de requisição à API (MESMA DO script-login.js)
+async function apiFetch(endpoint, data) {
+  try {
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      credentials: 'include',
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Erro na comunicação com o servidor:', error);
+    alert('Erro ao conectar ao servidor.');
+    throw error;
+  }
+}
+
+// Funções específicas para GET
+async function apiGet(endpoint) {
+  try {
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Erro na comunicação com o servidor:', error);
+    alert('Erro ao conectar ao servidor.');
+    throw error;
+  }
+}
+
+// Variáveis globais
 let mesAtual = new Date().getMonth();
 let anoAtual = new Date().getFullYear();
 let turmaSelecionada = null;
@@ -156,8 +201,7 @@ async function carregarTurmasProfessor() {
         
         selectTurma.innerHTML = '<option value="">Carregando turmas...</option>';
         
-        // ✅ CORRIGIDO: usando apiService
-        const data = await apiService.getAlunosTurmaProfessor();
+        const data = await apiGet('/api/professor/turmas-alunos');
         console.log('📡 Resposta da API:', data);
         
         if (data.sucesso) {
@@ -230,7 +274,7 @@ function abrirListaAlunos(dia, mes, ano) {
     }
     
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-                  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+                  'Jullo', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     
     const dataSelecionada = `${dia} de ${meses[mes]} de ${ano}`;
     
@@ -349,8 +393,7 @@ async function salvarFrequencia() {
     try {
         console.log('Enviando frequências:', { dia, mes, ano, turma_id: turmaIdSelecionada, frequencias });
         
-        // ✅ CORRIGIDO: usando apiService
-        const result = await apiService.salvarFrequencia({ 
+        const result = await apiFetch('/api/frequencia', { 
             dia, 
             mes, 
             ano, 
@@ -374,8 +417,7 @@ async function salvarFrequencia() {
 
 async function carregarFrequenciaServidor(dia, mes, ano, turmaId) {
     try {
-        // ✅ CORRIGIDO: usando apiService
-        const result = await apiService.getFrequencia(dia, mes, ano, turmaId);
+        const result = await apiGet(`/api/frequencia?dia=${dia}&mes=${mes}&ano=${ano}&turma_id=${turmaId}`);
         
         if (!result.sucesso) return;
 

@@ -1,8 +1,73 @@
-// ⭐⭐ ADICIONE ISSO NO TOPO DE CADA ARQUIVO .js ⭐⭐
-// REMOVIDO: API_URL e apiFetch - AGORA USA apiService
-
+// script-admin.js - VERSÃO SEM API-SERVICE
 console.log('✅ Script do admin carregado!');
 
+// URL base do backend (Railway) - MESMA DO script-login.js
+const BASE_URL = 'https://prosemeddiariodigital-production.up.railway.app';
+
+// Função genérica de requisição à API (MESMA DO script-login.js)
+async function apiFetch(endpoint, data) {
+  try {
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      credentials: 'include',
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Erro na comunicação com o servidor:', error);
+    alert('Erro ao conectar ao servidor.');
+    throw error;
+  }
+}
+
+// Funções específicas para GET, PUT, DELETE
+async function apiGet(endpoint) {
+  try {
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Erro na comunicação com o servidor:', error);
+    alert('Erro ao conectar ao servidor.');
+    throw error;
+  }
+}
+
+async function apiDelete(endpoint) {
+  try {
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Erro na comunicação com o servidor:', error);
+    alert('Erro ao conectar ao servidor.');
+    throw error;
+  }
+}
+
+// ================== FUNÇÕES DO SISTEMA ==================
 document.addEventListener("DOMContentLoaded", () => {
   const views = document.querySelectorAll(".view");
   const menuButtons = document.querySelectorAll(".nav button");
@@ -50,8 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const data = Object.fromEntries(new FormData(form));
 
     try {
-      // ✅ CORRIGIDO: usando apiService
-      const json = await apiService.criarTurma(data);
+      const json = await apiFetch('/api/turmas', data);
       alert(json.mensagem || json.erro || "Erro ao cadastrar turma");
       if (json.sucesso) {
         form.reset();
@@ -78,8 +142,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // ✅ CORRIGIDO: usando apiService
-      const json = await apiService.criarAluno({ nome, turma_id });
+      const json = await apiFetch('/api/cadastro', { 
+        nome, 
+        email: `${nome.toLowerCase().replace(/\s+/g, '.')}@aluno.escola`, 
+        senha: "123456",
+        tipo: "aluno",
+        turma_id 
+      });
       if (json.sucesso) {
         alert(json.mensagem || "Aluno cadastrado com sucesso!");
         form.reset();
@@ -105,8 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
       tipo: "professor",
     };
     try {
-      // ✅ CORRIGIDO: usando apiService
-      const json = await apiService.cadastrarUsuario(data);
+      const json = await apiFetch('/api/cadastro', data);
       msgVinculo.textContent = json.mensagem || json.erro;
       msgVinculo.className = json.sucesso ? "success" : "error";
       if (json.sucesso) {
@@ -131,9 +199,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // ✅ CORRIGIDO: usando apiService
-      const json = await apiService.vincularProfessor(professorId, turmaId);
-      msgVinculo.textContent = json.message;
+      const json = await apiFetch('/api/vincular-professor', { professorId, turmaId });
+      msgVinculo.textContent = json.message || json.erro;
       msgVinculo.className = json.success ? "success" : "error";
       if (json.success) {
         carregarTurmas();
@@ -145,505 +212,286 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ================== CARREGAR TURMAS ==================
-  async function carregarTurmas() {
+  // ================== LOGOUT ==================
+  document.getElementById("btn-logout").addEventListener("click", async () => {
     try {
-      // ✅ CORRIGIDO: usando apiService
-      const data = await apiService.getTurmas();
-      if (!data.sucesso) throw new Error(data.erro || "Erro ao carregar turmas");
-
-      const tbody = document.querySelector("#table-turmas tbody");
-      tbody.innerHTML = "";
-      data.turmas.forEach((turma) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${turma.nome}</td>
-          <td>${turma.ano}</td>
-          <td>${turma.turno}</td>
-          <td>${turma.professores || "<em>Sem professor</em>"}</td>
-          <td></td>
-        `;
-        tbody.appendChild(row);
-      });
-
-      document.getElementById("count-turmas").textContent = data.turmas.length;
+      await apiFetch('/logout', {});
+      localStorage.removeItem('usuarioLogado');
+      window.location.href = "index.html";
     } catch (error) {
-      console.error("Erro ao carregar turmas:", error);
-      alert("Erro ao carregar turmas!");
+      console.error('Erro no logout:', error);
+      localStorage.removeItem('usuarioLogado');
+      window.location.href = "index.html";
     }
-  }
+  });
 
-  // ================== CARREGAR ALUNOS ==================
-  async function carregarAlunos() {
-    const tbody = document.querySelector('#table-alunos tbody');
-    if (!tbody) {
-      console.error('Tabela de alunos não encontrada!');
-      return;
-    }
-    tbody.innerHTML = '';
+  // ================== INICIALIZAÇÃO ==================
+  carregarTurmas();
+  carregarAlunos();
+  carregarProfessores();
+  carregarSelectsTurmas();
+  atualizarContagens();
+  carregarAdministradores();
+});
+
+// ================== FUNÇÕES DE CARREGAMENTO DE DADOS ==================
+
+async function carregarTurmas() {
+  try {
+    const data = await apiGet('/api/turmas');
+    if (!data.sucesso) throw new Error(data.erro || "Erro ao carregar turmas");
+
+    const tbody = document.querySelector("#table-turmas tbody");
+    tbody.innerHTML = "";
     
-    try {
-      // ✅ CORRIGIDO: usando apiService
-      const data = await apiService.getAlunos();
+    data.turmas.forEach((turma) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td><strong>${turma.nome}</strong></td>
+        <td>${turma.ano}</td>
+        <td>${turma.turno}</td>
+        <td>${turma.professores || "<span style='color:#666; font-style:italic;'>Sem professor</span>"}</td>
+        <td style="text-align:right">
+          <button class="btn small danger" onclick="excluirTurma(${turma.id})">🗑️</button>
+        </td>
+      `;
+      tbody.appendChild(row);
+    });
+
+    document.getElementById("count-turmas").textContent = data.turmas.length;
+  } catch (error) {
+    console.error("Erro ao carregar turmas:", error);
+    alert("Erro ao carregar turmas!");
+  }
+}
+
+async function carregarAlunos() {
+  const tbody = document.querySelector('#table-alunos tbody');
+  if (!tbody) {
+    console.error('Tabela de alunos não encontrada!');
+    return;
+  }
+  tbody.innerHTML = '';
+  
+  try {
+    const data = await apiGet('/api/alunos');
+    
+    if (data.sucesso && data.alunos.length > 0) {
+      let turmaAtual = '';
       
-      if (data.sucesso && data.alunos.length > 0) {
-        let turmaAtual = '';
-        
-        data.alunos.forEach(aluno => {
-          // Adiciona cabeçalho da turma quando mudar de turma
-          if (aluno.turma !== turmaAtual) {
-            turmaAtual = aluno.turma;
-            
-            const headerRow = document.createElement('tr');
-            headerRow.className = 'turma-header';
-            headerRow.innerHTML = `
-              <td colspan="3">🏫 ${turmaAtual || 'Sem turma'}</td>
-            `;
-            tbody.appendChild(headerRow);
-          }
+      data.alunos.forEach(aluno => {
+        if (aluno.turma !== turmaAtual) {
+          turmaAtual = aluno.turma;
           
-          // Adiciona linha do aluno
-          const tr = document.createElement('tr');
-          tr.className = 'aluno-row';
-          tr.innerHTML = `
-            <td>${aluno.nome}</td>
-            <td>${aluno.turma || 'Sem turma'}</td>
-            <td style="text-align: right;">
-              <button class="btn small danger" onclick="excluirAluno(${aluno.id})">🗑️</button>
-            </td>
+          const headerRow = document.createElement('tr');
+          headerRow.className = 'turma-header';
+          headerRow.innerHTML = `
+            <td colspan="3">🏫 ${turmaAtual || 'Sem turma'}</td>
           `;
-          tbody.appendChild(tr);
-        });
-      } else {
-        // Mensagem quando não há alunos
+          tbody.appendChild(headerRow);
+        }
+        
         const tr = document.createElement('tr');
+        tr.className = 'aluno-row';
         tr.innerHTML = `
-          <td colspan="3" class="empty-state">
-            Nenhum aluno cadastrado
+          <td>${aluno.nome}</td>
+          <td>${aluno.turma || 'Sem turma'}</td>
+          <td style="text-align: right;">
+            <button class="btn small danger" onclick="excluirAluno(${aluno.id})">🗑️</button>
           </td>
         `;
         tbody.appendChild(tr);
-      }
-    } catch (err) {
-      console.error('Erro ao carregar alunos:', err);
-    }
-  }
-
-  // ================== EXCLUIR ALUNO ==================
-  window.excluirAluno = async function(id) {
-    if (!confirm('Tem certeza que deseja excluir este aluno?')) return;
-    
-    try {
-      // ✅ CORRIGIDO: usando apiService
-      const data = await apiService.excluirAluno(id);
-      
-      if (data.sucesso) {
-        alert('Aluno excluído com sucesso!');
-        carregarAlunos();
-        atualizarContagens();
-      } else {
-        alert(data.erro || 'Erro ao excluir aluno');
-      }
-    } catch (err) {
-      console.error('Erro ao excluir aluno:', err);
-      alert('Erro ao excluir aluno');
-    }
-  }
-
-  // ================== CARREGAR PROFESSORES ==================
-  async function carregarProfessores() {
-    try {
-      // ✅ CORRIGIDO: usando apiService
-      const data = await apiService.getProfessores();
-      if (!data.sucesso) throw new Error(data.erro || "Erro ao carregar professores");
-
-      const select = document.getElementById("select-professor");
-      select.innerHTML = "<option value=''>Selecione</option>";
-
-      const tbody = document.querySelector("#table-professores tbody");
-      tbody.innerHTML = "";
-
-      // Carrega todos os professores e suas disciplinas
-      const professoresComDisciplinas = await Promise.all(
-        data.professores.map(async (prof) => {
-          try {
-            // ✅ CORRIGIDO: usando apiService
-            const dataDisciplinas = await apiService.getDisciplinasProfessor(prof.id);
-            return {
-              ...prof,
-              disciplinas: dataDisciplinas.sucesso ? dataDisciplinas.disciplinas : []
-            };
-          } catch (error) {
-            console.error(`Erro ao carregar disciplinas do professor ${prof.nome}:`, error);
-            return {
-              ...prof,
-              disciplinas: []
-            };
-          }
-        })
-      );
-
-      professoresComDisciplinas.forEach((prof) => {
-        const opt = document.createElement("option");
-        opt.value = prof.id;
-        opt.textContent = prof.nome;
-        select.appendChild(opt);
-
-        const row = document.createElement("tr");
-        
-        // Formata as disciplinas para exibição
-        let disciplinasHTML = "";
-        if (prof.disciplinas && prof.disciplinas.length > 0) {
-          disciplinasHTML = prof.disciplinas.map(d => 
-            `<span class="disciplina-tag">${d.nome}</span>`
-          ).join("");
-        } else {
-          disciplinasHTML = '<span style="color:#666; font-style:italic; font-size:12px;">Nenhuma disciplina</span>';
-        }
-
-        row.innerHTML = `
-          <td><strong>${prof.nome}</strong></td>
-          <td>${prof.email}</td>
-          <td>${prof.turmas}</td>
-          <td>
-            <div class="disciplinas-lista">
-              ${disciplinasHTML}
-            </div>
-          </td>
-          <td style="text-align:right">
-            <button class="btn small danger" onclick="excluirProfessor(${prof.id}, '${prof.nome.replace(/'/g, "\\'")}')">🗑️</button>
-          </td>
-        `;
-        tbody.appendChild(row);
       });
-
-      document.getElementById("count-professores").textContent = data.professores.length;
-    } catch (err) {
-      console.error("Erro ao carregar professores:", err);
-      alert("Erro ao carregar professores!");
+    } else {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td colspan="3" class="empty-state">
+          Nenhum aluno cadastrado
+        </td>
+      `;
+      tbody.appendChild(tr);
     }
+  } catch (err) {
+    console.error('Erro ao carregar alunos:', err);
   }
+}
 
-  // ================== EXCLUIR PROFESSOR ==================
-  window.excluirProfessor = async function(id) {
-    if (!confirm('Tem certeza que deseja excluir este professor?')) return;
-    
-    try {
-      // ✅ CORRIGIDO: usando apiService
-      const data = await apiService.excluirProfessor(id);
-      
-      if (data.sucesso) {
-        alert('Professor excluído com sucesso!');
-        carregarProfessores();
-        atualizarContagens();
-        carregarProfessoresDisciplinas(); // Atualiza o select de disciplinas
-      } else {
-        alert(data.erro || 'Erro ao excluir professor');
-      }
-    } catch (err) {
-      console.error('Erro ao excluir professor:', err);
-      alert('Erro ao excluir professor');
-    }
+async function carregarProfessores() {
+  try {
+    const data = await apiGet('/api/professores');
+    if (!data.sucesso) throw new Error(data.erro || "Erro ao carregar professores");
+
+    const select = document.getElementById("select-professor");
+    select.innerHTML = "<option value=''>Selecione</option>";
+
+    const tbody = document.querySelector("#table-professores tbody");
+    tbody.innerHTML = "";
+
+    data.professores.forEach((prof) => {
+      const opt = document.createElement("option");
+      opt.value = prof.id;
+      opt.textContent = prof.nome;
+      select.appendChild(opt);
+
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td><strong>${prof.nome}</strong></td>
+        <td>${prof.email}</td>
+        <td>${prof.turmas || 'Nenhuma'}</td>
+        <td>${prof.disciplinas || 'Nenhuma'}</td>
+        <td style="text-align:right">
+          <button class="btn small danger" onclick="excluirProfessor(${prof.id})">🗑️</button>
+        </td>
+      `;
+      tbody.appendChild(row);
+    });
+
+    document.getElementById("count-professores").textContent = data.professores.length;
+  } catch (err) {
+    console.error("Erro ao carregar professores:", err);
+    alert("Erro ao carregar professores!");
   }
+}
 
-// ================== EXCLUIR TURMA ==================
-window.excluirTurma = async function(id) {
-  if (!confirm('Tem certeza que deseja excluir esta turma?\n\n⚠️ Esta ação não pode ser desfeita.')) return;
+// ================== FUNÇÕES DE EXCLUSÃO ==================
+
+window.excluirAluno = async function(id) {
+  if (!confirm('Tem certeza que deseja excluir este aluno?')) return;
   
   try {
-    // ✅ CORRIGIDO: usando apiService
-    const data = await apiService.excluirTurma(id);
+    const data = await apiDelete(`/api/alunos/${id}`);
     
     if (data.sucesso) {
-      alert('✅ Turma excluída com sucesso!');
+      alert('Aluno excluído com sucesso!');
+      carregarAlunos();
+      atualizarContagens();
+    } else {
+      alert(data.erro || 'Erro ao excluir aluno');
+    }
+  } catch (err) {
+    console.error('Erro ao excluir aluno:', err);
+    alert('Erro ao excluir aluno');
+  }
+}
+
+window.excluirProfessor = async function(id) {
+  if (!confirm('Tem certeza que deseja excluir este professor?')) return;
+  
+  try {
+    const data = await apiDelete(`/api/professores/${id}`);
+    
+    if (data.sucesso) {
+      alert('Professor excluído com sucesso!');
+      carregarProfessores();
+      atualizarContagens();
+    } else {
+      alert(data.erro || 'Erro ao excluir professor');
+    }
+  } catch (err) {
+    console.error('Erro ao excluir professor:', err);
+    alert('Erro ao excluir professor');
+  }
+}
+
+window.excluirTurma = async function(id) {
+  if (!confirm('Tem certeza que deseja excluir esta turma?')) return;
+  
+  try {
+    const data = await apiDelete(`/api/turmas/${id}`);
+    
+    if (data.sucesso) {
+      alert('Turma excluída com sucesso!');
       carregarTurmas();
       carregarSelectsTurmas();
       atualizarContagens();
     } else {
-      // Mostra mensagem de erro específica
-      if (data.erro.includes('aluno(s) vinculado(s)')) {
-        alert(`❌ ${data.erro}\n\n💡 Solução: Transfira os alunos para outra turma antes de excluir.`);
-      } else if (data.erro.includes('professor(es) vinculado(s)')) {
-        alert(`❌ ${data.erro}\n\n💡 Solução: Remova os vínculos dos professores com esta turma primeiro.`);
-      } else {
-        alert('❌ ' + data.erro);
-      }
+      alert(data.erro || 'Erro ao excluir turma');
     }
   } catch (err) {
     console.error('Erro ao excluir turma:', err);
-    alert('❌ Erro de conexão ao excluir turma');
+    alert('Erro ao excluir turma');
   }
 }
 
-  // ================== CARREGAR SELECTS ==================
-  async function carregarSelectsTurmas() {
-    const selectTurmaAluno = document.getElementById("select-turma-aluno");
-    const selectTurmaVinculo = document.getElementById("select-turma-vinculo");
-    try {
-      // ✅ CORRIGIDO: usando apiService
-      const data = await apiService.getTurmas();
-      selectTurmaAluno.innerHTML = "";
-      selectTurmaVinculo.innerHTML = "";
-      if (data.sucesso) {
-        data.turmas.forEach((turma) => {
-          const opt1 = document.createElement("option");
-          opt1.value = turma.id;
-          opt1.textContent = turma.nome;
-          selectTurmaAluno.appendChild(opt1);
+// ================== FUNÇÕES AUXILIARES ==================
 
-          const opt2 = document.createElement("option");
-          opt2.value = turma.id;
-          opt2.textContent = turma.nome;
-          selectTurmaVinculo.appendChild(opt2);
-        });
-      }
-    } catch (err) {
-      console.error(err);
+async function carregarSelectsTurmas() {
+  const selectTurmaAluno = document.getElementById("select-turma-aluno");
+  const selectTurmaVinculo = document.getElementById("select-turma-vinculo");
+  try {
+    const data = await apiGet('/api/turmas');
+    selectTurmaAluno.innerHTML = "";
+    selectTurmaVinculo.innerHTML = "";
+    if (data.sucesso) {
+      data.turmas.forEach((turma) => {
+        const opt1 = document.createElement("option");
+        opt1.value = turma.id;
+        opt1.textContent = turma.nome;
+        selectTurmaAluno.appendChild(opt1);
+
+        const opt2 = document.createElement("option");
+        opt2.value = turma.id;
+        opt2.textContent = turma.nome;
+        selectTurmaVinculo.appendChild(opt2);
+      });
     }
+  } catch (err) {
+    console.error(err);
   }
+}
 
-  // ================== ATUALIZAR CONTAGENS ==================
-  async function atualizarContagens() {
+async function atualizarContagens() {
+  try {
+    const [t1, t2, t3] = await Promise.all([
+      apiGet('/api/turmas'),
+      apiGet('/api/professores'),
+      apiGet('/api/alunos'),
+    ]);
+    document.getElementById("count-turmas").textContent = t1.turmas?.length || 0;
+    document.getElementById("count-professores").textContent = t2.professores?.length || 0;
+    document.getElementById("count-alunos").textContent = t3.alunos?.length || 0;
+  } catch (err) {
+    console.error("Erro ao atualizar contagens", err);
+  }
+}
+
+// ================== FUNÇÕES DE ADMIN MASTER ==================
+
+// Verificar se o usuário atual é admin master
+async function verificarAdminMaster() {
     try {
-      const [t1, t2, t3] = await Promise.all([
-        apiService.getTurmas(),
-        apiService.getProfessores(),
-        apiService.getAlunos(),
-      ]);
-      document.getElementById("count-turmas").textContent = t1.turmas?.length || 0;
-      document.getElementById("count-professores").textContent = t2.professores?.length || 0;
-      document.getElementById("count-alunos").textContent = t3.alunos?.length || 0;
-    } catch (err) {
-      console.error("Erro ao atualizar contagens", err);
-    }
-  }
-
-  // ================== GERENCIAR DISCIPLINAS DO PROFESSOR ==================
-  
-  // Carregar professores para o select de disciplinas
-  async function carregarProfessoresDisciplinas() {
-      try {
-          const select = document.getElementById("select-professor-disciplina");
-          select.innerHTML = "<option value=''>Carregando professores...</option>";
-          
-          // ✅ CORRIGIDO: usando apiService
-          const data = await apiService.getProfessores();
-          
-          if (data.sucesso) {
-              select.innerHTML = "<option value=''>Selecione um professor</option>";
-              data.professores.forEach(professor => {
-                  const option = document.createElement("option");
-                  option.value = professor.id;
-                  option.textContent = professor.nome;
-                  select.appendChild(option);
-              });
-              
-              // Adiciona evento para carregar disciplinas quando selecionar professor
-              select.addEventListener("change", carregarDisciplinasProfessor);
-          }
-      } catch (error) {
-          console.error("Erro ao carregar professores:", error);
-      }
-  }
-
-  // Carregar todas as disciplinas disponíveis
-  async function carregarTodasDisciplinas() {
-      try {
-          // ✅ CORRIGIDO: usando apiService
-          const data = await apiService.getTodasDisciplinas();
-          
-          if (data.sucesso) {
-              const container = document.getElementById("disciplinas-container");
-              container.innerHTML = "";
-              
-              data.disciplinas.forEach(disciplina => {
-                  const label = document.createElement("label");
-                  label.className = "checkbox-disciplina";
-                  label.innerHTML = `
-                      <input type="checkbox" value="${disciplina.id}" data-nome="${disciplina.nome}">
-                      ${disciplina.nome}
-                  `;
-                  container.appendChild(label);
-              });
-          }
-      } catch (error) {
-          console.error("Erro ao carregar disciplinas:", error);
-          // Fallback com disciplinas padrão
-          const container = document.getElementById("disciplinas-container");
-          container.innerHTML = `
-              <label class="checkbox-disciplina"><input type="checkbox" value="1" data-nome="Matemática"> Matemática</label>
-              <label class="checkbox-disciplina"><input type="checkbox" value="2" data-nome="Português"> Português</label>
-              <label class="checkbox-disciplina"><input type="checkbox" value="3" data-nome="Ciências"> Ciências</label>
-              <label class="checkbox-disciplina"><input type="checkbox" value="4" data-nome="História"> História</label>
-              <label class="checkbox-disciplina"><input type="checkbox" value="5" data-nome="Geografia"> Geografia</label>
-          `;
-      }
-  }
-
-  // Carregar disciplinas vinculadas ao professor selecionado
-  async function carregarDisciplinasProfessor() {
-      const professorId = document.getElementById("select-professor-disciplina").value;
-      
-      if (!professorId) {
-          document.getElementById("lista-disciplinas-vinculadas").innerHTML = "<p style='margin:0; color:#666; font-style:italic;'>Selecione um professor para ver as disciplinas vinculadas.</p>";
-          return;
-      }
-      
-      try {
-          // Carrega disciplinas vinculadas
-          // ✅ CORRIGIDO: usando apiService
-          const data = await apiService.getDisciplinasProfessor(professorId);
-          
-          const listaContainer = document.getElementById("lista-disciplinas-vinculadas");
-          
-          if (data.sucesso && data.disciplinas.length > 0) {
-              let html = "<div class='lista-disciplinas'>";
-              data.disciplinas.forEach(disciplina => {
-                  html += `
-                      <div class="item-disciplina">
-                          ${disciplina.nome}
-                          <button class="btn-remover-disciplina" onclick="removerDisciplina(${professorId}, ${disciplina.id})">×</button>
-                      </div>
-                  `;
-              });
-              html += "</div>";
-              listaContainer.innerHTML = html;
-              
-              // Marca as checkboxes das disciplinas vinculadas
-              data.disciplinas.forEach(disciplina => {
-                  const checkbox = document.querySelector(`input[value="${disciplina.id}"]`);
-                  if (checkbox) {
-                      checkbox.checked = true;
-                      checkbox.parentElement.classList.add("checked");
-                  }
-              });
-          } else {
-              listaContainer.innerHTML = "<p style='margin:0; color:#666; font-style:italic;'>Nenhuma disciplina vinculada a este professor.</p>";
-              
-              // Desmarca todas as checkboxes
-              document.querySelectorAll(".checkbox-disciplina input").forEach(checkbox => {
-                  checkbox.checked = false;
-                  checkbox.parentElement.classList.remove("checked");
-              });
-          }
-          
-          // Adiciona evento para as checkboxes
-          document.querySelectorAll(".checkbox-disciplina input").forEach(checkbox => {
-              checkbox.addEventListener("change", function() {
-                  this.parentElement.classList.toggle("checked", this.checked);
-              });
-          });
-          
-      } catch (error) {
-          console.error("Erro ao carregar disciplinas do professor:", error);
-      }
-  }
-
-  // Vincular disciplinas ao professor
-  async function vincularDisciplinas() {
-      const professorId = document.getElementById("select-professor-disciplina").value;
-      
-      if (!professorId) {
-          alert("Selecione um professor!");
-          return;
-      }
-      
-      const disciplinasSelecionadas = Array.from(document.querySelectorAll(".checkbox-disciplina input:checked"))
-          .map(checkbox => ({
-              id: checkbox.value,
-              nome: checkbox.getAttribute("data-nome")
-          }));
-      
-      if (disciplinasSelecionadas.length === 0) {
-          alert("Selecione pelo menos uma disciplina!");
-          return;
-      }
-      
-      try {
-          // ✅ CORRIGIDO: usando apiService
-          const data = await apiService.vincularDisciplinas({
-              professor_id: professorId,
-              disciplinas: disciplinasSelecionadas.map(d => d.id)
-          });
-          
-          if (data.sucesso) {
-              alert("✅ Disciplinas vinculadas com sucesso!");
-              carregarDisciplinasProfessor(); // Atualiza a lista
-              carregarProfessores(); // Atualiza a tabela de professores
-          } else {
-              alert("❌ Erro ao vincular disciplinas: " + data.erro);
-          }
-      } catch (error) {
-          console.error("Erro ao vincular disciplinas:", error);
-          alert("❌ Erro de conexão ao vincular disciplinas!");
-      }
-  }
-
-  // Remover disciplina do professor (precisa ser global para funcionar no onclick)
-  window.removerDisciplina = async function(professorId, disciplinaId) {
-      if (!confirm("Tem certeza que deseja remover esta disciplina do professor?")) {
-          return;
-      }
-      
-      try {
-          // ✅ CORRIGIDO: usando apiService
-          const data = await apiService.removerDisciplina({
-              professor_id: professorId,
-              disciplina_id: disciplinaId
-          });
-          
-          if (data.sucesso) {
-              alert("✅ Disciplina removida com sucesso!");
-              carregarDisciplinasProfessor(); // Atualiza a lista
-              carregarProfessores(); // Atualiza a tabela de professores
-          } else {
-              alert("❌ Erro ao remover disciplina: " + data.erro);
-          }
-      } catch (error) {
-          console.error("Erro ao remover disciplina:", error);
-          alert("❌ Erro de conexão ao remover disciplina!");
-      }
-  }
-
- // ================== EXCLUIR PROFESSOR ==================
-window.excluirProfessor = async function(id, nome) {
-    const confirmacao = confirm(`Tem certeza que deseja excluir o professor "${nome}"?\n\n✅ Serão removidos automaticamente:\n• Vínculos com turmas\n• Vínculos com disciplinas\n• Registros de frequência\n• Registros de notas\n• Objetos de conhecimento`);
-    
-    if (!confirmacao) return;
-    
-    try {
-        // ✅ CORRIGIDO: usando apiService
-        const data = await apiService.excluirProfessor(id);
-        
-        if (data.sucesso) {
-            alert('✅ ' + data.mensagem);
-            carregarProfessores();
-            atualizarContagens();
-            carregarProfessoresDisciplinas();
-        } else {
-            alert('❌ ' + data.erro);
-        }
-    } catch (err) {
-        console.error('Erro ao excluir professor:', err);
-        alert('❌ Erro de conexão ao excluir professor');
+        const data = await apiGet('/api/admin/verificar-master');
+        return data.sucesso && data.is_master;
+    } catch (error) {
+        console.error('Erro ao verificar permissões master:', error);
+        return false;
     }
 }
-  // ================== LOGOUT ==================
-  document.getElementById("btn-logout").addEventListener("click", async () => {
-    await apiService.logout();
-    window.location.href = "/login.html";
-  });
 
-  // ================== CONFIGURAÇÕES E PERMISSÕES ==================
-
-// Carregar administradores para gerenciamento
+// Carregar administradores para gerenciamento (apenas para masters)
 async function carregarAdministradores() {
     try {
+        const isMaster = await verificarAdminMaster();
         const select = document.getElementById('select-admins');
+        const secaoCadastroAdmin = document.getElementById('secaoCadastroAdmin');
+        const secaoAdminMaster = document.getElementById('secaoAdminMaster');
+
+        // Mostrar/ocultar seções baseado nas permissões
+        if (secaoCadastroAdmin) {
+            secaoCadastroAdmin.style.display = isMaster ? 'block' : 'none';
+        }
+        if (secaoAdminMaster) {
+            secaoAdminMaster.style.display = isMaster ? 'block' : 'none';
+        }
+
+        if (!isMaster) {
+            select.innerHTML = '<option value="">Apenas administradores masters podem gerenciar permissões</option>';
+            return;
+        }
+
         select.innerHTML = '<option value="">Carregando administradores...</option>';
         
-        // ✅ CORRIGIDO: usando apiService
-        const data = await apiService.getAdministradores();
+        const data = await apiGet('/api/admin/administradores');
         
         if (data.sucesso) {
             select.innerHTML = '<option value="">Selecione um administrador</option>';
@@ -655,7 +503,6 @@ async function carregarAdministradores() {
                 select.appendChild(option);
             });
             
-            // Adiciona evento para mostrar informações
             select.addEventListener('change', mostrarInfoPermissao);
         }
     } catch (error) {
@@ -675,7 +522,7 @@ function mostrarInfoPermissao() {
     }
     
     const selectedOption = select.options[select.selectedIndex];
-    const isMaster = selectedOption.getAttribute('data-master') === 'true';
+    const isMaster = selectedOption.getAttribute('data-master') === '1';
     
     let html = '';
     if (isMaster) {
@@ -722,7 +569,7 @@ async function alternarPermissaoAdmin() {
     }
     
     const selectedOption = select.options[select.selectedIndex];
-    const isCurrentlyMaster = selectedOption.getAttribute('data-master') === 'true';
+    const isCurrentlyMaster = selectedOption.getAttribute('data-master') === '1';
     const newPermission = !isCurrentlyMaster;
     
     const confirmMessage = isCurrentlyMaster 
@@ -734,17 +581,16 @@ async function alternarPermissaoAdmin() {
     }
     
     try {
-        // ✅ CORRIGIDO: usando apiService
-        const data = await apiService.toggleAdminPermission({
+        const data = await apiFetch('/api/admin/toggle-permission', {
             admin_id: adminId,
             pode_criar_admin: newPermission
         });
         
         if (data.sucesso) {
-            alert(`✅ Permissões atualizadas com sucesso!`);
+            alert(`✅ ${data.mensagem}`);
             carregarAdministradores();
         } else {
-            alert('❌ Erro ao atualizar permissões: ' + data.erro);
+            alert('❌ ' + data.erro);
         }
     } catch (error) {
         console.error('Erro ao alternar permissão:', error);
@@ -752,43 +598,106 @@ async function alternarPermissaoAdmin() {
     }
 }
 
-  // ================== INICIALIZAÇÃO ==================
-  carregarTurmas();
-  carregarAlunos();
-  carregarProfessores();
-  carregarSelectsTurmas();
-  atualizarContagens();
-  carregarAdministradores();
-  
-  // ================== INICIALIZAÇÃO DAS DISCIPLINAS ==================
-  carregarProfessoresDisciplinas();
-  carregarTodasDisciplinas();
-  
-  // Adicionar evento ao botão de vincular disciplinas
-  document.getElementById("btn-vincular-disciplinas").addEventListener("click", vincularDisciplinas);
-  // Na seção de inicialização, adicione:
-document.getElementById("btn-toggle-admin").addEventListener("click", alternarPermissaoAdmin);
-});
+// Carregar usuários para redefinição de senha
+async function carregarUsuariosRedefinicaoSenha() {
+    try {
+        const isMaster = await verificarAdminMaster();
+        const select = document.getElementById('selectUsuarioSenha');
+        
+        if (!isMaster) {
+            select.innerHTML = '<option value="">Apenas administradores masters</option>';
+            return;
+        }
+
+        select.innerHTML = '<option value="">Carregando usuários...</option>';
+        
+        const data = await apiGet('/api/admin/todos-usuarios');
+        
+        if (data.sucesso) {
+            select.innerHTML = '<option value="">Selecione um usuário</option>';
+            data.usuarios.forEach(usuario => {
+                const option = document.createElement('option');
+                option.value = usuario.id;
+                option.textContent = `${usuario.nome} (${usuario.email}) - ${usuario.tipo}`;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao carregar usuários:', error);
+        document.getElementById('selectUsuarioSenha').innerHTML = '<option value="">Erro ao carregar usuários</option>';
+    }
+}
+
+// Redefinir senha de usuário (admin master)
+async function redefinirSenhaUsuario() {
+    const usuarioId = document.getElementById('selectUsuarioSenha').value;
+    const novaSenha = document.getElementById('novaSenhaUsuario').value;
+
+    if (!usuarioId) {
+        alert('Selecione um usuário!');
+        return;
+    }
+
+    if (!novaSenha || novaSenha.length < 6) {
+        alert('A senha deve ter pelo menos 6 caracteres!');
+        return;
+    }
+
+    try {
+        const result = await apiFetch('/admin/redefinir-senha', {
+            usuario_id: usuarioId,
+            nova_senha: novaSenha
+        });
+
+        if (result.sucesso) {
+            alert('✅ ' + result.mensagem);
+            document.getElementById('novaSenhaUsuario').value = '';
+        } else {
+            alert('❌ ' + result.erro);
+        }
+    } catch (error) {
+        console.error('Erro ao redefinir senha:', error);
+        alert('❌ Erro ao redefinir senha!');
+    }
+}
+
+// Excluir usuário (admin master)
+async function excluirUsuario(usuarioId, usuarioNome) {
+    if (!confirm(`Tem certeza que deseja excluir o usuário "${usuarioNome}"?\n\nEsta ação não pode ser desfeita!`)) {
+        return;
+    }
+    
+    try {
+        const data = await apiDelete(`/api/admin/usuarios/${usuarioId}`);
+        
+        if (data.sucesso) {
+            alert('✅ ' + data.mensagem);
+            // Recarregar dados conforme necessário
+            carregarUsuariosRedefinicaoSenha();
+        } else {
+            alert('❌ ' + data.erro);
+        }
+    } catch (error) {
+        console.error('Erro ao excluir usuário:', error);
+        alert('❌ Erro ao excluir usuário!');
+    }
+}
 
 // ================== FUNÇÕES DE CADASTRO DE ADMINISTRADOR ==================
 
 async function verificarPermissoesCadastroAdmin() {
     try {
-        // ✅ CORRIGIDO: usando apiService
-        const result = await apiService.verificarPermissaoAdmin();
-        
-        console.log('🔍 Resultado da verificação de permissão:', result);
-        
+        const isMaster = await verificarAdminMaster();
         const secaoCadastroAdmin = document.getElementById('secaoCadastroAdmin');
         const mensagemDiv = document.getElementById('mensagemCadastroAdmin');
         
-        if (result.sucesso && result.tem_permissao) {
+        if (isMaster) {
             secaoCadastroAdmin.style.display = 'block';
             mensagemDiv.innerHTML = `<p style="color: #4CAF50; margin: 0;">✅ Você tem permissão para cadastrar novos administradores</p>`;
             mensagemDiv.style.display = 'block';
         } else {
             secaoCadastroAdmin.style.display = 'block'; // Mantém visível para mostrar mensagem
-            mensagemDiv.innerHTML = `<p style="color: #f44336; margin: 0;">❌ ${result.erro || 'Você não tem permissão para cadastrar administradores'}</p>`;
+            mensagemDiv.innerHTML = `<p style="color: #f44336; margin: 0;">❌ Apenas administradores masters podem cadastrar novos administradores</p>`;
             mensagemDiv.style.display = 'block';
         }
     } catch (error) {
@@ -801,6 +710,13 @@ async function verificarPermissoesCadastroAdmin() {
 
 async function cadastrarNovoAdmin(event) {
     if (event) event.preventDefault();
+    
+    // Verificar se é master antes de prosseguir
+    const isMaster = await verificarAdminMaster();
+    if (!isMaster) {
+        alert('❌ Apenas administradores masters podem cadastrar novos administradores!');
+        return;
+    }
     
     const nome = document.getElementById('nomeAdmin').value.trim();
     const email = document.getElementById('emailAdmin').value.trim();
@@ -827,11 +743,11 @@ async function cadastrarNovoAdmin(event) {
     try {
         mostrarMensagemCadastro('⏳ Cadastrando administrador...', 'info');
         
-        // ✅ CORRIGIDO: usando apiService
-        const result = await apiService.cadastrarAdmin({
+        const result = await apiFetch('/api/cadastro', {
             nome: nome,
             email: email,
-            senha: senha
+            senha: senha,
+            tipo: 'administrador'
         });
         
         console.log('📨 Resposta do cadastro:', result);
@@ -852,29 +768,54 @@ async function cadastrarNovoAdmin(event) {
         console.error('Erro no cadastro:', error);
         mostrarMensagemCadastro('❌ Erro de conexão ao cadastrar administrador!', 'erro');
     }
-
-
-
-    function mostrarMensagemCadastro(texto, tipo) {
-        mensagemDiv.innerHTML = `<p style="margin: 0;">${texto}</p>`;
-        
-        if (tipo === 'sucesso') {
-            mensagemDiv.style.backgroundColor = '#d4edda';
-            mensagemDiv.style.color = '#155724';
-            mensagemDiv.style.border = '1px solid #c3e6cb';
-        } else if (tipo === 'erro') {
-            mensagemDiv.style.backgroundColor = '#f8d7da';
-            mensagemDiv.style.color = '#721c24';
-            mensagemDiv.style.border = '1px solid #f5c6cb';
-        } else {
-            mensagemDiv.style.backgroundColor = '#d1ecf1';
-            mensagemDiv.style.color = '#0c5460';
-            mensagemDiv.style.border = '1px solid #bee5eb';
-        }
-        
-        mensagemDiv.style.display = 'block';
-        mensagemDiv.style.padding = '12px';
-        mensagemDiv.style.borderRadius = '6px';
-        mensagemDiv.style.marginTop = '15px';
-    }
 }
+
+function mostrarMensagemCadastro(texto, tipo) {
+    const mensagemDiv = document.getElementById('mensagemCadastroAdmin');
+    mensagemDiv.innerHTML = `<p style="margin: 0;">${texto}</p>`;
+    
+    if (tipo === 'sucesso') {
+        mensagemDiv.style.backgroundColor = '#d4edda';
+        mensagemDiv.style.color = '#155724';
+        mensagemDiv.style.border = '1px solid #c3e6cb';
+    } else if (tipo === 'erro') {
+        mensagemDiv.style.backgroundColor = '#f8d7da';
+        mensagemDiv.style.color = '#721c24';
+        mensagemDiv.style.border = '1px solid #f5c6cb';
+    } else {
+        mensagemDiv.style.backgroundColor = '#d1ecf1';
+        mensagemDiv.style.color = '#0c5460';
+        mensagemDiv.style.border = '1px solid #bee5eb';
+    }
+    
+    mensagemDiv.style.display = 'block';
+    mensagemDiv.style.padding = '12px';
+    mensagemDiv.style.borderRadius = '6px';
+    mensagemDiv.style.marginTop = '15px';
+}
+
+// Adicionar event listeners para funções de admin master
+document.addEventListener("DOMContentLoaded", function() {
+    // Botão de alternar permissão
+    const btnToggleAdmin = document.getElementById('btn-toggle-admin');
+    if (btnToggleAdmin) {
+        btnToggleAdmin.addEventListener('click', alternarPermissaoAdmin);
+    }
+    
+    // Observar quando a aba de senhas for aberta
+    const senhasView = document.getElementById('view-Senhas');
+    if (senhasView) {
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                    if (senhasView.style.display !== 'none') {
+                        console.log('🔧 Aba de Senhas aberta - carregando usuários...');
+                        carregarUsuariosRedefinicaoSenha();
+                    }
+                }
+            });
+        });
+        
+        observer.observe(senhasView, { attributes: true });
+    }
+});

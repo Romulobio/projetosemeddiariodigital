@@ -1,97 +1,105 @@
-// script-login.js
+// ======================================
+// script-login.js - VERSÃO CORRIGIDA
+// ======================================
 
-document.addEventListener('DOMContentLoaded', () => {
-  if (!window.apiService) {
-    console.error('❌ apiService não carregado! Verifique se api-service.js está antes deste script no HTML.');
-    return;
-  }
+// URL base do backend (Railway)
+const BASE_URL = 'https://prosemeddiariodigital-production.up.railway.app';
 
-  console.log('✅ Script de Login e Cadastro carregado!');
-  voltarSelecao();
-});
-
-// Função auxiliar para chamadas à API com tratamento padrão
-// ------------------------
-async function apiFetch(path, options = {}) {
+// Função genérica de requisição à API
+async function apiFetch(endpoint, data) {
   try {
-    let data;
-
-    if (options.method === 'POST') {
-      const body = JSON.parse(options.body);
-      if (path === '/login') {
-        data = await apiService.login(body);
-      } else if (path === '/cadastro') {
-        data = await apiService.cadastro(body);
-      }
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+      credentials: 'include', // Importante para sessions
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-
-    return data;
+    
+    return await response.json();
   } catch (error) {
-    console.error('Erro no apiFetch:', error);
+    console.error('Erro na comunicação com o servidor:', error);
+    alert('Erro ao conectar ao servidor. Verifique sua conexão.');
     throw error;
   }
 }
 
-// ------------------------
-// FUNÇÕES DE MOSTRAR/OCULTAR CONTAINERS
-// ------------------------
+// ======================================
+// Funções de exibição e controle da UI
+// ======================================
 function esconderTodos() {
-  const ids = [
+  const containers = [
     'tipo-login-container',
     'login-professor-container',
     'login-admin-container',
     'cadastro-professor-container',
     'cadastro-admin-container'
   ];
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
+  
+  containers.forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.hidden = true;
+    }
   });
 }
 
 function mostrarLogin(tipo) {
   esconderTodos();
-  document.getElementById(`login-${tipo}-container`).style.display = 'block';
+  const container = document.getElementById(`login-${tipo}-container`);
+  if (container) {
+    container.hidden = false;
+    // Limpar campos ao mostrar
+    document.getElementById(`login-${tipo}-email`).value = '';
+    document.getElementById(`login-${tipo}-senha`).value = '';
+  }
 }
 
 function mostrarCadastro(tipo) {
   esconderTodos();
-  document.getElementById(`cadastro-${tipo}-container`).style.display = 'block';
+  const container = document.getElementById(`cadastro-${tipo}-container`);
+  if (container) {
+    container.hidden = false;
+    // Limpar campos ao mostrar
+    document.getElementById(`cadastro-${tipo}-nome`).value = '';
+    document.getElementById(`cadastro-${tipo}-email`).value = '';
+    document.getElementById(`cadastro-${tipo}-senha`).value = '';
+  }
 }
 
 function voltarSelecao() {
   esconderTodos();
-  document.getElementById('tipo-login-container').style.display = 'block';
+  document.getElementById('tipo-login-container').hidden = false;
 }
 
-// ------------------------
-// Helpers UI
-// ------------------------
 function bloquearBotao(botaoId, bloquear = true) {
   const btn = document.getElementById(botaoId);
   if (!btn) return;
+  
   btn.disabled = bloquear;
   if (bloquear) {
-    btn.dataset.originalText = btn.innerText;
-    btn.innerText = 'Aguarde...';
+    btn.dataset.originalText = btn.textContent;
+    btn.textContent = 'Aguarde...';
   } else {
-    btn.innerText = btn.dataset.originalText || btn.innerText;
+    btn.textContent = btn.dataset.originalText || btn.textContent;
   }
 }
 
-// ------------------------
-// LOGIN DE PROFESSOR E ADMIN
-// ------------------------
+// ======================================
+// LOGIN
+// ======================================
 async function fazerLogin(tipo) {
   let btnId = '';
-
   try {
-    let body;
     const emailEl = document.getElementById(`login-${tipo}-email`);
     const senhaEl = document.getElementById(`login-${tipo}-senha`);
     const email = emailEl?.value.trim();
     const senha = senhaEl?.value;
-
     btnId = `btn-login-${tipo}`;
 
     if (!email || !senha) {
@@ -99,49 +107,43 @@ async function fazerLogin(tipo) {
       return;
     }
 
-    body = { email, senha };
     bloquearBotao(btnId, true);
+    const data = await apiFetch('/api/login', { email, senha });
 
-    const data = await apiService.login(body);
-    console.log('Resposta do servidor:', data);
+    console.log('Resposta do login:', data);
 
-    if (data?.sucesso && data.usuario) {
-      const usuarioParaSalvar = {
-        id: data.usuario.id ?? data.usuario._id ?? null,
-        nome: data.usuario.nome ?? data.usuario.name ?? '',
-        tipo: data.usuario.tipo ?? data.usuario.role ?? ''
-      };
-      localStorage.setItem('usuarioLogado', JSON.stringify(usuarioParaSalvar));
-
-      if (['administrador', 'admin'].includes(usuarioParaSalvar.tipo)) {
+    if (data?.sucesso) {
+      // Salvar informações do usuário
+      localStorage.setItem('usuarioLogado', JSON.stringify(data.usuario));
+      
+      // Redirecionar baseado no tipo
+      if (data.usuario.tipo === 'administrador') {
         window.location.href = 'admin.html';
-      } else if (usuarioParaSalvar.tipo === 'professor') {
+      } else if (data.usuario.tipo === 'professor') {
         window.location.href = 'pagina-professor.html';
       } else {
-        alert('Login efetuado, mas tipo de usuário não reconhecido.');
+        alert('Tipo de usuário não reconhecido: ' + data.usuario.tipo);
       }
     } else {
-      alert('Erro: ' + (data?.erro || 'Resposta inesperada do servidor.'));
+      alert('Erro: ' + (data?.erro || 'Credenciais inválidas.'));
     }
   } catch (error) {
     console.error('Erro no login:', error);
-    alert('Erro na conexão ou credenciais incorretas:\n' + (error.message || error));
+    alert('Falha ao fazer login. Tente novamente.');
   } finally {
     if (btnId) bloquearBotao(btnId, false);
   }
 }
 
-// ------------------------
-// CADASTRO DE PROFESSOR E ADMIN
-// ------------------------
+// ======================================
+// CADASTRO
+// ======================================
 async function fazerCadastro(tipo) {
   let btnId = '';
-
   try {
     const nome = document.getElementById(`cadastro-${tipo}-nome`)?.value.trim();
     const email = document.getElementById(`cadastro-${tipo}-email`)?.value.trim();
     const senha = document.getElementById(`cadastro-${tipo}-senha`)?.value;
-
     btnId = `btn-cadastrar-${tipo}`;
 
     if (!nome || !email || !senha) {
@@ -153,51 +155,35 @@ async function fazerCadastro(tipo) {
       return;
     }
 
-    const body = { nome, email, senha, tipo: tipo === 'admin' ? 'administrador' : 'professor' };
     bloquearBotao(btnId, true);
+    
+    const data = await apiFetch('/api/cadastro', {
+      nome,
+      email,
+      senha,
+      tipo: tipo === 'admin' ? 'administrador' : 'professor'
+    });
 
-    const data = await apiService.cadastro(body);
+    console.log('Resposta do cadastro:', data);
 
     if (data?.sucesso) {
-      alert('Cadastro realizado com sucesso!');
-      mostrarLogin(tipo);
-
-      ['nome', 'email', 'senha'].forEach(campo => {
-        const input = document.getElementById(`cadastro-${tipo}-${campo}`);
-        if (input) input.value = '';
-      });
+      alert(data.mensagem || 'Cadastro realizado com sucesso!');
+      mostrarLogin(tipo); // Voltar para tela de login
     } else {
-      alert('Erro: ' + (data?.erro || 'Resposta inesperada do servidor.'));
+      alert('Erro: ' + (data?.erro || 'Não foi possível cadastrar.'));
     }
   } catch (error) {
     console.error('Erro no cadastro:', error);
-    alert('Erro de conexão ou validação:\n' + (error.message || error));
+    alert('Erro de conexão. Verifique sua internet e tente novamente.');
   } finally {
     if (btnId) bloquearBotao(btnId, false);
   }
 }
 
-// ------------------------
-// VERIFICAÇÃO AUTOMÁTICA DE LOGIN AO CARREGAR PÁGINA
-// ------------------------
-document.addEventListener('DOMContentLoaded', () => {
-  const usuario = JSON.parse(localStorage.getItem('usuarioLogado') || 'null');
-  const current = window.location.pathname.split('/').pop() || 'index.html';
-
-  if (usuario) {
-    if (usuario.tipo === 'professor' && !current.includes('pagina-professor.html')) {
-      window.location.href = 'pagina-professor.html';
-      return;
-    } else if (['administrador', 'admin'].includes(usuario.tipo) && !current.includes('admin.html')) {
-      window.location.href = 'admin.html';
-      return;
-    }
-  } else {
-    if (!current.includes('index.html') && current !== '') {
-      window.location.href = 'index.html';
-      return;
-    }
-  }
-
+// ======================================
+// INICIALIZAÇÃO
+// ======================================
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🔧 Inicializando sistema de login...');
   voltarSelecao();
 });

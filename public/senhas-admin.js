@@ -1,21 +1,56 @@
-// ========================
-// FUNÇÕES DE GERENCIAMENTO DE SENHAS
-// ========================
+// ✅ CONFIGURAÇÃO DA API - URL DO SEU BACKEND NO RAILWAY
+const API_BASE_URL = 'https://prosemeddiariodigital-production.up.railway.app';
 
-// Verificar se é admin master e carregar usuários
-async function verificarPermissoesESenhas() {
-    try {
-        // ✅ CORRIGIDO: usando apiService
-        const result = await apiService.verificarPermissaoAdmin();
-        
-        if (result.sucesso && result.tem_permissao) {
-            document.getElementById('secaoAdminMaster').style.display = 'block';
-            await carregarUsuariosParaSenha();
+// ✅ SERVIÇO DE API SIMPLIFICADO
+const apiService = {
+    async request(endpoint, options = {}) {
+        try {
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers,
+                },
+                credentials: 'include',
+                ...options,
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Erro na requisição:', error);
+            return { sucesso: false, erro: error.message };
         }
-    } catch (error) {
-        console.error('Erro ao verificar permissões:', error);
+    },
+
+    // Verificar permissão de admin
+    async verificarPermissaoAdmin() {
+        return await this.request('/api/admin/verificar-master');
+    },
+
+    // Alterar senha do próprio usuário
+    async alterarSenha(dados) {
+        return await this.request('/alterar-senha', {
+            method: 'POST',
+            body: JSON.stringify(dados),
+        });
+    },
+
+    // Redefinir senha como admin
+    async redefinirSenhaAdmin(dados) {
+        return await this.request('/admin/redefinir-senha', {
+            method: 'POST',
+            body: JSON.stringify(dados),
+        });
+    },
+
+    // Obter usuários para admin
+    async getUsuariosAdmin() {
+        return await this.request('/api/admin/todos-usuarios');
     }
-}
+};
 
 // senhas-admin.js - Sistema de Gerenciamento de Senhas
 
@@ -45,7 +80,6 @@ async function alterarMinhaSenha() {
     try {
         mostrarMensagemSenha('⏳ Alterando senha...', 'info', mensagemDiv);
 
-        // ✅ CORRIGIDO: usando apiService
         const data = await apiService.alterarSenha({
             senha_atual: senhaAtual,
             nova_senha: novaSenha,
@@ -93,7 +127,6 @@ async function redefinirSenhaUsuario() {
     try {
         mostrarMensagemSenha('⏳ Redefinindo senha...', 'info', mensagemDiv);
 
-        // ✅ CORRIGIDO: usando apiService
         const data = await apiService.redefinirSenhaAdmin({
             usuario_id: usuarioId,
             nova_senha: novaSenha
@@ -118,7 +151,6 @@ async function carregarUsuariosParaRedefinicao() {
         const select = document.getElementById('selectUsuarioSenha');
         select.innerHTML = '<option value="">Carregando usuários...</option>';
 
-        // ✅ CORRIGIDO: usando apiService
         const data = await apiService.getUsuariosAdmin();
 
         if (data.sucesso) {
@@ -146,7 +178,6 @@ async function carregarUsuariosParaRedefinicao() {
 // ================== VERIFICAR PERMISSÕES DE ADMIN MASTER ==================
 async function verificarPermissoesAdminMaster() {
     try {
-        // ✅ CORRIGIDO: usando apiService
         const result = await apiService.verificarPermissaoAdmin();
         
         const secaoAdminMaster = document.getElementById('secaoAdminMaster');

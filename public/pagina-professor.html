@@ -6,7 +6,6 @@
   <title>Portal do Professor</title>
   <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles-professor.css">
-
 </head>
 <body>
   <!-- Cabeçalho -->
@@ -39,7 +38,7 @@
       <div class="botao" onclick="abrirFrequencia()">📊 Frequência</div>
       <div class="botao" onclick="abrirDiario()">🏫 Diário Digital</div>
       <div class="botao" onclick="abrirRelatorios()">📈 Relatórios</div>
-      <div class="botao" onclick="abrirnotas()">🗓️ Cronograma de Notas</div>
+      <div class="botao" onclick="abrirNotas()">📝 Sistema de Notas</div>
     </div>
   </main>
 
@@ -48,98 +47,6 @@
     © 2025 - Portal do Professor | Sistema Escolar Integrado
   </footer>
 
-  <!-- Scripts -->
-  <script>
-    // ===============================
-    // Verificação do Professor Logado
-    // ===============================
-    function verificarProfessor() {
-      const usuario = JSON.parse(localStorage.getItem('usuarioLogado'));
-      if (!usuario || usuario.tipo !== 'professor') {
-        window.location.href = 'index.html';
-      }
-      document.getElementById('nome-professor').textContent = usuario.nome;
-      atualizarData();
-    }
-
-    // ===============================
-    // Exibe Data Atual no Cabeçalho
-    // ===============================
-    function atualizarData() {
-      const data = new Date();
-      const opcoes = { day: '2-digit', month: 'long', year: 'numeric' };
-      document.getElementById('data-atual').textContent =
-        data.toLocaleDateString('pt-BR', opcoes);
-    }
-
-    // ===============================
-    // Botões de Navegação
-    // ===============================
-    function abrirFrequencia() { window.location.href = 'frequencia.html'; }
-    function abrirDiario() { window.location.href = 'diario.html'; }
-    function abrirRelatorios() { window.location.href = 'relatorios.html'; }
-    function abrirnotas() { window.location.href = 'notas.html'; }
-
-    // ===============================
-    // Funções Gerais
-    // ===============================
-    function sair() {
-      localStorage.removeItem('usuarioLogado');
-      window.location.href = 'index.html';
-    }
-
-    function toggleMenu() {
-      const menu = document.getElementById('dropdownMenu');
-      menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-    }
-
-    document.addEventListener('DOMContentLoaded', verificarProfessor);
-
-// Função para verificar se o professor está logado (ATUALIZADA)
-async function verificarProfessor() {
-  const usuario = JSON.parse(localStorage.getItem('usuarioLogado'));
-  
-  if (!usuario || usuario.tipo !== 'professor') {
-    window.location.href = 'index.html';
-    return;
-  }
-  
-  // Verifica no servidor se a sessão ainda é válida
-  try {
-    const data = await apiService.getUsuario();
-    
-    if (!data.sucesso) {
-      throw new Error('Sessão expirada');
-    }
-    
-    document.getElementById('nome-professor').textContent = usuario.nome;
-    atualizarData();
-  } catch (error) {
-    console.error('Erro ao verificar sessão:', error);
-    localStorage.removeItem('usuarioLogado');
-    window.location.href = 'index.html';
-  }
-}
-
-// Função para fazer logout (ATUALIZADA)
-async function sair() {
-  try {
-    await apiService.logout();
-  } catch (error) {
-    console.error('Erro no logout:', error);
-  } finally {
-    localStorage.removeItem('usuarioLogado');
-    window.location.href = 'index.html';
-  }
-}
-
-// Substitua a função verificarProfessor existente
-document.addEventListener('DOMContentLoaded', verificarProfessor);
-</script>
-
-<script type="module">
-  import { apiService } from './api-service.js';
-  import './script-pagina-professor.js';  // ou script correspondente à página
-</script>
+  <script src="script-professor.js"></script>
 </body>
 </html>

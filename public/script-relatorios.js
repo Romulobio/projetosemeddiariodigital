@@ -1,4 +1,43 @@
-// script-relatorios.js - VERSÃO CORRIGIDA (SEM CÓDIGO DO SERVIDOR)
+// ✅ CONFIGURAÇÃO DA API - URL DO SEU BACKEND NO RAILWAY
+const API_BASE_URL = 'https://prosemeddiariodigital-production.up.railway.app';
+
+// ✅ SERVIÇO DE API SIMPLIFICADO
+const apiService = {
+    async request(endpoint, options = {}) {
+        try {
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers,
+                },
+                credentials: 'include',
+                ...options,
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Erro na requisição:', error);
+            return { sucesso: false, erro: error.message };
+        }
+    },
+
+    // Buscar turmas e alunos do professor
+    async getAlunosTurmaProfessor() {
+        const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+        return await this.request(`/api/professor/${usuario.id}/turmas`);
+    },
+
+    // Gerar relatório de frequência
+    async gerarRelatorio(queryParams) {
+        return await this.request(`/api/relatorios/frequencia?${queryParams}`);
+    }
+};
+
+// script-relatorios.js - VERSÃO CORRIGIDA
 console.log('✅ Script de relatórios carregado!');
 
 // Variáveis globais
@@ -33,8 +72,8 @@ function configurarFiltrosPadrao() {
     const anoEl = document.getElementById('filtro-ano');
     
     if (mesEl) {
-        mesEl.value = agora.getMonth();
-        console.log('🔧 Mês padrão definido:', agora.getMonth());
+        mesEl.value = agora.getMonth() + 1; // Corrigido: meses de 1-12
+        console.log('🔧 Mês padrão definido:', agora.getMonth() + 1);
     }
     if (anoEl) {
         anoEl.value = agora.getFullYear();
@@ -46,7 +85,6 @@ function configurarFiltrosPadrao() {
 async function carregarTurmasDoProfessor() {
     console.log('🏫 Carregando turmas do professor...');
     try {
-        // ✅ CORRIGIDO: usando apiService
         const data = await apiService.getAlunosTurmaProfessor();
         
         if (data.sucesso && data.alunosPorTurma) {
@@ -181,9 +219,8 @@ async function carregarRelatorios() {
             queryParams.append('aluno', aluno);
         }
         
-        console.log(`🌐 Fazendo requisição para: /gerar-relatorio?${queryParams}`);
+        console.log(`🌐 Fazendo requisição para: /api/relatorios/frequencia?${queryParams}`);
         
-        // ✅ CORRIGIDO: usando apiService
         const data = await apiService.gerarRelatorio(queryParams.toString());
         
         console.log('📨 Resposta recebida:', data);

@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recuperar Senha - Sistema Escolar</title>
-  
     <style>
         * {
             margin: 0;
@@ -158,52 +157,6 @@
         </div>
     </div>
 
-    <script>
-        document.getElementById('recoveryForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('email').value.trim();
-            const messageDiv = document.getElementById('message');
-            
-            if (!email) {
-                showMessage('Por favor, informe seu email.', 'error');
-                return;
-            }
-
-            try {
-                showMessage('Enviando solicitação...', 'info');
-                
-                // ✅ CORRIGIDO: Usando apiService
-                const data = await apiService.solicitarRecuperacaoSenha({ email });
-                
-                if (data.sucesso) {
-                    showMessage(data.mensagem, 'success');
-                    document.getElementById('recoveryForm').reset();
-                    
-                    // Se estiver em desenvolvimento, mostra o link no console
-                    if (data.link_teste) {
-                        console.log('🔗 Link de recuperação (desenvolvimento):', data.link_teste);
-                        showMessage(data.mensagem + '<br><br><strong>Link para testes:</strong><br>' + data.link_teste, 'info');
-                    }
-                } else {
-                    showMessage(data.erro, 'error');
-                }
-            } catch (error) {
-                console.error('Erro:', error);
-                showMessage('Erro de conexão. Tente novamente.', 'error');
-            }
-        });
-
-        function showMessage(text, type) {
-            const messageDiv = document.getElementById('message');
-            messageDiv.innerHTML = text;
-            messageDiv.className = 'message ' + type;
-            messageDiv.style.display = 'block';
-        }
-    </script>
-    <script type="module">
-  import { apiService } from './api-service.js';
-  import './script-senha.js';  // ou script correspondente à página
-</script>
+    <script src="script-recuperar-senha.js"></script>
 </body>
 </html>

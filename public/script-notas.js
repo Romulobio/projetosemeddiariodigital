@@ -1,5 +1,60 @@
-// ⭐⭐ ADICIONE ISSO NO TOPO DE CADA ARQUIVO .js ⭐⭐
-// REMOVIDO: API_URL e apiFetch - AGORA USA apiService
+// ⭐⭐ SISTEMA DE NOTAS - CONECTADO AO RAILWAY ⭐⭐
+
+console.log('✅ Script de notas carregado!');
+
+// ✅ CONFIGURAÇÃO DA API - URL DO SEU BACKEND NO RAILWAY
+const API_BASE_URL = 'https://prosemeddiariodigital-production.up.railway.app';
+
+// ✅ SERVIÇO DE API SIMPLIFICADO
+const apiService = {
+    async request(endpoint, options = {}) {
+        try {
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers,
+                },
+                credentials: 'include', // IMPORTANTE: para enviar cookies de sessão
+                ...options,
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Erro na requisição:', error);
+            return { sucesso: false, erro: error.message };
+        }
+    },
+
+    // Buscar turmas do professor (CORRIGIDO: rota correta)
+    async getTurmasNotasProfessor() {
+        const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+        return await this.request(`/api/professor/${usuario.id}/turmas`);
+    },
+
+    // Buscar notas da turma (CORRIGIDO: rota correta)
+    async getNotasTurma(turmaId, unidade) {
+        return await this.request(`/api/turmas/${turmaId}/notas?unidade=${unidade}`);
+    },
+
+    // Buscar médias anuais (CORRIGIDO: rota correta)
+    async getMediasAnuais(turmaId) {
+        return await this.request(`/api/turmas/${turmaId}/medias-anuais`);
+    },
+
+    // Salvar notas (CORRIGIDO: rota correta)
+    async salvarNotas(dadosNotas) {
+        return await this.request('/api/notas/salvar', {
+            method: 'POST',
+            body: JSON.stringify(dadosNotas),
+        });
+    }
+};
+
+// ⭐⭐ SISTEMA DE NOTAS - CONECTADO AO RAILWAY ⭐⭐
 
 console.log('✅ Script de notas carregado!');
 
@@ -16,14 +71,24 @@ let estado = {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ DOM completamente carregado - Sistema de Notas');
     
+    // Configurar data atual
+    const dataElement = document.getElementById('data-relatorio');
+    if (dataElement) {
+        const agora = new Date();
+        dataElement.textContent = agora.toLocaleDateString('pt-BR');
+    }
+    
     carregarTurmasProfessor();
     configurarEventListeners();
     
     // Configurar usuário logado
     const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
     if (usuario.nome) {
-        document.getElementById('userName').textContent = usuario.nome;
-        document.getElementById('userInitial').textContent = usuario.nome.charAt(0).toUpperCase();
+        // Se houver elementos para exibir o nome do usuário, preencha-os
+        const userNameElement = document.getElementById('userName');
+        const userInitialElement = document.getElementById('userInitial');
+        if (userNameElement) userNameElement.textContent = usuario.nome;
+        if (userInitialElement) userInitialElement.textContent = usuario.nome.charAt(0).toUpperCase();
     }
 });
 
@@ -65,7 +130,7 @@ async function carregarTurmasProfessor() {
         
         selectTurma.innerHTML = '<option value="">Carregando turmas...</option>';
         
-        // ✅ CORRIGIDO: usando apiService
+        // ✅ CORRIGIDO: usando apiService com rota correta
         const data = await apiService.getTurmasNotasProfessor();
         console.log('📡 Resposta da API:', data);
         
@@ -140,7 +205,7 @@ async function carregarNotas() {
     const turmaId = estado.alunos[0].turma_id;
     
     try {
-        // ✅ CORRIGIDO: usando apiService
+        // ✅ CORRIGIDO: usando apiService com rota correta
         const data = await apiService.getNotasTurma(turmaId, estado.unidadeSelecionada);
         
         if (data.sucesso) {
@@ -175,7 +240,7 @@ async function carregarMediasAnuais() {
     const turmaId = estado.alunos[0].turma_id;
     
     try {
-        // ✅ CORRIGIDO: usando apiService
+        // ✅ CORRIGIDO: usando apiService com rota correta
         const data = await apiService.getMediasAnuais(turmaId);
         
         if (data.sucesso) {
@@ -270,7 +335,7 @@ function calcularMediaAluno(alunoId) {
                    value="0"
                    data-aluno="${alunoId}" data-tipo="recuperacao"
                    placeholder="Nota recuperação"
-                   oninput="calcularMediaAluno(${alunoId})">
+                   oninput="calcularMediaAluno(${aluno.id})">
         `;
         recuperacaoCell.className = 'coluna-recuperacao recuperacao-sim';
     } 
@@ -406,7 +471,7 @@ function criarLinhaTabela(aluno, notas, mediaUnidade, recuperacao) {
                         value="${notaRecuperacao}"
                         data-aluno="${aluno.id}" data-tipo="recuperacao"
                         placeholder="Nota recuperação"
-                        oninput="calcularMediaAluno(${alunoId})">` : 
+                        oninput="calcularMediaAluno(${aluno.id})">` : 
                 "Não"
             }
         </td>

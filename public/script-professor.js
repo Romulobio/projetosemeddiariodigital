@@ -1,3 +1,48 @@
+// ✅ CONFIGURAÇÃO DA API - URL DO SEU BACKEND NO RAILWAY
+const API_BASE_URL = 'https://prosemeddiariodigital-production.up.railway.app';
+
+// ✅ SERVIÇO DE API SIMPLIFICADO
+const apiService = {
+    async request(endpoint, options = {}) {
+        try {
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers,
+                },
+                credentials: 'include',
+                ...options,
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Erro na requisição:', error);
+            return { sucesso: false, erro: error.message };
+        }
+    },
+
+    // Verificar autenticação
+    async checkAuth() {
+        return await this.request('/check-auth');
+    },
+
+    // Fazer logout
+    async logout() {
+        return await this.request('/logout', {
+            method: 'POST'
+        });
+    },
+
+    // Obter dados do usuário
+    async getUsuario() {
+        return await this.request('/api/dados-usuario');
+    }
+};
+
 // script-professor.js - VERSÃO CORRIGIDA
 console.log('✅ Script do professor carregado!');
 
@@ -6,9 +51,7 @@ async function verificarAutenticacao() {
     try {
         console.log('🔐 Verificando autenticação...');
         
-        // ✅ CORRIGIDO: usando apiFetch
-        const response = await apiFetch('/check-auth');
-        const data = await response.json();
+        const data = await apiService.checkAuth();
         
         console.log('📊 Resposta da autenticação:', data);
         
@@ -20,13 +63,13 @@ async function verificarAutenticacao() {
             } else {
                 console.error('❌ Usuário não é professor. Tipo:', data.usuario.tipo);
                 alert('Acesso permitido apenas para professores!');
-                window.location.href = '/';
+                window.location.href = 'index.html';
                 return false;
             }
         } else {
             console.error('❌ Não autenticado:', data.erro);
             alert('Sessão expirada! Faça login novamente.');
-            window.location.href = '/';
+            window.location.href = 'index.html';
             return false;
         }
     } catch (error) {
@@ -41,7 +84,7 @@ function carregarDadosProfessor(usuario) {
     console.log('👤 Carregando dados do professor:', usuario);
     
     document.getElementById('nome-professor').textContent = usuario.nome;
-    document.getElementById('colegio-professor').textContent = 'Colégio Municipal';
+    document.getElementById('colegio-professor').textContent = 'Colégio Municipal Monsenhor Galvão';
     
     // Também salva no localStorage para backup
     localStorage.setItem('usuarioLogado', JSON.stringify(usuario));
@@ -73,7 +116,7 @@ function toggleMenu() {
 // Fechar menu ao clicar fora
 document.addEventListener('click', function(event) {
     const menu = document.getElementById('dropdownMenu');
-    const menuBtn = document.querySelector('.menu-btn');
+    const menuBtn = document.querySelector('.header-right button');
     
     if (menu && menuBtn && !menu.contains(event.target) && !menuBtn.contains(event.target)) {
         menu.style.display = 'none';
@@ -119,27 +162,19 @@ async function sair() {
     try {
         console.log('🚪 Saindo do sistema...');
         
-        // ✅ CORRIGIDO: usando apiFetch
-        const response = await apiFetch('/logout', { 
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const data = await response.json();
+        const data = await apiService.logout();
         
         if (data.sucesso) {
             console.log('✅ Logout realizado com sucesso');
             localStorage.removeItem('usuarioLogado');
-            window.location.href = '/';
+            window.location.href = 'index.html';
         } else {
             console.error('❌ Erro no logout:', data.erro);
-            window.location.href = '/';
+            window.location.href = 'index.html';
         }
     } catch (error) {
         console.error('💥 Erro ao sair:', error);
-        window.location.href = '/';
+        window.location.href = 'index.html';
     }
 }
 
