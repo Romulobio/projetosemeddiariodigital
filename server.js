@@ -11,12 +11,21 @@ import mysql from 'mysql2/promise';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import cors from 'cors';
-
 dotenv.config();
 
+console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'desenvolvimento'}`);
+
+
 const app = express();
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const MySQLStore = MySQLStoreImport(session);
+
+// ========================
+// SERVIR ARQUIVOS ESTÁTICOS
+// ========================
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ========================
 // CORS PARA DESENVOLVIMENTO E PRODUÇÃO
@@ -40,7 +49,6 @@ app.use(cors(corsOptions));
 // ========================
 console.log('🔧 Configurando conexão com MySQL (serviços separados)...');
 
-// CONFIGURAÇÃO PARA SERVIÇOS EM PROJETOS DIFERENTES
 const dbConfig = {
   host: process.env.MYSQLHOST,        // Vem das variáveis Railway
   port: process.env.MYSQLPORT,        // Vem das variáveis Railway  
@@ -120,6 +128,7 @@ app.use(session({
 // ========================
 // CONFIGURAÇÃO DO EXPRESS
 // ========================
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -1191,7 +1200,7 @@ app.use((req, res) => {
 // ========================
 // SERVIR FRONTEND (HTML, CSS, JS)
 // ========================
-app.use(express.static(path.join(__dirname, 'public')));
+
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
