@@ -33,6 +33,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cors(corsOptions));
 
 // ========================
 // CORS PARA DESENVOLVIMENTO E PRODUÇÃO
@@ -48,8 +49,6 @@ const corsOptions = {
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
-
-app.use(cors(corsOptions));
 
 // ========================
 // CONEXÃO COM O BANCO DE DADOS (SERVIÇOS SEPARADOS)
@@ -176,46 +175,6 @@ function fazerLogin(usuario, res, req) {
   res.json({ sucesso: true, mensagem: 'Login realizado com sucesso!', usuario: req.session.usuario });
 }
 
-// ========================
-// ROTAS PÚBLICAS
-// ========================
-app.get('/', (req, res) => {
-  res.json({
-    message: 'API Prosemed Diário Digital - Online com Railway',
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0',
-    database: 'Railway MySQL'
-  });
-});
-
-app.get('/health', async (req, res) => {
-  try {
-    await db.execute('SELECT 1');
-    res.status(200).json({ 
-      status: 'healthy', 
-      database: 'connected', 
-      timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV || 'development'
-    });
-  } catch (err) {
-    res.status(500).json({ 
-      status: 'unhealthy', 
-      database: 'disconnected',
-      error: err.message 
-    });
-  }
-});
-
-app.get('/status', (req, res) => {
-  res.json({
-    app: 'Prosemed Diário Digital',
-    status: 'operacional',
-    environment: process.env.NODE_ENV || 'development',
-    port: process.env.PORT || 8080,
-    timestamp: new Date().toISOString()
-  });
-});
 
 // ========================
 // ROTAS DE AUTENTICAÇÃO
@@ -1182,6 +1141,50 @@ app.get('/debug/estrutura/usuarios', async (req, res) => {
   }
 });
 
+// ===============================
+// ROTA: Buscar turmas e alunos do professor
+// ===============================
+app.get('/api/professor/turmas-alunos', async (req, res) => {
+  try {
+    const professorId = req.query.professorId;
+
+    if (!professorId) {
+      return res.status(400).json({ success: false, message: 'ID do professor não fornecido.' });
+    }
+
+    const [turmas] = await db.query(
+      `SELECT t.id, t.nome_turma, d.nome_disciplina
+       FROM turmas t
+       JOIN disciplinas d ON t.disciplina_id = d.id
+       JOIN professor_disciplinas pd ON pd.turma_id = t.id
+       WHERE pd.professor_id = ?`,
+      [professorId]
+    );
+
+    const [alunos] = await db.query(
+      `SELECT a.id, a.nome, a.turma_id
+       FROM alunos a
+       JOIN turmas t ON a.turma_id = t.id
+       JOIN professor_disciplinas pd ON pd.turma_id = t.id
+       WHERE pd.professor_id = ?`,
+      [professorId]
+    );
+
+    res.json({
+      success: true,
+      turmas,
+      alunos
+    });
+
+  } catch (error) {
+    console.error('Erro ao buscar turmas e alunos:', error);
+    res.status(500).json({ success: false, message: 'Erro interno ao buscar dados.' });
+  }
+});
+// ========================
+// SERVIR FRONTEND (HTML, CSS, JS)
+// ========================
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -1196,19 +1199,6 @@ app.use((err, req, res, next) => {
     erro: 'Erro interno do servidor',
     detalhes: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
-});
-
-app.use((req, res) => {
-  res.status(404).json({ sucesso: false, erro: 'Rota não encontrada' });
-});
-
-// ========================
-// SERVIR FRONTEND (HTML, CSS, JS)
-// ========================
-
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ========================
