@@ -1,5 +1,5 @@
 // ======================================
-// script-login.js - VERSÃO FINAL CORRIGIDA (2025)
+// script-login.js - VERSÃO OTIMIZADA
 // ======================================
 
 // Detecta automaticamente se está em localhost ou produção
@@ -7,7 +7,7 @@ const BASE_URL = window.location.hostname.includes("localhost")
   ? "http://localhost:3000" // Backend local
   : "https://prosemeddiariodigital-production.up.railway.app"; // Backend Railway
 
-console.log("🌐 Backend ativo:", BASE_URL);
+console.log("🌐 Backend ativo:", BASE_URL );
 
 // ======================================
 // Função genérica de requisição à API
@@ -18,113 +18,107 @@ async function apiFetch(endpoint, data) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-      credentials: 'include', // importante para sessions
+      credentials: 'include', // Importante para sessions
     });
 
+    // Captura a resposta de erro para exibir no alerta
+    const responseData = await response.json();
+
     if (!response.ok) {
-      throw new Error(`Erro HTTP: ${response.status}`);
+      // Usa a mensagem de erro do servidor, se disponível
+      throw new Error(responseData.erro || `Erro HTTP: ${response.status}`);
     }
 
-    return await response.json();
+    return responseData;
   } catch (error) {
     console.error('❌ Erro na comunicação com o servidor:', error);
-    alert('Erro ao conectar ao servidor. Verifique sua conexão.');
+    // Exibe o erro específico no alerta para o usuário
+    alert(`Erro ao conectar ao servidor: ${error.message}`);
     throw error;
   }
 }
 
 // ======================================
-// Funções de exibição e controle da interface
+// Funções de controle da interface (UI)
 // ======================================
-function esconderTodos() {
-  const ids = [
-    'tipo-login-container',
-    'login-professor-container',
-    'login-admin-container',
-    'cadastro-professor-container',
-    'cadastro-admin-container'
-  ];
 
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.hidden = true;
+/**
+ * Função central para gerenciar qual tela é exibida.
+ * @param {string} telaId O ID do contêiner a ser mostrado.
+ */
+function mostrarTela(telaId) {
+  // Esconde todos os contêineres principais de uma vez
+  document.querySelectorAll('.login-container').forEach(container => {
+    container.hidden = true;
   });
+
+  // Mostra apenas o contêiner desejado
+  const telaParaMostrar = document.getElementById(telaId);
+  if (telaParaMostrar) {
+    telaParaMostrar.hidden = false;
+  }
 }
-// ==================================================
-// Torna funções acessíveis ao HTML (escopo global)
-// ==================================================
+
+// Torna as funções de UI acessíveis globalmente para o HTML
 window.mostrarLogin = function (tipo) {
-  document.getElementById("tipo-login-container").hidden = true;
-  document.getElementById(`login-${tipo}-container`).hidden = false;
+  mostrarTela(`login-${tipo}-container`);
 };
 
-window.voltarSelecao = function () {
-  document.getElementById("login-professor-container").hidden = true;
-  document.getElementById("login-admin-container").hidden = true;
-  document.getElementById("cadastro-professor-container").hidden = true;
-  document.getElementById("cadastro-admin-container").hidden = true;
-  document.getElementById("tipo-login-container").hidden = false;
-};
-
-// ✅ Função global: mostrar tela de cadastro
 window.mostrarCadastro = function (tipo) {
-  esconderTodos();
-  const el = document.getElementById(`cadastro-${tipo}-container`);
-  if (el) {
-    el.hidden = false;
-    const nome = document.getElementById(`cadastro-${tipo}-nome`);
-    const email = document.getElementById(`cadastro-${tipo}-email`);
-    const senha = document.getElementById(`cadastro-${tipo}-senha`);
-    if (nome) nome.value = '';
-    if (email) email.value = '';
-    if (senha) senha.value = '';
+  const telaId = `cadastro-${tipo}-container`;
+  mostrarTela(telaId);
+
+  // Limpa os campos do formulário de cadastro ao exibi-lo
+  const form = document.getElementById(telaId);
+  if (form) {
+    form.querySelectorAll('input').forEach(input => input.value = '');
   }
 };
 
-// ✅ Função global: voltar para a tela de seleção
 window.voltarSelecao = function () {
-  esconderTodos();
-  const tipo = document.getElementById('tipo-login-container');
-  if (tipo) tipo.hidden = false;
+  mostrarTela('tipo-login-container');
 };
 
-// Bloqueia botão enquanto processa
+/**
+ * Bloqueia ou desbloqueia um botão para evitar cliques duplos.
+ * @param {string} botaoId O ID do botão.
+ * @param {boolean} bloquear True para bloquear, false para desbloquear.
+ */
 function bloquearBotao(botaoId, bloquear = true) {
   const btn = document.getElementById(botaoId);
   if (!btn) return;
 
   btn.disabled = bloquear;
   if (bloquear) {
-    btn.dataset.originalText = btn.textContent;
+    btn.dataset.originalText = btn.textContent; // Salva o texto original
     btn.textContent = 'Aguarde...';
   } else {
+    // Restaura o texto original salvo anteriormente
     btn.textContent = btn.dataset.originalText || btn.textContent;
   }
 }
 
 // ======================================
-// LOGIN
+// LÓGICA DE LOGIN
 // ======================================
 window.fazerLogin = async function (tipo) {
-  let btnId = '';
+  const btnId = `btn-login-${tipo}`;
+  bloquearBotao(btnId, true);
+
   try {
     const email = document.getElementById(`login-${tipo}-email`)?.value.trim();
     const senha = document.getElementById(`login-${tipo}-senha`)?.value;
-    btnId = `btn-login-${tipo}`;
 
     if (!email || !senha) {
       alert('Preencha e-mail e senha!');
-      return;
+      return; // Não continua se os campos estiverem vazios
     }
 
-    bloquearBotao(btnId, true);
-
-    const data = await apiFetch('/api/login', { email, senha });
-    console.log('🔑 Resposta do login:', data);
+    const data = await apiFetch('/api/login', { email, senha, tipo });
 
     if (data?.sucesso) {
       localStorage.setItem('usuarioLogado', JSON.stringify(data.usuario));
-
+      // Redireciona com base no tipo de usuário retornado pela API
       if (data.usuario.tipo === 'administrador') {
         window.location.href = 'admin.html';
       } else if (data.usuario.tipo === 'professor') {
@@ -132,27 +126,26 @@ window.fazerLogin = async function (tipo) {
       } else {
         alert('Tipo de usuário não reconhecido: ' + data.usuario.tipo);
       }
-    } else {
-      alert('Erro: ' + (data?.erro || 'Credenciais inválidas.'));
     }
+    // A função apiFetch já trata os alertas de erro
   } catch (error) {
-    console.error('❌ Erro no login:', error);
-    alert('Falha ao fazer login. Tente novamente.');
+    console.error('❌ Falha no processo de login:', error);
   } finally {
-    if (btnId) bloquearBotao(btnId, false);
+    bloquearBotao(btnId, false); // Garante que o botão seja desbloqueado sempre
   }
 };
 
 // ======================================
-// CADASTRO
+// LÓGICA DE CADASTRO
 // ======================================
 window.fazerCadastro = async function (tipo) {
-  let btnId = '';
+  const btnId = `btn-cadastrar-${tipo}`;
+  bloquearBotao(btnId, true);
+
   try {
     const nome = document.getElementById(`cadastro-${tipo}-nome`)?.value.trim();
     const email = document.getElementById(`cadastro-${tipo}-email`)?.value.trim();
     const senha = document.getElementById(`cadastro-${tipo}-senha`)?.value;
-    btnId = `btn-cadastrar-${tipo}`;
 
     if (!nome || !email || !senha) {
       alert('Preencha todos os campos!');
@@ -163,35 +156,26 @@ window.fazerCadastro = async function (tipo) {
       return;
     }
 
-    bloquearBotao(btnId, true);
-
-    const data = await apiFetch('/api/cadastro', {
-      nome,
-      email,
-      senha,
-      tipo: tipo === 'admin' ? 'administrador' : 'professor',
-    });
-
-    console.log('📝 Resposta do cadastro:', data);
+    const tipoDeConta = tipo === 'admin' ? 'administrador' : 'professor';
+    const data = await apiFetch('/api/cadastro', { nome, email, senha, tipo: tipoDeConta });
 
     if (data?.sucesso) {
-      alert(data.mensagem || 'Cadastro realizado com sucesso!');
-      mostrarLogin(tipo);
-    } else {
-      alert('Erro: ' + (data?.erro || 'Não foi possível cadastrar.'));
+      alert(data.mensagem || 'Cadastro realizado com sucesso! Faça o login.');
+      window.mostrarLogin(tipo); // Leva para a tela de login correspondente
     }
+    // A função apiFetch já trata os alertas de erro
   } catch (error) {
-    console.error('❌ Erro no cadastro:', error);
-    alert('Erro de conexão. Verifique sua internet e tente novamente.');
+    console.error('❌ Falha no processo de cadastro:', error);
   } finally {
-    if (btnId) bloquearBotao(btnId, false);
+    bloquearBotao(btnId, false);
   }
 };
 
 // ======================================
-// INICIALIZAÇÃO
+// INICIALIZAÇÃO DO SCRIPT
 // ======================================
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('✅ Sistema de login carregado.');
+  console.log('✅ Sistema de login carregado e pronto.');
+  // Garante que a tela inicial de seleção seja sempre a primeira a ser exibida
   window.voltarSelecao();
 });
