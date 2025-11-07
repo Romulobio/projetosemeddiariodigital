@@ -1,86 +1,96 @@
 // ======================================
-// script-login.js - VERSÃO CORRIGIDA
+// script-login.js - VERSÃO FINAL CORRIGIDA (2025)
 // ======================================
 
-// URL base do backend (Railway)
-const BASE_URL = 'https://prosemeddiariodigital-production.up.railway.app';
+// Detecta automaticamente se está em localhost ou produção
+const BASE_URL = window.location.hostname.includes("localhost")
+  ? "http://localhost:3000" // Backend local
+  : "https://prosemeddiariodigital-production.up.railway.app"; // Backend Railway
 
+console.log("🌐 Backend ativo:", BASE_URL);
+
+// ======================================
 // Função genérica de requisição à API
+// ======================================
 async function apiFetch(endpoint, data) {
   try {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-      credentials: 'include', // Importante para sessions
+      credentials: 'include', // importante para sessions
     });
-    
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`Erro HTTP: ${response.status}`);
     }
-    
+
     return await response.json();
   } catch (error) {
-    console.error('Erro na comunicação com o servidor:', error);
+    console.error('❌ Erro na comunicação com o servidor:', error);
     alert('Erro ao conectar ao servidor. Verifique sua conexão.');
     throw error;
   }
 }
 
 // ======================================
-// Funções de exibição e controle da UI
+// Funções de exibição e controle da interface
 // ======================================
 function esconderTodos() {
-  const containers = [
+  const ids = [
     'tipo-login-container',
     'login-professor-container',
     'login-admin-container',
     'cadastro-professor-container',
     'cadastro-admin-container'
   ];
-  
-  containers.forEach(id => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.hidden = true;
-    }
+
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.hidden = true;
   });
 }
 
-function mostrarLogin(tipo) {
+// ✅ Função global: mostrar tela de login
+window.mostrarLogin = function (tipo) {
   esconderTodos();
-  const container = document.getElementById(`login-${tipo}-container`);
-  if (container) {
-    container.hidden = false;
-    // Limpar campos ao mostrar
-    document.getElementById(`login-${tipo}-email`).value = '';
-    document.getElementById(`login-${tipo}-senha`).value = '';
+  const el = document.getElementById(`login-${tipo}-container`);
+  if (el) {
+    el.hidden = false;
+    const email = document.getElementById(`login-${tipo}-email`);
+    const senha = document.getElementById(`login-${tipo}-senha`);
+    if (email) email.value = '';
+    if (senha) senha.value = '';
   }
-}
+};
 
-function mostrarCadastro(tipo) {
+// ✅ Função global: mostrar tela de cadastro
+window.mostrarCadastro = function (tipo) {
   esconderTodos();
-  const container = document.getElementById(`cadastro-${tipo}-container`);
-  if (container) {
-    container.hidden = false;
-    // Limpar campos ao mostrar
-    document.getElementById(`cadastro-${tipo}-nome`).value = '';
-    document.getElementById(`cadastro-${tipo}-email`).value = '';
-    document.getElementById(`cadastro-${tipo}-senha`).value = '';
+  const el = document.getElementById(`cadastro-${tipo}-container`);
+  if (el) {
+    el.hidden = false;
+    const nome = document.getElementById(`cadastro-${tipo}-nome`);
+    const email = document.getElementById(`cadastro-${tipo}-email`);
+    const senha = document.getElementById(`cadastro-${tipo}-senha`);
+    if (nome) nome.value = '';
+    if (email) email.value = '';
+    if (senha) senha.value = '';
   }
-}
+};
 
-function voltarSelecao() {
+// ✅ Função global: voltar para a tela de seleção
+window.voltarSelecao = function () {
   esconderTodos();
-  document.getElementById('tipo-login-container').hidden = false;
-}
+  const tipo = document.getElementById('tipo-login-container');
+  if (tipo) tipo.hidden = false;
+};
 
+// Bloqueia botão enquanto processa
 function bloquearBotao(botaoId, bloquear = true) {
   const btn = document.getElementById(botaoId);
   if (!btn) return;
-  
+
   btn.disabled = bloquear;
   if (bloquear) {
     btn.dataset.originalText = btn.textContent;
@@ -89,32 +99,15 @@ function bloquearBotao(botaoId, bloquear = true) {
     btn.textContent = btn.dataset.originalText || btn.textContent;
   }
 }
-// Função para alternar entre os tipos de login
-function mostrarLogin(tipo) {
-  // Esconde todas as seções de login
-  document.querySelectorAll('.login-section').forEach(sec => {
-    sec.style.display = 'none';
-  });
-
-  // Mostra apenas a seção do tipo escolhido
-  const section = document.getElementById(`login-${tipo}`);
-  if (section) {
-    section.style.display = 'block';
-  } else {
-    console.error(`Seção de login não encontrada: login-${tipo}`);
-  }
-}
 
 // ======================================
 // LOGIN
 // ======================================
-async function fazerLogin(tipo) {
+window.fazerLogin = async function (tipo) {
   let btnId = '';
   try {
-    const emailEl = document.getElementById(`login-${tipo}-email`);
-    const senhaEl = document.getElementById(`login-${tipo}-senha`);
-    const email = emailEl?.value.trim();
-    const senha = senhaEl?.value;
+    const email = document.getElementById(`login-${tipo}-email`)?.value.trim();
+    const senha = document.getElementById(`login-${tipo}-senha`)?.value;
     btnId = `btn-login-${tipo}`;
 
     if (!email || !senha) {
@@ -123,15 +116,13 @@ async function fazerLogin(tipo) {
     }
 
     bloquearBotao(btnId, true);
-    const data = await apiFetch('/api/login', { email, senha });
 
-    console.log('Resposta do login:', data);
+    const data = await apiFetch('/api/login', { email, senha });
+    console.log('🔑 Resposta do login:', data);
 
     if (data?.sucesso) {
-      // Salvar informações do usuário
       localStorage.setItem('usuarioLogado', JSON.stringify(data.usuario));
-      
-      // Redirecionar baseado no tipo
+
       if (data.usuario.tipo === 'administrador') {
         window.location.href = 'admin.html';
       } else if (data.usuario.tipo === 'professor') {
@@ -143,17 +134,17 @@ async function fazerLogin(tipo) {
       alert('Erro: ' + (data?.erro || 'Credenciais inválidas.'));
     }
   } catch (error) {
-    console.error('Erro no login:', error);
+    console.error('❌ Erro no login:', error);
     alert('Falha ao fazer login. Tente novamente.');
   } finally {
     if (btnId) bloquearBotao(btnId, false);
   }
-}
+};
 
 // ======================================
 // CADASTRO
 // ======================================
-async function fazerCadastro(tipo) {
+window.fazerCadastro = async function (tipo) {
   let btnId = '';
   try {
     const nome = document.getElementById(`cadastro-${tipo}-nome`)?.value.trim();
@@ -171,34 +162,34 @@ async function fazerCadastro(tipo) {
     }
 
     bloquearBotao(btnId, true);
-    
+
     const data = await apiFetch('/api/cadastro', {
       nome,
       email,
       senha,
-      tipo: tipo === 'admin' ? 'administrador' : 'professor'
+      tipo: tipo === 'admin' ? 'administrador' : 'professor',
     });
 
-    console.log('Resposta do cadastro:', data);
+    console.log('📝 Resposta do cadastro:', data);
 
     if (data?.sucesso) {
       alert(data.mensagem || 'Cadastro realizado com sucesso!');
-      mostrarLogin(tipo); // Voltar para tela de login
+      mostrarLogin(tipo);
     } else {
       alert('Erro: ' + (data?.erro || 'Não foi possível cadastrar.'));
     }
   } catch (error) {
-    console.error('Erro no cadastro:', error);
+    console.error('❌ Erro no cadastro:', error);
     alert('Erro de conexão. Verifique sua internet e tente novamente.');
   } finally {
     if (btnId) bloquearBotao(btnId, false);
   }
-}
+};
 
 // ======================================
 // INICIALIZAÇÃO
 // ======================================
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('🔧 Inicializando sistema de login...');
-  voltarSelecao();
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('✅ Sistema de login carregado.');
+  window.voltarSelecao();
 });
