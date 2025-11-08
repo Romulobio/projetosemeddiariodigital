@@ -1,6 +1,7 @@
 {
   "name": "projeto-semed",
   "version": "1.0.0",
+  "type": "module",
   "description": "Projeto completo (frontend + backend) para deploy no Railway",
   "main": "server.js",
   "scripts": {
