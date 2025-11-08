@@ -25,7 +25,7 @@ const MySQLStore = MySQLStoreImport(session);
 
 app.use(cors({
   origin: 'https://divine-tranquility-production.up.railway.app', // domínio do frontend
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
 
