@@ -23,11 +23,6 @@ const app = express();
 const MySQLStore = MySQLStoreImport(session);
 
 // ========================
-// SERVIR ARQUIVOS ESTÁTICOS
-// ========================
-app.use(express.static(path.join(__dirname, 'public')));
-
-// ========================
 // CONFIGURAÇÃO DO EXPRESS
 // ========================
 
@@ -1180,13 +1175,6 @@ app.get('/api/professor/turmas-alunos', async (req, res) => {
     console.error('Erro ao buscar turmas e alunos:', error);
     res.status(500).json({ success: false, message: 'Erro interno ao buscar dados.' });
   }
-});
-// ========================
-// SERVIR FRONTEND (HTML, CSS, JS)
-// ========================
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ========================
