@@ -23,26 +23,66 @@ console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'desenvolvimento'}`);
 const app = express();
 const MySQLStore = MySQLStoreImport(session);
 
+app.use(express.json());
+
+// ========================
+// CONFIGURAÇÃO DE CORS
+// ========================
+const allowedOrigins = [
+  'https://divine-tranquility-production.up.railway.app',
+  'http://localhost:5500',
+  'http://127.0.0.1:5500'
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Permite requests sem origin (como mobile apps ou curl)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Não permitido por CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+
+// Middleware para headers adicionais (opcional, mas pode ajudar)
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  
+  // Se for uma requisição OPTIONS, retorna 200
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+// Aplica CORS para todas as rotas
 app.use(cors({
   origin: 'https://divine-tranquility-production.up.railway.app', // domínio do frontend
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
 
-app.use(express.json());
+// Middleware personalizado para headers CORS adicionais
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+});
 
-// ========================
-// CORS PARA DESENVOLVIMENTO E PRODUÇÃO
-// ========================
-const corsOptions = {
-  origin: [
-        'http://localhost:5500', // se testar localmente
-    'http://127.0.0.1:5500'
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-};
+// Handler específico para requisições OPTIONS (preflight)
+app.options('*', cors(corsOptions));
 
 // ========================
 // CONFIGURAÇÃO DO EXPRESS
@@ -162,6 +202,16 @@ function verificarAdminMaster(req, res, next) {
 }
 
 // ========================
+// MIDDLEWARE DE LOG PARA DEBUG
+// ========================
+app.use((req, res, next) => {
+  console.log(`📨 ${req.method} ${req.path}`);
+  console.log(`🌐 Origin: ${req.headers.origin}`);
+  console.log(`📋 Headers:`, req.headers);
+  next();
+});
+
+// ========================
 // FUNÇÕES AUXILIARES
 // ========================
 function fazerLogin(usuario, res, req) {
@@ -274,6 +324,10 @@ app.post('/logout', verificarAuth, (req, res) => {
 // Rota para verificar autenticação
 app.get('/check-auth', verificarAuth, (req, res) => {
   res.json({ sucesso: true, usuario: req.session.usuario });
+});
+
+app.get('/api/test-cors', (req, res) => {
+  res.json({ message: 'CORS está funcionando!' });
 });
 
 // ========================

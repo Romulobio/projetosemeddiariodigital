@@ -10,34 +10,74 @@ const BASE_URL = window.location.hostname.includes("localhost")
 console.log("🌐 Backend ativo:", BASE_URL );
 
 // ======================================
-// Função genérica de requisição à API
+// Função genérica de requisição à API CORRIGIDA
 // ======================================
 async function apiFetch(endpoint, data) {
   try {
+    console.log(`📨 Enviando requisição para: ${BASE_URL}${endpoint}`);
+    
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
       body: JSON.stringify(data),
       credentials: 'include', // Importante para sessions
+      mode: 'cors' // ⬅️ Isso deve ser suficiente para habilitar CORS
     });
 
-    // Captura a resposta de erro para exibir no alerta
-    const responseData = await response.json();
-
+    console.log(`📨 Resposta recebida - Status: ${response.status}`);
+    
+    // Se a resposta não for ok, lança um erro
     if (!response.ok) {
-      // Usa a mensagem de erro do servidor, se disponível
-      throw new Error(responseData.erro || `Erro HTTP: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
     }
-
-    return responseData;
+    
+    const result = await response.json();
+    console.log('✅ Resposta da API:', result);
+    return result;
+    
   } catch (error) {
-    console.error('❌ Erro na comunicação com o servidor:', error);
-    // Exibe o erro específico no alerta para o usuário
-    alert(`Erro ao conectar ao servidor: ${error.message}`);
+    console.error(`❌ Erro na requisição para ${endpoint}:`, error);
+    
+    // Se for um erro de CORS, o erro será "Failed to fetch" ou similar
+    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+      console.error('💥 Erro de CORS ou de rede. Verifique a configuração do backend.');
+      alert('Erro de conexão. Verifique se o backend está configurado para aceitar requisições do seu domínio.');
+    }
+    
     throw error;
   }
 }
 
+// Função para testar CORS
+async function testarCORS() {
+  try {
+    const response = await fetch(`${BASE_URL}/api/test-cors`, {
+      method: 'GET',
+      credentials: 'include',
+      mode: 'cors'
+    });
+    console.log('✅ Teste CORS bem-sucedido:', response.status);
+    return true;
+  } catch (error) {
+    console.error('❌ Teste CORS falhou:', error);
+    return false;
+  }
+}
+
+// Chame esta função no carregamento da página para verificar
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('✅ Sistema de login carregado e pronto.');
+  mostrarTela('tipo-login-container');
+  testarCORS().then(sucesso => {
+    if (!sucesso) {
+      alert('Atenção: Problema de CORS detectado. O login pode não funcionar.');
+    }
+  });
+});
 // ======================================
 // Funções de controle da interface (UI)
 // ======================================
@@ -147,10 +187,8 @@ function bloquearBotao(botaoId, bloquear = true) {
 }
 
 // ======================================
-// LÓGICA DE LOGIN
+// LÓGICA DE LOGIN - MELHORADA
 // ======================================
-// MODIFICADO: Mantido como atribuição a `window` para clareza e garantia de escopo global
-// para `onclick="fazerLogin(...)"`
 window.fazerLogin = async function (tipo) {
   const btnId = `btn-login-${tipo}`;
   bloquearBotao(btnId, true);
@@ -161,30 +199,58 @@ window.fazerLogin = async function (tipo) {
 
     if (!email || !senha) {
       alert('Preencha e-mail e senha!');
-      return; // Não continua se os campos estiverem vazios
+      bloquearBotao(btnId, false);
+      return;
+    }
+
+    console.log('🔐 Tentando login para:', email);
+    
+    // Testa a conexão primeiro
+    const conexaoOk = await testarConexao();
+    if (!conexaoOk) {
+      alert('❌ Servidor indisponível. Verifique sua conexão.');
+      bloquearBotao(btnId, false);
+      return;
     }
 
     const data = await apiFetch('/api/login', { email, senha, tipo });
 
     if (data?.sucesso) {
+      console.log('✅ Login bem-sucedido! Usuário:', data.usuario);
       localStorage.setItem('usuarioLogado', JSON.stringify(data.usuario));
-      // Redireciona com base no tipo de usuário retornado pela API
-      if (data.usuario.tipo === 'administrador') {
-        window.location.href = 'admin.html';
-      } else if (data.usuario.tipo === 'professor') {
-        window.location.href = 'pagina-professor.html';
-      } else {
-        alert('Tipo de usuário não reconhecido: ' + data.usuario.tipo);
-      }
+      
+      // Pequeno delay para feedback visual
+      setTimeout(() => {
+        if (data.usuario.tipo === 'administrador') {
+          window.location.href = 'admin.html';
+        } else if (data.usuario.tipo === 'professor') {
+          window.location.href = 'pagina-professor.html';
+        } else {
+          alert('Tipo de usuário não reconhecido: ' + data.usuario.tipo);
+        }
+      }, 500);
+      
+    } else {
+      // Se a API retornou sucesso: false mas não lançou erro
+      alert(data?.erro || 'Erro desconhecido no login');
     }
-    // A função apiFetch já trata os alertas de erro
+    
   } catch (error) {
     console.error('❌ Falha no processo de login:', error);
+    
+    // Mensagens de erro mais amigáveis
+    if (error.message.includes('Timeout') || error.message.includes('não respondeu')) {
+      alert('⏰ Servidor demorou para responder. Tente novamente.');
+    } else if (error.message.includes('Failed to fetch')) {
+      alert('🔌 Erro de conexão. Verifique se o servidor está online.');
+    } else {
+      alert('❌ Erro ao fazer login: ' + error.message);
+    }
+    
   } finally {
-    bloquearBotao(btnId, false); // Garante que o botão seja desbloqueado sempre
+    bloquearBotao(btnId, false);
   }
 };
-
 // ======================================
 // LÓGICA DE CADASTRO
 // ======================================
@@ -223,6 +289,26 @@ window.fazerCadastro = async function (tipo) {
   }
 };
 
+function atualizarStatusConexao(status) {
+  const elemento = document.getElementById('status-conexao');
+  if (!elemento) return;
+  
+  elemento.style.display = 'block';
+  if (status === 'testando') {
+    elemento.innerHTML = '🔄 Conectando...';
+    elemento.style.background = '#fff3cd';
+    elemento.style.color = '#856404';
+  } else if (status === 'online') {
+    elemento.innerHTML = '✅ Conectado';
+    elemento.style.background = '#d1edff';
+    elemento.style.color = '#004085';
+    setTimeout(() => elemento.style.display = 'none', 3000);
+  } else if (status === 'offline') {
+    elemento.innerHTML = '❌ Offline';
+    elemento.style.background = '#f8d7da';
+    elemento.style.color = '#721c24';
+  }
+}
 // ======================================
 // INICIALIZAÇÃO DO SCRIPT
 // ======================================
