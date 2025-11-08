@@ -19,29 +19,30 @@ dotenv.config();
 
 console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'desenvolvimento'}`);
 
-
 const app = express();
 const MySQLStore = MySQLStoreImport(session);
 
 app.use(express.json());
 
 // ========================
-// CONFIGURAÇÃO DE CORS
+// CONFIGURAÇÃO DE CORS CORRIGIDA (APENAS UMA VEZ!)
 // ========================
 const allowedOrigins = [
   'https://divine-tranquility-production.up.railway.app',
   'http://localhost:5500',
-  'http://127.0.0.1:5500'
+  'http://127.0.0.1:5500',
+  'http://localhost:3000'
 ];
 
-const corsOptions = {
+app.use(cors({
   origin: function (origin, callback) {
     // Permite requests sem origin (como mobile apps ou curl)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.log('❌ Bloqueado por CORS:', origin);
       callback(new Error('Não permitido por CORS'));
     }
   },
@@ -49,48 +50,19 @@ const corsOptions = {
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   optionsSuccessStatus: 200
-};
-
-app.use(cors(corsOptions));
-
-// Middleware para headers adicionais (opcional, mas pode ajudar)
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  
-  // Se for uma requisição OPTIONS, retorna 200
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
-
-// Aplica CORS para todas as rotas
-app.use(cors({
-  origin: 'https://divine-tranquility-production.up.railway.app', // domínio do frontend
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true
 }));
 
-// Middleware personalizado para headers CORS adicionais
+// Middleware para logs de CORS
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  console.log(`🌐 CORS - ${req.method} ${req.path} - Origin: ${req.headers.origin}`);
   next();
 });
-
-// Handler específico para requisições OPTIONS (preflight)
-app.options('*', cors(corsOptions));
 
 // ========================
 // CONFIGURAÇÃO DO EXPRESS
 // ========================
-
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
 
 // ========================
 // CONEXÃO COM O BANCO DE DADOS (SERVIÇOS SEPARADOS)
@@ -207,7 +179,6 @@ function verificarAdminMaster(req, res, next) {
 app.use((req, res, next) => {
   console.log(`📨 ${req.method} ${req.path}`);
   console.log(`🌐 Origin: ${req.headers.origin}`);
-  console.log(`📋 Headers:`, req.headers);
   next();
 });
 
@@ -222,9 +193,38 @@ function fazerLogin(usuario, res, req) {
     tipo: usuario.tipo.toLowerCase(),
     pode_criar_admin: Boolean(usuario.pode_criar_admin)
   };
-  res.json({ sucesso: true, mensagem: 'Login realizado com sucesso!', usuario: req.session.usuario });
+  
+  // Salva a sessão antes de enviar resposta
+  req.session.save((err) => {
+    if (err) {
+      console.error('❌ Erro ao salvar sessão:', err);
+      return res.status(500).json({ 
+        sucesso: false, 
+        erro: 'Erro ao criar sessão' 
+      });
+    }
+    
+    console.log('✅ Sessão criada para:', usuario.email);
+    res.status(200).json({ 
+      sucesso: true, 
+      mensagem: 'Login realizado com sucesso!', 
+      usuario: req.session.usuario 
+    });
+  });
 }
 
+// ========================
+// ROTA DE TESTE CORS
+// ========================
+app.get('/api/test-cors', (req, res) => {
+  console.log('✅ Rota /api/test-cors acessada com sucesso');
+  res.json({ 
+    message: 'CORS está funcionando!',
+    timestamp: new Date().toISOString(),
+    origin: req.headers.origin,
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
 
 // ========================
 // ROTAS DE AUTENTICAÇÃO
@@ -287,29 +287,44 @@ app.post('/api/login', async (req, res) => {
   const { email, senha } = req.body;
   
   if (!email || !senha) {
-    return res.json({ sucesso: false, erro: 'Email e senha são obrigatórios!' });
+    return res.status(400).json({ 
+      sucesso: false, 
+      erro: 'Email e senha são obrigatórios!' 
+    });
   }
 
   try {
     const [results] = await db.execute('SELECT * FROM usuarios WHERE email = ?', [email]);
     
     if (results.length === 0) {
-      return res.json({ sucesso: false, erro: 'Email ou senha incorretos!' });
+      return res.status(401).json({ 
+        sucesso: false, 
+        erro: 'Email ou senha incorretos!' 
+      });
     }
 
     const usuario = results[0];
     const match = await bcrypt.compare(senha, usuario.senha);
     
     if (match) {
+      console.log('✅ Login bem-sucedido para:', usuario.email);
       fazerLogin(usuario, res, req);
     } else {
-      return res.json({ sucesso: false, erro: 'Email ou senha incorretos!' });
+      return res.status(401).json({ 
+        sucesso: false, 
+        erro: 'Email ou senha incorretos!' 
+      });
     }
   } catch (err) {
-    console.error('Erro no login:', err);
-    res.json({ sucesso: false, erro: 'Erro ao fazer login!' });
+    console.error('❌ Erro no login:', err);
+    return res.status(500).json({ 
+      sucesso: false, 
+      erro: 'Erro interno do servidor!' 
+    });
   }
 });
+
+// ... (o restante das suas rotas permanece igual)
 
 app.post('/logout', verificarAuth, (req, res) => {
   req.session.destroy(err => {
@@ -324,10 +339,6 @@ app.post('/logout', verificarAuth, (req, res) => {
 // Rota para verificar autenticação
 app.get('/check-auth', verificarAuth, (req, res) => {
   res.json({ sucesso: true, usuario: req.session.usuario });
-});
-
-app.get('/api/test-cors', (req, res) => {
-  res.json({ message: 'CORS está funcionando!' });
 });
 
 // ========================
