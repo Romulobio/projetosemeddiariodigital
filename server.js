@@ -1192,23 +1192,61 @@ app.use((err, req, res, next) => {
 // ========================
 // INICIAR SERVIDOR
 // ========================
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8080; // Se PORT não estiver no Railway, usará 8080
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log('\n🚀 Servidor Prosemed Diário Digital iniciado!');
-  console.log(`📍 Porta: ${PORT}`);
-  console.log(`🌐 Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🗄️ Database: Railway MySQL`);
-  console.log(`🔗 URL: https://prosemeddiariodigital-production.up.railway.app`);
-  console.log('\n📋 Endpoints disponíveis:');
-  console.log(`   GET  /health          - Status da aplicação`);
-  console.log(`   GET  /debug/tables    - Listar tabelas`);
-  console.log(`   POST /login           - Login de usuário`);
-  console.log(`   POST /cadastro        - Cadastro de usuário`);
-  console.log(`   GET  /api/admin/verificar-master - Verificar admin master`);
-  console.log(`   POST /admin/redefinir-senha - Redefinir senha (admin master)`);
-  console.log(`   POST /api/recuperar-senha - Recuperação de senha`);
-  console.log(`   GET  /api/relatorios/frequencia - Relatórios de frequência`);
-});
+// Esta função assíncrona garante que a conexão com o DB seja testada
+// ANTES que o servidor Express comece a escutar.
+async function startServer() {
+  try {
+    // 1. Testar conexão com o banco de dados
+    const connection = await db.getConnection();
+    console.log('✅ Conectado ao MySQL Railway com sucesso! (projetos separados)');
+    
+    // Testar query básica
+    const [result] = await connection.execute('SELECT 1 + 1 AS test');
+    console.log('✅ Query teste executada:', result[0].test); // Agora você deve ver esta mensagem
+    
+    connection.release(); // Liberar a conexão de teste
 
+    // 2. Iniciar o servidor Express
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log('\n🚀 Servidor Prosemed Diário Digital iniciado!');
+      console.log(`📍 Porta: ${PORT}`);
+      console.log(`🌐 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🗄️ Database: Railway MySQL`);
+      console.log(`🔗 URL: https://prosemeddiariodigital-production.up.railway.app`);
+      console.log('\n📋 Endpoints disponíveis:');
+      console.log(`   GET  /health          - Status da aplicação`);
+      console.log(`   GET  /debug/tables    - Listar tabelas`);
+      console.log(`   POST /api/login       - Login de usuário`); // Corrigi para /api/login
+      console.log(`   POST /api/cadastro    - Cadastro de usuário`); // Corrigi para /api/cadastro
+      console.log(`   GET  /api/admin/verificar-master - Verificar admin master`);
+      console.log(`   POST /api/admin/redefinir-senha - Redefinir senha (admin master)`); // Corrigi para /api/admin/redefinir-senha
+      console.log(`   POST /api/recuperar-senha - Recuperação de senha`);
+      console.log(`   GET  /api/relatorios/frequencia - Relatórios de frequência`);
+    });
+
+  } catch (err) {
+    console.error('❌ ERRO CRÍTICO ao iniciar o servidor ou conectar ao MySQL:');
+    console.error('   Código:', err.code);
+    console.error('   Mensagem:', err.message);
+    console.error('   Host:', process.env.MYSQLHOST);
+    console.error('   Port:', process.env.MYSQLPORT);
+    
+    if (err.code === 'ENOTFOUND') {
+      console.error('\n💡 ERRO CRÍTICO: Host do MySQL não encontrado.');
+      console.error('   Verifique se as variáveis no Railway estão CORRETAS:');
+      console.error('   - MYSQLHOST deve ser: caboose.proxy.rlwy.net');
+      console.error('   - MYSQLPORT deve ser: 29311');
+    }
+    // IMPORTANTE: Se o servidor não conseguir iniciar devido a um erro crítico,
+    // é bom sair do processo para que o Railway possa tentar um novo deploy.
+    process.exit(1); 
+  }
+}
+
+// Chamar a função para iniciar o servidor
+startServer();
+
+// O 'export default app;' deve estar no final do arquivo, APENAS UMA VEZ
 export default app;
