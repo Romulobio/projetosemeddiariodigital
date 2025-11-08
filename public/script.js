@@ -185,33 +185,6 @@ window.fazerCadastro = async function (tipo) {
 document.addEventListener('DOMContentLoaded', () => {
   console.log('✅ Sistema de login carregado e pronto.');
   // Garante que a tela inicial de seleção seja sempre a primeira a ser exibida
-  // --- garantir funções visíveis no escopo global (para onclick inline)
-window.mostrarLogin = function(tipo) {
-  esconderTodos();
-  const el = document.getElementById(`login-${tipo}-container`);
-  if (el) el.hidden = false;
-};
-
-window.mostrarCadastro = function(tipo) {
-  esconderTodos();
-  const el = document.getElementById(`cadastro-${tipo}-container`);
-  if (el) el.hidden = false;
-};
-
-window.voltarSelecao = function() {
-  esconderTodos();
-  const t = document.getElementById('tipo-login-container');
-  if (t) t.hidden = false;
-};
-
-// Se você escreveu funções fazerLogin/fazerCadastro como "function fazerLogin() { }",
-// torne-as globais também:
-if (typeof window.fazerLogin === 'undefined' && typeof fazerLogin === 'function') {
-  window.fazerLogin = fazerLogin;
-}
-if (typeof window.fazerCadastro === 'undefined' && typeof fazerCadastro === 'function') {
-  window.fazerCadastro = fazerCadastro;
-}
-
+  
   
 });
