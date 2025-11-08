@@ -1,6 +1,7 @@
 // ========================
 // IMPORTAÇÕES E CONFIGURAÇÕES INICIAIS (ES MODULES)
 // ========================
+import cors from 'cors';
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import session from 'express-session';
@@ -10,7 +11,6 @@ import crypto from 'crypto';
 import mysql from 'mysql2/promise';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import cors from 'cors';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,14 +23,20 @@ console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'desenvolvimento'}`);
 const app = express();
 const MySQLStore = MySQLStoreImport(session);
 
+app.use(cors({
+  origin: 'https://divine-tranquility-production.up.railway.app', // domínio do frontend
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
+
+app.use(express.json());
+
 // ========================
 // CORS PARA DESENVOLVIMENTO E PRODUÇÃO
 // ========================
 const corsOptions = {
   origin: [
-    'https://divine-tranquility-production.up.railway.app', // frontend no Railway
-    
-    'http://localhost:5500', // se testar localmente
+        'http://localhost:5500', // se testar localmente
     'http://127.0.0.1:5500'
   ],
   credentials: true,
@@ -45,7 +51,6 @@ const corsOptions = {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-app.use(cors(corsOptions));
 
 // ========================
 // CONEXÃO COM O BANCO DE DADOS (SERVIÇOS SEPARADOS)
