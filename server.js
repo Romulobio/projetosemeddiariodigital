@@ -11,6 +11,7 @@ import mysql from 'mysql2/promise';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import cors from 'cors';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -23,20 +24,12 @@ const app = express();
 const MySQLStore = MySQLStoreImport(session);
 
 // ========================
-// CONFIGURAÇÃO DO EXPRESS
-// ========================
-
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(cors(corsOptions));
-
-// ========================
 // CORS PARA DESENVOLVIMENTO E PRODUÇÃO
 // ========================
 const corsOptions = {
   origin: [
     'https://divine-tranquility-production.up.railway.app', // frontend no Railway
-    'https://prosemeddiariodigital-production.up.railway.app', // backend
+    
     'http://localhost:5500', // se testar localmente
     'http://127.0.0.1:5500'
   ],
@@ -44,6 +37,14 @@ const corsOptions = {
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
+
+// ========================
+// CONFIGURAÇÃO DO EXPRESS
+// ========================
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cors(corsOptions));
 
 // ========================
 // CONEXÃO COM O BANCO DE DADOS (SERVIÇOS SEPARADOS)
