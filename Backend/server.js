@@ -18,27 +18,21 @@ dotenv.config();
 
 console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'desenvolvimento'}`);
 
-// ========================
-// 🔧 CONFIGURAÇÃO DE CORS
-// ========================
+
 
 // Domínios permitidos (adicione outros se quiser)
 const allowedOrigins = [
-  'https://projetosemeddiariodigital-lwz1.vercel.app',
+  "https://prosemeddiariodigital-lwz1.vercel.app",
   'http://localhost:3000'
 ];
 
 // Middleware único e limpo de CORS
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Permite requisições sem "origin" (como Postman)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        console.log(`❌ [CORS] Origem bloqueada: ${origin}`);
         callback(new Error('CORS bloqueado para esta origem.'));
       }
     },
