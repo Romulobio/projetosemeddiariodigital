@@ -23,14 +23,12 @@ console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'desenvolvimento'}`);
 // ========================
 // 🔧 CONFIGURAÇÃO DE CORS (PRIMEIRO MIDDLEWARE DO SERVIDOR!)
 // ========================
-const allowedOrigins = [
-  'https://prosemeddiariodigital-production.up.railway.app',
-  'https://projetosemeddiariodigital-lwz1.vercel.app',
-  'http://localhost:5500',
-  'http://127.0.0.1:5500',
-  'http://localhost:3000',
-  'http://localhost:8080'
-];
+// ✅ Configuração do CORS
+app.use(cors({
+  origin: 'https://projetosemeddiariodigital-lwz1.vercel.app', // domínio do frontend
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+}));
 
 // ✅ Middleware CORS manual + logs
 app.use((req, res, next) => {
