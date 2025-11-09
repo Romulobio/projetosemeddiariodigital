@@ -1,8 +1,6 @@
-// script-admin.js - VERSÃO SEM API-SERVICE
-console.log('✅ Script do admin carregado!');
-
-// Detecta automaticamente se está em localhost ou produção
-this.baseURL = 'https://prosemeddiariodigital-production.up.railway.app';
+const BASE_URL = window.location.hostname.includes('localhost')
+  ? 'http://localhost:8080'
+  : 'https://prosemeddiariodigital-production.up.railway.app';
 
 // Função genérica de requisição à API (MESMA DO script-login.js)
 async function apiFetch(endpoint, data) {

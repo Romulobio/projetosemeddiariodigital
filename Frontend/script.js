@@ -2,8 +2,10 @@
 // script-login.js - VERSÃO OTIMIZADA E CORRIGIDA
 // ======================================
 
-// Detecta automaticamente se está em localhost ou produção
-this.baseURL = 'https://prosemeddiariodigital-production.up.railway.app';
+const BASE_URL = window.location.hostname.includes('localhost')
+  ? 'http://localhost:8080'
+  : 'https://prosemeddiariodigital-production.up.railway.app';
+
 
 
 console.log("🌐 Backend ativo:", BASE_URL );

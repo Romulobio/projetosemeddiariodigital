@@ -1,9 +1,7 @@
-// ⭐⭐ SISTEMA DE NOTAS - CONECTADO AO RAILWAY ⭐⭐
+const BASE_URL = window.location.hostname.includes('localhost')
+  ? 'http://localhost:8080'
+  : 'https://prosemeddiariodigital-production.up.railway.app';
 
-console.log('✅ Script de notas carregado!');
-
-// Detecta automaticamente se está em localhost ou produção
-const API_URL = process.env.API_URL || "https://prosemeddiariodigital-production.up.railway.app";
 
 // ✅ SERVIÇO DE API SIMPLIFICADO
 const apiService = {

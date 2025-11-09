@@ -1,8 +1,7 @@
-// script-frequencia.js - VERSÃO SEM API-SERVICE
-console.log('✅ Script de frequência carregado!');
+const BASE_URL = window.location.hostname.includes('localhost')
+  ? 'http://localhost:8080'
+  : 'https://prosemeddiariodigital-production.up.railway.app';
 
-// Detecta automaticamente se está em localhost ou produção
-const API_URL = process.env.API_URL || "https://prosemeddiariodigital-production.up.railway.app";
 
 // Função genérica de requisição à API (MESMA DO script-login.js)
 async function apiFetch(endpoint, data) {
