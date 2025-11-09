@@ -35,7 +35,13 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: 'https://projetosemeddiariodigital-production-bed1.up.railway.app', // URL do frontend
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS não permitido'));
+    }
+  },
   credentials: true
 }));
 
@@ -587,7 +593,7 @@ app.get('/api/admin/todos-usuarios', verificarAuth, verificarAdminMaster, async 
 });
 
 // Excluir usuário (apenas admin master)
-app.delete('/api/admin/usuarios/:id', verificarAuth, verificarAdminMaster, async (req, res) => {
+app.delete('/api/admin/usuarios', verificarAuth, verificarAdminMaster, async (req, res) => {
   const usuarioId = req.params.id;
   
   // Impedir que o próprio usuário se exclua
@@ -958,7 +964,7 @@ app.get('/api/relatorios/frequencia', verificarAuth, verificarProfessor, async (
 // ========================
 
 // Rota para obter turmas e alunos do professor (notas)
-app.get('/api/professor/:id/turmas', verificarAuth, verificarProfessor, async (req, res) => {
+app.get('/api/professor/turmas', verificarAuth, verificarProfessor, async (req, res) => {
   try {
     const professorId = req.session.usuario.id;
     
