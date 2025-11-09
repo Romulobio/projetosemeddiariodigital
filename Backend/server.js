@@ -22,22 +22,25 @@ console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'desenvolvimento'}`);
 
 // Domínios permitidos (adicione outros se quiser)
 const allowedOrigins = [
-  "https://prosemeddiariodigital-lwz1.vercel.app",
-  'http://localhost:3000'
+  "https://projetosemeddiariodigital-lwz1.vercel.app", // frontend Vercel
+  "http://localhost:3000"
 ];
 
-// Middleware único e limpo de CORS
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
+      // Permite requisições de ferramentas internas ou sem origin (ex: Postman)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
       } else {
-        callback(new Error('CORS bloqueado para esta origem.'));
+        console.log(`❌ CORS bloqueado para: ${origin}`);
+        return callback(new Error("CORS não permitido para esta origem."));
       }
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    credentials: true
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
@@ -53,13 +56,10 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // ========================
 // 🔍 ROTA DE TESTE DE CORS
 // ========================
-app.get('/api/test-cors', (req, res) => {
-  console.log('✅ [CORS] Teste recebido de:', req.headers.origin);
-  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.json({ success: true, message: '✅ CORS funcionando corretamente!' });
+app.get("/api/test-cors", (req, res) => {
+  console.log("✅ [CORS] Teste recebido de:", req.headers.origin);
+  res.json({ success: true, message: "✅ CORS funcionando corretamente!" });
 });
-
 
 // ========================
 // CONEXÃO COM O BANCO DE DADOS (SERVIÇOS SEPARADOS)
