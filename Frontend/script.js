@@ -3,9 +3,7 @@
 // ======================================
 
 // Detecta automaticamente se está em localhost ou produção
-const BASE_URL = window.location.hostname.includes("localhost")
-  ? "http://localhost:3000" // Backend local
-  : "https://prosemeddiariodigital-production.up.railway.app"; // Backend Railway
+const API_URL = process.env.API_URL || "https://prosemeddiariodigital-production.up.railway.app";
 
 console.log("🌐 Backend ativo:", BASE_URL );
 

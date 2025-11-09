@@ -28,28 +28,15 @@ app.use(express.json());
 // CONFIGURAÇÃO DE CORS CORRIGIDA (APENAS UMA VEZ!)
 // ========================
 const allowedOrigins = [
-  'https://divine-tranquility-production.up.railway.app',
+  'https://projetosemeddiariodigital-production-bed1.up.railway.app',
   'http://localhost:5500',
   'http://127.0.0.1:5500',
   'http://localhost:3000'
 ];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    // Permite requests sem origin (como mobile apps ou curl)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log('❌ Bloqueado por CORS:', origin);
-      callback(new Error('Não permitido por CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  optionsSuccessStatus: 200
+  origin: 'https://projetosemeddiariodigital-production-bed1.up.railway.app', // URL do frontend
+  credentials: true
 }));
 
 // Middleware para logs de CORS
