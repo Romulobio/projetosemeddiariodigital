@@ -21,7 +21,7 @@ dotenv.config();
 console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'desenvolvimento'}`);
 
 // ========================
-// 🔧 CONFIGURAÇÃO DE CORS CORRIGIDA E GARANTIDA
+// 🔧 CONFIGURAÇÃO DE CORS (PRIMEIRO MIDDLEWARE DO SERVIDOR!)
 // ========================
 const allowedOrigins = [
   'https://prosemeddiariodigital-production.up.railway.app',
@@ -29,43 +29,55 @@ const allowedOrigins = [
   'http://localhost:5500',
   'http://127.0.0.1:5500',
   'http://localhost:3000',
+  'http://localhost:8080'
 ];
 
-// ✅ Middleware manual antes de tudo para garantir headers
+// ✅ Middleware CORS manual + logs
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.header("Access-Control-Allow-Origin", origin);
-  }
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Access-Control-Allow-Credentials", "true");
+  console.log(`🌐 [CORS] Requisição de: ${origin} -> ${req.method} ${req.path}`);
 
-  // Trata requisições preflight
-  if (req.method === "OPTIONS") {
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+
+  if (req.method === 'OPTIONS') {
+    console.log('🔁 [CORS] Requisição preflight OPTIONS detectada.');
     return res.sendStatus(204);
   }
+
   next();
 });
 
-// ✅ Middleware CORS do pacote (apenas para reforçar)
+// ✅ Middleware CORS oficial (reforço extra)
 app.use(
   cors({
-    origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log(`❌ [CORS] Origem bloqueada: ${origin}`);
+        callback(new Error('CORS bloqueado para esta origem.'));
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   })
 );
 
-// ✅ Sempre antes de rotas e sessões
+// ✅ JSON deve vir depois do CORS
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ========================
-// ROTA DE TESTE DE CORS (para debug no navegador)
+// 🔍 ROTA DE TESTE DE CORS
 // ========================
-app.get("/api/test-cors", (req, res) => {
-  res.json({ message: "✅ CORS ativo e funcionando!" });
+app.get('/api/test-cors', (req, res) => {
+  res.json({ success: true, message: '✅ CORS está funcionando corretamente!' });
 });
 
 
