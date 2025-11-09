@@ -28,25 +28,32 @@ app.use(express.json());
 // CONFIGURAÇÃO DE CORS CORRIGIDA (APENAS UMA VEZ!)
 // ========================
 const allowedOrigins = [
-  'https://projetosemeddiariodigital-production-bed1.up.railway.app',
+  'https://prosemeddiariodigital-production.up.railway.app',
   'http://localhost:5500',
   'http://127.0.0.1:5500',
   'http://localhost:3000'
 ];
 
 app.use(cors({
-  origin: [
-    'http://localhost:8080',
-    'https://prosemeddiariodigital-production-bed1.up.railway.app'
-  ],
+  origin: function(origin, callback) {
+    // Permite requisições sem origem (ex: Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS não permitido para esta origem: ' + origin));
+    }
+  },
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
+
 // Middleware para logs de CORS
 app.use((req, res, next) => {
   console.log(`🌐 CORS - ${req.method} ${req.path} - Origin: ${req.headers.origin}`);
   next();
 });
+
 
 // ========================
 // CONFIGURAÇÃO DO EXPRESS
