@@ -1,5 +1,5 @@
-// ✅ CONFIGURAÇÃO DA API - URL DO SEU BACKEND NO RAILWAY
-const API_BASE_URL = 'https://prosemeddiariodigital-production.up.railway.app';
+// Detecta automaticamente se está em localhost ou produção
+const API_URL = process.env.API_URL || "https://prosemeddiariodigital-production.up.railway.app";
 
 // ✅ SERVIÇO DE API SIMPLIFICADO
 const apiService = {

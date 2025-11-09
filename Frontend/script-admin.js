@@ -1,8 +1,8 @@
 // script-admin.js - VERSÃO SEM API-SERVICE
 console.log('✅ Script do admin carregado!');
 
-// URL base do backend (Railway) - MESMA DO script-login.js
-const BASE_URL = 'https://prosemeddiariodigital-production.up.railway.app';
+// Detecta automaticamente se está em localhost ou produção
+const API_URL = process.env.API_URL || "https://prosemeddiariodigital-production.up.railway.app";
 
 // Função genérica de requisição à API (MESMA DO script-login.js)
 async function apiFetch(endpoint, data) {
