@@ -35,16 +35,13 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS não permitido'));
-    }
-  },
+  origin: [
+    'http://localhost:8080',
+    'https://prosemeddiariodigital-production-bed1.up.railway.app'
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
-
 // Middleware para logs de CORS
 app.use((req, res, next) => {
   console.log(`🌐 CORS - ${req.method} ${req.path} - Origin: ${req.headers.origin}`);
@@ -1084,52 +1081,53 @@ app.post('/api/notas/salvar', verificarAuth, verificarProfessor, async (req, res
 
       if (existentes.length > 0) {
         // Atualizar nota existente
+        // Atualizar nota existente
         await db.execute(
-          `UPDATE notas SET 
-            qualitativo_participacao = ?, qualitativo_organizacao = ?, qualitativo_respeito = ?,
-            atividade = ?, avaliacao = ?, recuperacao = ?, atualizado_em = NOW()
-           WHERE aluno_id = ? AND turma_id = ? AND unidade = ?`,
+          `UPDATE notas 
+           SET 
+             qualitativo_participacao = ?, 
+             qualitativo_organizacao = ?, 
+             qualitativo_respeito = ?, 
+             atividade = ?, 
+             avaliacao = ?, 
+             recuperacao = ?, 
+             atualizado_em = NOW()
+           WHERE id = ?`,
           [
-            qualitativo.participacao,
-            qualitativo.organizacao,
-            qualitativo.respeito,
-            atividade,
-            avaliacao,
-            recuperacao,
-            alunoId,
-            turma_id,
-            unidade
+            qualitativo.participacao || 0,
+            qualitativo.organizacao || 0,
+            qualitativo.respeito || 0,
+            atividade || 0,
+            avaliacao || 0,
+            recuperacao || 0,
+            existentes[0].id
           ]
         );
       } else {
         // Inserir nova nota
         await db.execute(
           `INSERT INTO notas 
-            (aluno_id, turma_id, unidade, qualitativo_participacao, qualitativo_organizacao, 
-             qualitativo_respeito, atividade, avaliacao, recuperacao, professor_id) 
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            (aluno_id, turma_id, unidade, qualitativo_participacao, qualitativo_organizacao, qualitativo_respeito, atividade, avaliacao, recuperacao, professor_id, criado_em)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
           [
             alunoId,
             turma_id,
             unidade,
-            qualitativo.participacao,
-            qualitativo.organizacao,
-            qualitativo.respeito,
-            atividade,
-            avaliacao,
-            recuperacao,
+            qualitativo.participacao || 0,
+            qualitativo.organizacao || 0,
+            qualitativo.respeito || 0,
+            atividade || 0,
+            avaliacao || 0,
+            recuperacao || 0,
             professorId
           ]
         );
       }
+
       registros++;
     }
 
-    res.json({ 
-      sucesso: true, 
-      mensagem: `Notas da unidade ${unidade} salvas com sucesso!`,
-      registros 
-    });
+    res.json({ sucesso: true, mensagem: `${registros} notas processadas com sucesso!` });
   } catch (err) {
     console.error('Erro ao salvar notas:', err);
     res.status(500).json({ sucesso: false, erro: 'Erro ao salvar notas.' });
@@ -1250,6 +1248,12 @@ app.use((err, req, res, next) => {
     erro: 'Erro interno do servidor',
     detalhes: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
+});
+// ========================
+// ROTA PÁGINA PRINCIPAL OU STATUS
+// ========================
+app.get('/', (req, res) => {
+  res.send('🟢 API do Sistema Escolar rodando!');
 });
 
 // ========================

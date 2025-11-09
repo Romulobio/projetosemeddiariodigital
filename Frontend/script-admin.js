@@ -2,7 +2,7 @@
 console.log('✅ Script do admin carregado!');
 
 // Detecta automaticamente se está em localhost ou produção
-const API_URL = process.env.API_URL || "https://prosemeddiariodigital-production.up.railway.app";
+this.baseURL = 'https://prosemeddiariodigital-production.up.railway.app';
 
 // Função genérica de requisição à API (MESMA DO script-login.js)
 async function apiFetch(endpoint, data) {

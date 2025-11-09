@@ -3,7 +3,8 @@
 // ======================================
 
 // Detecta automaticamente se está em localhost ou produção
-const API_URL = process.env.API_URL || "https://prosemeddiariodigital-production.up.railway.app";
+this.baseURL = 'https://prosemeddiariodigital-production.up.railway.app';
+
 
 console.log("🌐 Backend ativo:", BASE_URL );
 
