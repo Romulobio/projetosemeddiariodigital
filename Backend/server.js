@@ -53,11 +53,7 @@ app.use(
   })
 );
 
-// Middleware para depuração de CORS (ver no console Railway)
-app.use((req, res, next) => {
-  console.log(`🌐 [CORS LOG] ${req.method} ${req.path} - Origin: ${req.headers.origin}`);
-  next();
-});
+
 
 // ========================
 // CONFIGURAÇÃO DO EXPRESS
