@@ -1,8 +1,10 @@
 // ========================
 // IMPORTAÇÕES E CONFIGURAÇÕES INICIAIS (ES MODULES)
 // ========================
-import cors from 'cors';
+
 import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import session from 'express-session';
 import MySQLStoreImport from 'express-mysql-session';
@@ -10,49 +12,61 @@ import path from 'path';
 import crypto from 'crypto';
 import mysql from 'mysql2/promise';
 import { fileURLToPath } from 'url';
-import dotenv from 'dotenv';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const app = express();
+const MySQLStore = MySQLStoreImport(session);
 
 dotenv.config();
 
 console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'desenvolvimento'}`);
 
-const app = express();
-const MySQLStore = MySQLStoreImport(session);
-
-app.use(express.json());
-
 // ========================
-// CONFIGURAÇÃO DE CORS CORRIGIDA (APENAS UMA VEZ!)
+// 🔧 CONFIGURAÇÃO DE CORS CORRIGIDA E GARANTIDA
 // ========================
 const allowedOrigins = [
   'https://prosemeddiariodigital-production.up.railway.app',
   'https://projetosemeddiariodigital-lwz1.vercel.app',
   'http://localhost:5500',
   'http://127.0.0.1:5500',
-  'http://localhost:3000'
+  'http://localhost:3000',
 ];
 
+// ✅ Middleware manual antes de tudo para garantir headers
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Credentials", "true");
+
+  // Trata requisições preflight
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+  next();
+});
+
+// ✅ Middleware CORS do pacote (apenas para reforçar)
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // Permite requisições sem "origin" (como em testes locais ou ferramentas internas)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.log("❌ CORS bloqueado para origem:", origin);
-        callback(new Error("CORS não permitido para esta origem"));
-      }
-    },
-    credentials: true,
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   })
 );
 
+// ✅ Sempre antes de rotas e sessões
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ========================
+// ROTA DE TESTE DE CORS (para debug no navegador)
+// ========================
+app.get("/api/test-cors", (req, res) => {
+  res.json({ message: "✅ CORS ativo e funcionando!" });
+});
 
 
 // ========================
