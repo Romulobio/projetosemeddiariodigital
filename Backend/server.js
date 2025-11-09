@@ -1,7 +1,6 @@
 // ========================
 // IMPORTAÇÕES E CONFIGURAÇÕES INICIAIS (ES MODULES)
 // ========================
-
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -15,75 +14,58 @@ import { fileURLToPath } from 'url';
 
 const app = express();
 const MySQLStore = MySQLStoreImport(session);
-
 dotenv.config();
 
 console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'desenvolvimento'}`);
 
 // ========================
-// 🔧 CONFIGURAÇÃO DE CORS (PRIMEIRO MIDDLEWARE DO SERVIDOR!)
+// 🔧 CONFIGURAÇÃO DE CORS
 // ========================
-// ✅ Configuração do CORS
-app.use(cors({
-  origin: 'https://projetosemeddiariodigital-lwz1.vercel.app', // domínio do frontend
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true
-}));
 
-// ✅ Middleware CORS manual + logs
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  console.log(`🌐 [CORS] Requisição de: ${origin} -> ${req.method} ${req.path}`);
+// Domínios permitidos (adicione outros se quiser)
+const allowedOrigins = [
+  'https://projetosemeddiariodigital-lwz1.vercel.app',
+  'http://localhost:3000'
+];
 
-  if (allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
-
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-
-  if (req.method === 'OPTIONS') {
-    console.log('🔁 [CORS] Requisição preflight OPTIONS detectada.');
-    return res.sendStatus(204);
-  }
-
-  next();
-});
-
-// ✅ Middleware CORS oficial (reforço extra)
+// Middleware único e limpo de CORS
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      // Permite requisições sem "origin" (como Postman)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         console.log(`❌ [CORS] Origem bloqueada: ${origin}`);
         callback(new Error('CORS bloqueado para esta origem.'));
       }
     },
-    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true
   })
 );
 
-// ✅ JSON deve vir depois do CORS
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Middleware para lidar com OPTIONS (pré-flight)
+app.options('*', cors());
+
+// ========================
+// CONFIGURAÇÕES DO EXPRESS
+// ========================
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ========================
 // 🔍 ROTA DE TESTE DE CORS
 // ========================
 app.get('/api/test-cors', (req, res) => {
-  res.json({ success: true, message: '✅ CORS está funcionando corretamente!' });
+  console.log('✅ [CORS] Teste recebido de:', req.headers.origin);
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.json({ success: true, message: '✅ CORS funcionando corretamente!' });
 });
 
-
-// ========================
-// CONFIGURAÇÃO DO EXPRESS
-// ========================
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ========================
 // CONEXÃO COM O BANCO DE DADOS (SERVIÇOS SEPARADOS)
