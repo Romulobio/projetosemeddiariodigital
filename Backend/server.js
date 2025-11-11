@@ -18,34 +18,31 @@ const app = express();
 const MySQLStore = MySQLStoreImport(session);
 
 // ========================
-// ⚙️ CONFIGURAÇÃO DO CORS (CORRIGIDO)
+// CONFIGURAÇÃO DE CORS - CORRIGIDA
 // ========================
+import cors from "cors";
 
-// Lista de origens autorizadas
 const allowedOrigins = [
-  'http://localhost:8080',
-  'http://127.0.0.1:8080',
-  'https://projetosemeddiariodigital-lwz1r1omxvw-romulobios-projects.vercel.app',
-  "https://projetosemeddiariodigital-production.up.railway.app",
+  "http://localhost:5000",
+  "http://localhost:3000",
+  "https://projetosemeddiariodigital-lwz1lrlo1mxwu-romulobios-projects.vercel.app", // domínio do Vercel (frontend)
+  "https://projetosemeddiariodigital-production.up.railway.app" // domínio do backend (caso precise requisições internas)
 ];
 
-app.use(express.json());
-
-// Aplica o CORS apenas uma vez
-app.use(cors({
-  origin: function (origin, callback) {
-    // Permite requisições sem origem (ex: Postman) ou de domínios autorizados
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.warn('🚫 Bloqueado por CORS:', origin);
-      callback(new Error('CORS não permitido para esta origem: ' + origin));
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log("❌ Bloqueado por CORS:", origin);
+        callback(new Error("CORS bloqueado"));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
+  })
+);
 
 // ✅ Middleware para pré-voo (preflight) de requisições OPTIONS
 app.options('*', cors());
