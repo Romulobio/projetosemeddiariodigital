@@ -3,7 +3,7 @@
 // ======================================
 
 const BASE_URL = window.location.hostname.includes('localhost')
-  ? 'http://localhost:8080'
+  ? 'http://localhost:5000'
   : 'https://prosemeddiariodigital-production.up.railway.app';
 
 
@@ -83,106 +83,51 @@ document.addEventListener('DOMContentLoaded', () => {
 // Funções de controle da interface (UI)
 // ======================================
 
-// ADICIONADO: Definição da função esconderTodos
-/**
- * Esconde todos os contêineres principais de login/cadastro.
- */
 function esconderTodos() {
   document.querySelectorAll('.login-container').forEach(container => {
     container.hidden = true;
   });
 }
 
-/**
- * Função central para gerenciar qual tela é exibida.
- * @param {string} telaId O ID do contêiner a ser mostrado.
- */
 function mostrarTela(telaId) {
-  // Esconde todos os contêineres principais de uma vez
-  esconderTodos(); // MODIFICADO: Chama a função corretamente
-  // document.querySelectorAll('.login-container').forEach(container => { // REMOVIDO: Já coberto por esconderTodos()
-  //   container.hidden = true;
-  // });
-
-  // Mostra apenas o contêiner desejado
+  esconderTodos();
   const telaParaMostrar = document.getElementById(telaId);
   if (telaParaMostrar) {
     telaParaMostrar.hidden = false;
   }
 }
 
-// MODIFICADO: Simplificado para declarações diretas, não precisa do `window.foo = window.foo || function()`
-// Como as funções `mostrarLogin`, `mostrarCadastro`, `voltarSelecao` e `fazerLogin`/`fazerCadastro`
-// são chamadas diretamente no HTML via `onclick`, elas precisam estar no escopo global.
-// Declará-las como `function nomeDaFuncao() {}` ou `window.nomeDaFuncao = function() {}`
-// as torna globais. Optaremos por declarações diretas e limpas onde possível.
-
-/**
- * Exibe a tela de login para um tipo específico (professor ou admin).
- * @param {string} tipo O tipo de login ('professor' ou 'admin').
- */
-function mostrarLogin(tipo) { // REMOVIDO: `window.mostrarLogin = window.mostrarLogin ||`
+function mostrarLogin(tipo) {
   esconderTodos();
   const el = document.getElementById(`login-${tipo}-container`);
   if (el) el.hidden = false;
 }
-// MODIFICADO: Atribuição direta para garantir acessibilidade global se necessário,
-// especialmente se outras partes do código ainda usarem `window.mostrarLogin`.
-// Mas a declaração `function mostrarLogin(tipo)` já faz isso quando não há `import/export`.
-window.mostrarLogin = mostrarLogin;
 
-
-/**
- * Exibe a tela de cadastro para um tipo específico (professor ou admin).
- * @param {string} tipo O tipo de cadastro ('professor' ou 'admin').
- */
-function mostrarCadastro(tipo) { // REMOVIDO: `window.mostrarCadastro = function (tipo)`
+function mostrarCadastro(tipo) {
   const telaId = `cadastro-${tipo}-container`;
   mostrarTela(telaId);
-
-  // Limpa os campos do formulário de cadastro ao exibi-lo
+  
   const form = document.getElementById(telaId);
   if (form) {
     form.querySelectorAll('input').forEach(input => input.value = '');
   }
 }
-// MODIFICADO: Atribuição direta para garantir acessibilidade global.
-window.mostrarCadastro = mostrarCadastro;
 
-
-/**
- * Retorna à tela de seleção de tipo de acesso.
- */
-function voltarSelecao() { // REMOVIDO: `window.voltarSelecao = window.voltarSelecao ||`
+function voltarSelecao() {
   esconderTodos();
   const t = document.getElementById('tipo-login-container');
   if (t) t.hidden = false;
 }
-// MODIFICADO: Atribuição direta para garantir acessibilidade global.
-window.voltarSelecao = voltarSelecao;
 
-
-// REMOVIDO: As linhas redundantes abaixo, já que as funções são definidas diretamente ou como `window.fazerLogin = async function(...)`
-// window.fazerLogin = window.fazerLogin || fazerLogin;       // se você já tem function fazerLogin() {...}
-// window.fazerCadastro = window.fazerCadastro || fazerCadastro; // idem
-// window.mostrarCadastro = window.mostrarCadastro || function(tipo){ /*...*/ };
-
-
-/**
- * Bloqueia ou desbloqueia um botão para evitar cliques duplos.
- * @param {string} botaoId O ID do botão.
- * @param {boolean} bloquear True para bloquear, false para desbloquear.
- */
 function bloquearBotao(botaoId, bloquear = true) {
   const btn = document.getElementById(botaoId);
   if (!btn) return;
 
   btn.disabled = bloquear;
   if (bloquear) {
-    btn.dataset.originalText = btn.textContent; // Salva o texto original
+    btn.dataset.originalText = btn.textContent;
     btn.textContent = 'Aguarde...';
   } else {
-    // Restaura o texto original salvo anteriormente
     btn.textContent = btn.dataset.originalText || btn.textContent;
   }
 }
@@ -252,12 +197,64 @@ window.fazerLogin = async function (tipo) {
     bloquearBotao(btnId, false);
   }
 };
+
+// ======================================
+// LÓGICA DE LOGIN
+// ======================================
+async function fazerLogin(tipo) {
+  const btnId = `btn-login-${tipo}`;
+  bloquearBotao(btnId, true);
+
+  try {
+    const email = document.getElementById(`login-${tipo}-email`)?.value.trim();
+    const senha = document.getElementById(`login-${tipo}-senha`)?.value;
+
+    if (!email || !senha) {
+      alert('Preencha e-mail e senha!');
+      bloquearBotao(btnId, false);
+      return;
+    }
+
+    console.log('🔐 Tentando login para:', email);
+    
+    const data = await apiFetch('/api/login', { email, senha, tipo });
+
+    if (data?.sucesso) {
+      console.log('✅ Login bem-sucedido! Usuário:', data.usuario);
+      localStorage.setItem('usuarioLogado', JSON.stringify(data.usuario));
+      
+      setTimeout(() => {
+        if (data.usuario.tipo === 'administrador') {
+          window.location.href = 'admin.html';
+        } else if (data.usuario.tipo === 'professor') {
+          window.location.href = 'pagina-professor.html';
+        } else {
+          alert('Tipo de usuário não reconhecido: ' + data.usuario.tipo);
+        }
+      }, 500);
+      
+    } else {
+      alert(data?.erro || 'Erro desconhecido no login');
+    }
+    
+  } catch (error) {
+    console.error('❌ Falha no processo de login:', error);
+    
+    if (error.message.includes('Failed to fetch')) {
+      alert('🔌 Erro de conexão. Verifique se o servidor está online na porta 5000.');
+    } else {
+      alert('❌ Erro ao fazer login: ' + error.message);
+    }
+    
+  } finally {
+    bloquearBotao(btnId, false);
+  }
+}
+
 // ======================================
 // LÓGICA DE CADASTRO
 // ======================================
-// MODIFICADO: Mantido como atribuição a `window` para clareza e garantia de escopo global
-// para `onclick="fazerCadastro(...)"`
-window.fazerCadastro = async function (tipo) {
+async function fazerCadastro(tipo) {
   const btnId = `btn-cadastrar-${tipo}`;
   bloquearBotao(btnId, true);
 
@@ -280,41 +277,26 @@ window.fazerCadastro = async function (tipo) {
 
     if (data?.sucesso) {
       alert(data.mensagem || 'Cadastro realizado com sucesso! Faça o login.');
-      mostrarLogin(tipo); // Leva para a tela de login correspondente
+      mostrarLogin(tipo);
     }
-    // A função apiFetch já trata os alertas de erro
   } catch (error) {
     console.error('❌ Falha no processo de cadastro:', error);
   } finally {
     bloquearBotao(btnId, false);
   }
-};
-
-function atualizarStatusConexao(status) {
-  const elemento = document.getElementById('status-conexao');
-  if (!elemento) return;
-  
-  elemento.style.display = 'block';
-  if (status === 'testando') {
-    elemento.innerHTML = '🔄 Conectando...';
-    elemento.style.background = '#fff3cd';
-    elemento.style.color = '#856404';
-  } else if (status === 'online') {
-    elemento.innerHTML = '✅ Conectado';
-    elemento.style.background = '#d1edff';
-    elemento.style.color = '#004085';
-    setTimeout(() => elemento.style.display = 'none', 3000);
-  } else if (status === 'offline') {
-    elemento.innerHTML = '❌ Offline';
-    elemento.style.background = '#f8d7da';
-    elemento.style.color = '#721c24';
-  }
 }
+
 // ======================================
-// INICIALIZAÇÃO DO SCRIPT
+// INICIALIZAÇÃO
 // ======================================
 document.addEventListener('DOMContentLoaded', () => {
   console.log('✅ Sistema de login carregado e pronto.');
-  // ADICIONADO: Garante que a tela inicial de seleção seja sempre a primeira a ser exibida
   mostrarTela('tipo-login-container');
 });
+
+// Tornar funções globais para o HTML
+window.mostrarLogin = mostrarLogin;
+window.mostrarCadastro = mostrarCadastro;
+window.voltarSelecao = voltarSelecao;
+window.fazerLogin = fazerLogin;
+window.fazerCadastro = fazerCadastro;
