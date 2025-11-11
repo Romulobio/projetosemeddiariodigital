@@ -25,8 +25,11 @@ const MySQLStore = MySQLStoreImport(session);
 const allowedOrigins = [
   'http://localhost:8080',
   'http://127.0.0.1:8080',
-  'https://projetosemeddiariodigital-lwz1r1omxvw-romulobios-projects.vercel.app' // ⬅️ seu domínio do Vercel
+  'https://projetosemeddiariodigital-lwz1r1omxvw-romulobios-projects.vercel.app',
+  "https://projetosemeddiariodigital-production.up.railway.app",
 ];
+
+app.use(express.json());
 
 // Aplica o CORS apenas uma vez
 app.use(cors({
@@ -1270,6 +1273,13 @@ app.get('/', (req, res) => {
 });
 
 // ========================
+// ROTA DE TESTE DO CORS
+// ========================
+app.get('/api/test-cors', (req, res) => {
+  res.json({ message: 'CORS funcionando corretamente 🚀' });
+});
+
+// ========================
 // INICIAR SERVIDOR
 // ========================
 const PORT = process.env.PORT || 5000; // Se PORT não estiver no Railway, usará 8080
@@ -1288,6 +1298,7 @@ async function startServer() {
     
     connection.release(); // Liberar a conexão de teste
 
+    
     // 2. Iniciar o servidor Express
     app.listen(PORT, '0.0.0.0', () => {
       console.log('\n🚀 Servidor Prosemed Diário Digital iniciado!');
