@@ -1,17 +1,15 @@
 // ======================================
-// script-login.js - VERSÃO OTIMIZADA E CORRIGIDA
+// script-login.js - VERSÃO OTIMIZADA E CORRIGIDA (CORS + Conexão)
 // ======================================
 
 const BASE_URL = window.location.hostname.includes('localhost')
   ? 'http://localhost:5000'
-  : 'https://prosemeddiariodigital-production.up.railway.app';
+  : 'https://projetosemeddiariodigital-production.up.railway.app'; // ✅ corrigido
 
-
-
-console.log("🌐 Backend ativo:", BASE_URL );
+console.log("🌐 Backend ativo:", BASE_URL);
 
 // ======================================
-// Função genérica de requisição à API CORRIGIDA
+// Função genérica de requisição à API
 // ======================================
 async function apiFetch(endpoint, data) {
   try {
@@ -24,36 +22,32 @@ async function apiFetch(endpoint, data) {
         'Accept': 'application/json'
       },
       body: JSON.stringify(data),
-      credentials: 'include', // Importante para sessions
-      mode: 'cors' // ⬅️ Isso deve ser suficiente para habilitar CORS
+      credentials: 'include',
+      mode: 'cors'
     });
 
     console.log(`📨 Resposta recebida - Status: ${response.status}`);
-    
-    // Se a resposta não for ok, lança um erro
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
     }
-    
+
     const result = await response.json();
     console.log('✅ Resposta da API:', result);
     return result;
     
   } catch (error) {
     console.error(`❌ Erro na requisição para ${endpoint}:`, error);
-    
-    // Se for um erro de CORS, o erro será "Failed to fetch" ou similar
-    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-      console.error('💥 Erro de CORS ou de rede. Verifique a configuração do backend.');
-      alert('Erro de conexão. Verifique se o backend está configurado para aceitar requisições do seu domínio.');
+    if (error.message.includes('Failed to fetch')) {
+      alert('Erro de conexão com o servidor. Verifique CORS ou domínio.');
     }
-    
     throw error;
   }
 }
 
-// Função para testar CORS
+// ======================================
+// Função de teste de CORS e conexão
+// ======================================
 async function testarCORS() {
   try {
     const response = await fetch(`${BASE_URL}/api/test-cors`, {
@@ -61,21 +55,31 @@ async function testarCORS() {
       credentials: 'include',
       mode: 'cors'
     });
-    console.log('✅ Teste CORS bem-sucedido:', response.status);
-    return true;
+    if (response.ok) {
+      console.log('✅ CORS funcionando.');
+      return true;
+    }
+    throw new Error(`Status: ${response.status}`);
   } catch (error) {
     console.error('❌ Teste CORS falhou:', error);
     return false;
   }
 }
 
-// Chame esta função no carregamento da página para verificar
+// ✅ Função usada antes de tentar login
+async function testarConexao() {
+  return testarCORS();
+}
+
+// ======================================
+// Inicialização do sistema de login
+// ======================================
 document.addEventListener('DOMContentLoaded', () => {
   console.log('✅ Sistema de login carregado e pronto.');
   mostrarTela('tipo-login-container');
   testarCORS().then(sucesso => {
     if (!sucesso) {
-      alert('Atenção: Problema de CORS detectado. O login pode não funcionar.');
+      alert('⚠️ Atenção: O backend não respondeu corretamente ao teste CORS.');
     }
   });
 });
