@@ -17,37 +17,44 @@ dotenv.config();
 const app = express();
 const MySQLStore = MySQLStoreImport(session);
 
+// ========================
+// ⚙️ CONFIGURAÇÃO DO CORS (CORRIGIDO)
+// ========================
+
+// Lista de origens autorizadas
+const allowedOrigins = [
+  'http://localhost:8080',
+  'http://127.0.0.1:8080',
+  'https://projetosemeddiariodigital-lwz1r1omxvw-romulobios-projects.vercel.app' // ⬅️ seu domínio do Vercel
+];
+
+// Aplica o CORS apenas uma vez
 app.use(cors({
-    origin: ['http://localhost:8080', 'http://127.0.0.1:8080', 'https://projetosemeddiariodigital-lwz1.vercel.app'], // Frontend
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    credentials: true
+  origin: function (origin, callback) {
+    // Permite requisições sem origem (ex: Postman) ou de domínios autorizados
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn('🚫 Bloqueado por CORS:', origin);
+      callback(new Error('CORS não permitido para esta origem: ' + origin));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true
 }));
 
-// Middleware CORS — deve ser o PRIMEIRO app.use() (antes de tudo)
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.header("Access-Control-Allow-Origin", origin);
-  }
-  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Access-Control-Allow-Credentials", "true");
-
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204); // encerra preflight
-  }
-  next();
-});
+// ✅ Middleware para pré-voo (preflight) de requisições OPTIONS
+app.options('*', cors());
 
 // ========================
-// ⚙️ Express Configurações gerais
+// CONFIGURAÇÕES EXPRESS
 // ========================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ========================
-// 🔍 Rota de teste CORS
+// 🔍 ROTA DE TESTE CORS
 // ========================
 app.get("/api/test-cors", (req, res) => {
   console.log("✅ [CORS] Teste recebido de:", req.headers.origin);
@@ -55,6 +62,7 @@ app.get("/api/test-cors", (req, res) => {
     success: true,
     message: "✅ CORS funcionando corretamente!",
     origin: req.headers.origin,
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
