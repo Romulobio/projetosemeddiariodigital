@@ -22,9 +22,8 @@ console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'desenvolvimento'}`);
 
 // Domínios permitidos (adicione outros se quiser)
 const allowedOrigins = [
-  "https://projetosemeddiariodigital-lwz1.vercel.app", // frontend Vercel
-  "http://localhost:3000"
-];
+  'https://projetosemeddiariodigital-lwz1.vercel.app', // frontend Vercel
+  ];
 
 app.use(
   cors({
