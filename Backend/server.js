@@ -12,19 +12,17 @@ import crypto from 'crypto';
 import mysql from 'mysql2/promise';
 import { fileURLToPath } from 'url';
 
+dotenv.config();
+
 const app = express();
 const MySQLStore = MySQLStoreImport(session);
 
-console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'desenvolvimento'}`);
-
-
-// ========================
-// 🔒 CORS — Configuração avançada (Railway + Vercel)
-// ========================
-const allowedOrigins = [
-  "https://projetosemeddiariodigital-lwz1.vercel.app", // Frontend em produção
-  "http://localhost:3000", // Ambiente local
-];
+app.use(cors({
+    origin: ['http://localhost:8080', 'http://127.0.0.1:8080', 'https://projetosemeddiariodigital-lwz1.vercel.app'], // Frontend
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true
+}));
 
 // Middleware CORS — deve ser o PRIMEIRO app.use() (antes de tudo)
 app.use((req, res, next) => {
@@ -45,8 +43,8 @@ app.use((req, res, next) => {
 // ========================
 // ⚙️ Express Configurações gerais
 // ========================
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // ========================
 // 🔍 Rota de teste CORS
@@ -63,7 +61,6 @@ app.get("/api/test-cors", (req, res) => {
 // ========================
 // CONEXÃO COM O BANCO DE DADOS (SERVIÇOS SEPARADOS)
 // ========================
-dotenv.config();
 
 console.log('🔧 Configurando conexão com MySQL (serviços separados)...');
 
