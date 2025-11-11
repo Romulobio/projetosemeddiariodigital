@@ -14,7 +14,6 @@ import { fileURLToPath } from 'url';
 
 const app = express();
 const MySQLStore = MySQLStoreImport(session);
-dotenv.config();
 
 console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'desenvolvimento'}`);
 
@@ -64,6 +63,8 @@ app.get("/api/test-cors", (req, res) => {
 // ========================
 // CONEXÃO COM O BANCO DE DADOS (SERVIÇOS SEPARADOS)
 // ========================
+dotenv.config();
+
 console.log('🔧 Configurando conexão com MySQL (serviços separados)...');
 
 const dbConfig = {
