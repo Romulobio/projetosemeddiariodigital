@@ -19,45 +19,46 @@ dotenv.config();
 console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'desenvolvimento'}`);
 
 
-
-// Domínios permitidos (adicione outros se quiser)
+// ========================
+// 🔒 CORS — Configuração avançada (Railway + Vercel)
+// ========================
 const allowedOrigins = [
-  'https://projetosemeddiariodigital-lwz1.vercel.app', // frontend Vercel
-  ];
+  "https://projetosemeddiariodigital-lwz1.vercel.app", // Frontend em produção
+  "http://localhost:3000", // Ambiente local
+];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Permite requisições de ferramentas internas ou sem origin (ex: Postman)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      } else {
-        console.log(`❌ CORS bloqueado para: ${origin}`);
-        return callback(new Error("CORS não permitido para esta origem."));
-      }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+// Middleware CORS — deve ser o PRIMEIRO app.use() (antes de tudo)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Credentials", "true");
 
-// Middleware para lidar com OPTIONS (pré-flight)
-app.options('*', cors());
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204); // encerra preflight
+  }
+  next();
+});
 
 // ========================
-// CONFIGURAÇÕES DO EXPRESS
+// ⚙️ Express Configurações gerais
 // ========================
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // ========================
-// 🔍 ROTA DE TESTE DE CORS
+// 🔍 Rota de teste CORS
 // ========================
 app.get("/api/test-cors", (req, res) => {
   console.log("✅ [CORS] Teste recebido de:", req.headers.origin);
-  res.json({ success: true, message: "✅ CORS funcionando corretamente!" });
+  res.json({
+    success: true,
+    message: "✅ CORS funcionando corretamente!",
+    origin: req.headers.origin,
+  });
 });
 
 // ========================
