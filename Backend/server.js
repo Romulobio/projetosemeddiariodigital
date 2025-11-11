@@ -1264,7 +1264,7 @@ app.get('/', (req, res) => {
 // ========================
 // INICIAR SERVIDOR
 // ========================
-const PORT = process.env.PORT || 8080; // Se PORT não estiver no Railway, usará 8080
+const PORT = process.env.PORT || 5000; // Se PORT não estiver no Railway, usará 8080
 
 // Esta função assíncrona garante que a conexão com o DB seja testada
 // ANTES que o servidor Express comece a escutar.
