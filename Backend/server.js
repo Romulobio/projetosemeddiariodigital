@@ -18,37 +18,20 @@ const app = express();
 const MySQLStore = MySQLStoreImport(session);
 
 // ========================
-// ⚙️ CONFIGURAÇÃO DO CORS (CORRIGIDO)
+// ⚙️ CONFIGURAÇÃO DO CORS (ACEITA QUALQUER REQUISIÇÃO)
 // ========================
-
-// Lista de origens autorizadas
-const allowedOrigins = [
-  'http://localhost:8080',
-  'http://127.0.0.1:8080',
-  'https://projetosemeddiariodigital-lwz1r1omxvw-romulobios-projects.vercel.app',
-  "https://projetosemeddiariodigital-production.up.railway.app",
-];
-
-app.use(express.json());
-
-// Aplica o CORS apenas uma vez
 app.use(cors({
-  origin: function (origin, callback) {
-    // Permite requisições sem origem (ex: Postman) ou de domínios autorizados
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.warn('🚫 Bloqueado por CORS:', origin);
-      callback(new Error('CORS não permitido para esta origem: ' + origin));
-    }
-  },
+  origin: true,           // Aceita qualquer origem dinamicamente
+  credentials: true,      // Permite envio de cookies/autenticação
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: true
 }));
 
-// ✅ Middleware para pré-voo (preflight) de requisições OPTIONS
-app.options('*', cors());
+// ✅ Middleware para pré-voo (preflight)
+app.options('*', cors({
+  origin: true,
+  credentials: true,
+}));
 
 // ========================
 // CONFIGURAÇÕES EXPRESS
@@ -68,6 +51,7 @@ app.get("/api/test-cors", (req, res) => {
     environment: process.env.NODE_ENV || 'development'
   });
 });
+
 
 // ========================
 // CONEXÃO COM O BANCO DE DADOS (SERVIÇOS SEPARADOS)
