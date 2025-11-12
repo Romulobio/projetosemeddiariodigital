@@ -1,11 +1,11 @@
-// ================================
-// 📦 Importa e inicializa o serviço de API
-// ================================
+// ==================================================
+// 📡 Usa o ApiService carregado antes (via <script> api-service.js )
+// ==================================================
 const api = new ApiService();
 
-// ================================
-// 🔐 Função de Login do Administrador
-// ================================
+// ==================================================
+// 🔐 Login do Administrador
+// ==================================================
 async function loginAdmin(event) {
   event.preventDefault();
 
@@ -22,20 +22,20 @@ async function loginAdmin(event) {
     const resposta = await api.post('/api/login', dados);
 
     if (resposta.success) {
-      alert('Login realizado com sucesso!');
+      alert('✅ Login realizado com sucesso!');
       window.location.href = 'admin.html';
     } else {
       alert(resposta.message || 'Falha no login.');
     }
   } catch (erro) {
     console.error('Erro ao fazer login:', erro);
-    alert('Erro ao tentar fazer login no servidor.');
+    alert('Erro ao tentar conectar ao servidor.');
   }
 }
 
-// ================================
+// ==================================================
 // 👤 Cadastrar novo usuário
-// ================================
+// ==================================================
 async function cadastrarUsuario(event) {
   event.preventDefault();
 
@@ -54,9 +54,9 @@ async function cadastrarUsuario(event) {
     const resposta = await api.post('/api/cadastrar', novoUsuario);
 
     if (resposta.success) {
-      alert('Usuário cadastrado com sucesso!');
+      alert('✅ Usuário cadastrado com sucesso!');
       document.getElementById('formCadastro').reset();
-      carregarUsuarios(); // Atualiza a lista
+      carregarUsuarios();
     } else {
       alert(resposta.message || 'Erro ao cadastrar usuário.');
     }
@@ -66,15 +66,17 @@ async function cadastrarUsuario(event) {
   }
 }
 
-// ================================
+// ==================================================
 // 📋 Carregar lista de usuários
-// ================================
+// ==================================================
 async function carregarUsuarios() {
   try {
     const usuarios = await api.get('/api/usuarios');
 
     const tabela = document.getElementById('tabelaUsuarios');
-    tabela.innerHTML = ''; // Limpa
+    if (!tabela) return;
+
+    tabela.innerHTML = '';
 
     usuarios.forEach(user => {
       const row = document.createElement('tr');
@@ -96,9 +98,9 @@ async function carregarUsuarios() {
   }
 }
 
-// ================================
+// ==================================================
 // 🗑️ Excluir usuário
-// ================================
+// ==================================================
 async function excluirUsuario(id) {
   if (!confirm('Tem certeza que deseja excluir este usuário?')) return;
 
@@ -116,9 +118,9 @@ async function excluirUsuario(id) {
   }
 }
 
-// ================================
+// ==================================================
 // ✏️ Editar usuário
-// ================================
+// ==================================================
 async function editarUsuario(id) {
   const novoNome = prompt('Digite o novo nome:');
   if (!novoNome) return;
@@ -137,9 +139,9 @@ async function editarUsuario(id) {
   }
 }
 
-// ================================
+// ==================================================
 // 🚪 Logout
-// ================================
+// ==================================================
 async function logout() {
   try {
     const resposta = await api.post('/api/logout');
@@ -154,16 +156,16 @@ async function logout() {
   }
 }
 
-// ================================
+// ==================================================
 // ⚡ Inicialização da Página
-// ================================
+// ==================================================
 document.addEventListener('DOMContentLoaded', () => {
-  // Se houver uma tabela de usuários, carregue
+  // Carrega a lista se houver tabela
   if (document.getElementById('tabelaUsuarios')) {
     carregarUsuarios();
   }
 
-  // Adiciona listeners se os formulários existirem
+  // Liga eventos se os formulários existirem
   const formLogin = document.getElementById('formLogin');
   if (formLogin) formLogin.addEventListener('submit', loginAdmin);
 
@@ -173,3 +175,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnLogout = document.getElementById('btnLogout');
   if (btnLogout) btnLogout.addEventListener('click', logout);
 });
+
+// Torna as funções acessíveis globalmente (caso sejam chamadas no HTML)
+window.carregarUsuarios = carregarUsuarios;
+window.excluirUsuario = excluirUsuario;
+window.editarUsuario = editarUsuario;
+window.logout = logout;
+window.cadastrarUsuario = cadastrarUsuario;
