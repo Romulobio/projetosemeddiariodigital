@@ -1,122 +1,78 @@
-// ================================
-// 📦 api-service.js
-// Serviço central de comunicação com o backend
-// ================================
+// ===============================
+// API SERVICE - ÚNICO PONTO DE ACESSO À API
+// ===============================
 
-// 🚀 URL base do seu backend no Railway
-const BASE_URL = 'https://projetosemeddiariodigital-production.up.railway.app';
+// Detecta automaticamente se está rodando localmente ou no Railway
+const BASE_URL = window.location.hostname.includes('localhost')
+  ? 'http://localhost:8080'
+  : 'https://prosemeddiariodigital-production.up.railway.app';
 
-// Classe que concentra todas as chamadas à API
-class ApiService {
-  constructor() {
-    this.baseURL = BASE_URL;
-  }
-
-  // ===========================
-  // 🔐 LOGIN / AUTENTICAÇÃO
-  // ===========================
-  async login(email, senha, tipo) {
-    return this._fetch('/api/login', 'POST', { email, senha, tipo });
-  }
-
-  async logout() {
-    return this._fetch('/api/logout', 'POST');
-  }
-
-  async verificarSessao() {
-    return this._fetch('/api/verificar-sessao', 'GET');
-  }
-
-  // ===========================
-  // 🧑‍🏫 PROFESSORES
-  // ===========================
-  async getProfessores() {
-    return this._fetch('/api/professores', 'GET');
-  }
-
-  async cadastrarProfessor(nome, email, senha, disciplinas) {
-    return this._fetch('/api/professores', 'POST', { nome, email, senha, disciplinas });
-  }
-
-  async excluirProfessor(id) {
-    return this._fetch(`/api/professores/${id}`, 'DELETE');
-  }
-
-  // ===========================
-  // 🎓 ALUNOS
-  // ===========================
-  async getAlunos() {
-    return this._fetch('/api/alunos', 'GET');
-  }
-
-  async cadastrarAluno(nome, email, senha, turma_id) {
-    return this._fetch('/api/alunos', 'POST', { nome, email, senha, turma_id });
-  }
-
-  async excluirAluno(id) {
-    return this._fetch(`/api/alunos/${id}`, 'DELETE');
-  }
-
-  // ===========================
-  // 🏫 TURMAS
-  // ===========================
-  async getTurmas() {
-    return this._fetch('/api/turmas', 'GET');
-  }
-
-  async cadastrarTurma(nome, ano, curso) {
-    return this._fetch('/api/turmas', 'POST', { nome, ano, curso });
-  }
-
-  async excluirTurma(id) {
-    return this._fetch(`/api/turmas/${id}`, 'DELETE');
-  }
-
-  // ===========================
-  // 📘 DISCIPLINAS
-  // ===========================
-  async getDisciplinas() {
-    return this._fetch('/api/disciplinas', 'GET');
-  }
-
-  async cadastrarDisciplina(nome, carga_horaria) {
-    return this._fetch('/api/disciplinas', 'POST', { nome, carga_horaria });
-  }
-
-  async excluirDisciplina(id) {
-    return this._fetch(`/api/disciplinas/${id}`, 'DELETE');
-  }
-
-  // ===========================
-  // 💾 Função genérica de fetch
-  // ===========================
-  async _fetch(endpoint, method = 'GET', body = null) {
-    const options = {
+// Função genérica para requisições POST (ou PUT quando necessário)
+async function apiFetch(endpoint, data = {}, method = 'POST') {
+  try {
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include', // mantém cookies/sessões
-    };
+      body: method === 'GET' ? null : JSON.stringify(data),
+      credentials: 'include', // permite enviar cookies/sessões
+    });
 
-    if (body) options.body = JSON.stringify(body);
-
-    try {
-      const response = await fetch(`${this.baseURL}${endpoint}`, options);
-
-      // tenta converter para JSON
-      const data = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        console.error(`❌ Erro em ${endpoint}:`, data || response.statusText);
-        throw new Error(data?.message || `Erro: ${response.status}`);
-      }
-
-      return data;
-    } catch (err) {
-      console.error(`🚨 Falha ao acessar ${endpoint}:`, err.message);
-      throw err;
+    // Se o servidor não respondeu OK, lança erro
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Erro HTTP ${response.status}: ${errorText}`);
+      throw new Error(`Erro HTTP ${response.status}`);
     }
+
+    // Tenta converter para JSON
+    const json = await response.json();
+    return json;
+  } catch (error) {
+    console.error('❌ Erro na comunicação com o servidor:', error);
+    alert('Erro de conexão com o servidor. Verifique sua internet ou tente novamente.');
+    throw error;
   }
 }
 
-// 🔧 Cria instância global (disponível no navegador)
-window.apiService = new ApiService();
+// Função GET
+async function apiGet(endpoint) {
+  return apiFetch(endpoint, {}, 'GET');
+}
+
+// Função PUT
+async function apiPut(endpoint, data) {
+  return apiFetch(endpoint, data, 'PUT');
+}
+
+// Função DELETE
+async function apiDelete(endpoint) {
+  try {
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Erro HTTP ${response.status}: ${errorText}`);
+      throw new Error(`Erro HTTP ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('❌ Erro ao excluir:', error);
+    alert('Erro ao excluir no servidor.');
+    throw error;
+  }
+}
+
+// Exporta as funções globalmente (para serem acessadas em outros scripts)
+window.apiService = {
+  apiFetch,
+  apiGet,
+  apiPut,
+  apiDelete
+};
+
+console.log('✅ api-service.js carregado com sucesso:', BASE_URL);
