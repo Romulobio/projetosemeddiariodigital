@@ -1,7 +1,6 @@
 // ================================
 // 📦 Importa e inicializa o serviço de API
 // ================================
-import ApiService from './api-service.js';
 const api = new ApiService();
 
 // ================================
