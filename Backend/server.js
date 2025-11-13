@@ -23,8 +23,8 @@ const MySQLStore = MySQLStoreImport(session);
 // ⚙️ CONFIGURAÇÃO DO CORS (ACEITA QUALQUER REQUISIÇÃO)
 // ========================
 app.use(cors({
-  // Use a variável de ambiente para o domínio do frontend
-  origin: process.env.FRONTEND_URL, 
+  // 💡 CORREÇÃO: Use a variável local FRONTEND_URL em AMBOS os lugares
+  origin: FRONTEND_URL, 
   credentials: true,      // Permite envio de cookies/autenticação
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -32,7 +32,7 @@ app.use(cors({
 
 // O middleware de pré-voo (preflight) também deve usar a variável
 app.options('*', cors({
-  origin: FRONTEND_URL,
+  origin: FRONTEND_URL, // ✅ Já estava correto
   credentials: true,
 }));
 
