@@ -65,6 +65,21 @@ class AdminApp {
     if (btnRedefinirSenha) {
       btnRedefinirSenha.onclick = () => window.redefinirSenhaUsuario?.();
     }
+
+    // ✅ CORREÇÃO: ADICIONAR EVENT LISTENER para carregar disciplinas vinculadas
+    document.getElementById('select-professor-disciplina')?.addEventListener('change', (e) => {
+      const professorId = e.target.value;
+      if (professorId) {
+        this.carregarDisciplinasVinculadas(professorId);
+      } else {
+        // Limpar seleção de checkboxes
+        document.querySelectorAll('#disciplinas-container input[type="checkbox"]').forEach(cb => {
+          cb.checked = false;
+        });
+        document.getElementById('lista-disciplinas-vinculadas').innerHTML = 
+          '<p style="margin:0; color:#666; font-style:italic;">Selecione um professor para ver as disciplinas vinculadas.</p>';
+      }
+    });
   }
 
   async carregarDadosIniciais() {
@@ -202,6 +217,7 @@ class AdminApp {
   }
 
   // ================== PROFESSORES ==================
+  // ✅ CORREÇÃO: Função atualizada para incluir o botão de exclusão com onclick
   async carregarProfessores() {
     try {
       console.log('🔄 Carregando professores...');
@@ -223,7 +239,7 @@ class AdminApp {
             <td>Carregando...</td>
             <td>Carregando...</td>
             <td style="text-align:right">
-              <button class="btn small danger">🗑️</button>
+              <button class="btn small danger" onclick="adminApp.excluirProfessor(${professor.id})">🗑️</button>
             </td>
           `;
           tbody.appendChild(row);
@@ -322,7 +338,8 @@ class AdminApp {
 
       if (resultado.sucesso) {
         alert('✅ Disciplinas vinculadas com sucesso!');
-        // await this.carregarDisciplinasVinculadas(professorId);
+        // Recarrega as disciplinas vinculadas para atualizar a visualização
+        this.carregarDisciplinasVinculadas(professorId);
       } else {
         alert('❌ Erro: ' + resultado.erro);
       }
@@ -332,7 +349,31 @@ class AdminApp {
     }
   }
 
+  // ✅ CORREÇÃO: Nova função para excluir professor
+  async excluirProfessor(id) {
+    if (!confirm('Tem certeza que deseja excluir este professor? Todos os vínculos com turmas e disciplinas serão removidos.')) {
+      return;
+    }
+    
+    try {
+      console.log(`🔄 Excluindo professor ${id}...`);
+      const data = await apiService.request(`/api/professores/${id}`, { method: 'DELETE' });
+      
+      if (data.sucesso) {
+        alert('✅ Professor excluído com sucesso!');
+        await this.carregarProfessores();
+        await this.carregarSelects();
+      } else {
+        alert('❌ Erro: ' + data.erro);
+      }
+    } catch (err) {
+      console.error('❌ Erro ao excluir professor:', err);
+      alert('Erro ao excluir professor: ' + this.obterMensagemErro(err));
+    }
+  }
+
   // ================== ALUNOS ==================
+  // ✅ CORREÇÃO: Função atualizada para incluir o botão de exclusão com onclick
   async carregarAlunos() {
     try {
       console.log('🔄 Carregando alunos...');
@@ -352,7 +393,7 @@ class AdminApp {
             <td><strong>${aluno.nome}</strong></td>
             <td>${aluno.turma_id || 'Não definida'}</td>
             <td style="text-align:right">
-              <button class="btn small danger">🗑️</button>
+              <button class="btn small danger" onclick="adminApp.excluirAluno(${aluno.id})">🗑️</button>
             </td>
           `;
           tbody.appendChild(row);
@@ -397,6 +438,28 @@ class AdminApp {
     } catch (error) {
       console.error('❌ Erro ao cadastrar aluno:', error);
       alert('Erro ao cadastrar aluno: ' + this.obterMensagemErro(error));
+    }
+  }
+
+  // ✅ CORREÇÃO: Nova função para excluir aluno
+  async excluirAluno(id) {
+    if (!confirm('Tem certeza que deseja excluir este aluno?')) {
+      return;
+    }
+    
+    try {
+      console.log(`🔄 Excluindo aluno ${id}...`);
+      const data = await apiService.request(`/api/alunos/${id}`, { method: 'DELETE' });
+      
+      if (data.sucesso) {
+        alert('✅ Aluno excluído com sucesso!');
+        await this.carregarAlunos();
+      } else {
+        alert('❌ Erro: ' + data.erro);
+      }
+    } catch (err) {
+      console.error('❌ Erro ao excluir aluno:', err);
+      alert('Erro ao excluir aluno: ' + this.obterMensagemErro(err));
     }
   }
 
@@ -479,6 +542,7 @@ class AdminApp {
   }
 
   // ================== FUNÇÕES AUXILIARES ==================
+  // ✅ CORREÇÃO: Função atualizada para incluir o carregamento de disciplinas
   async carregarSelects() {
     try {
       // Carrega turmas para selects
@@ -522,8 +586,95 @@ class AdminApp {
           });
         }
       }
+
+      // ✅ NOVO: Carrega disciplinas para checkboxes
+      await this.carregarDisciplinas();
+      
     } catch (error) {
       console.error('❌ Erro ao carregar selects:', error);
+    }
+  }
+
+  // ✅ CORREÇÃO: Nova função para carregar disciplinas e popular checkboxes
+  async carregarDisciplinas() {
+    try {
+      console.log('🔄 Carregando disciplinas...');
+      
+      // Rota GET /api/disciplinas deve ser implementada no backend
+      const data = await apiService.request('/api/disciplinas');
+      
+      if (data.sucesso) {
+        const container = document.getElementById('disciplinas-container');
+        
+        if (container) {
+          container.innerHTML = '';
+          
+          data.disciplinas.forEach(disciplina => {
+            const checkboxWrapper = document.createElement('label');
+            checkboxWrapper.style.display = 'flex';
+            checkboxWrapper.style.alignItems = 'center';
+            checkboxWrapper.style.gap = '6px';
+            checkboxWrapper.style.cursor = 'pointer';
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = disciplina.id;
+            checkbox.id = `disciplina-${disciplina.id}`;
+            
+            const label = document.createElement('span');
+            label.textContent = disciplina.nome;
+            label.style.fontSize = '14px';
+            
+            checkboxWrapper.appendChild(checkbox);
+            checkboxWrapper.appendChild(label);
+            container.appendChild(checkboxWrapper);
+          });
+          
+          console.log(`✅ ${data.disciplinas.length} disciplinas carregadas`);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar disciplinas:', error);
+    }
+  }
+
+  // ✅ CORREÇÃO: Nova função para carregar e marcar disciplinas vinculadas
+  async carregarDisciplinasVinculadas(professorId) {
+    try {
+      console.log(`🔄 Carregando disciplinas vinculadas ao professor ${professorId}...`);
+      
+      // Rota GET /api/professor/:professor_id/disciplinas deve ser implementada no backend
+      const data = await apiService.request(`/api/professor/${professorId}/disciplinas`);
+      
+      const listaDiv = document.getElementById('lista-disciplinas-vinculadas');
+      
+      // Limpar todos os checkboxes antes de marcar os corretos
+      document.querySelectorAll('#disciplinas-container input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+      });
+
+      if (data.sucesso && data.disciplinas.length > 0) {
+        const disciplinasNomes = data.disciplinas.map(d => d.nome).join(', ');
+        listaDiv.innerHTML = `<p style="margin:0; color:#2E7D32;"><strong>Disciplinas vinculadas:</strong> ${disciplinasNomes}</p>`;
+        
+        // Marcar checkboxes correspondentes
+        data.disciplinas.forEach(disciplina => {
+          const checkbox = document.getElementById(`disciplina-${disciplina.id}`);
+          if (checkbox) {
+            checkbox.checked = true;
+          }
+        });
+      } else {
+        listaDiv.innerHTML = '<p style="margin:0; color:#666; font-style:italic;">Nenhuma disciplina vinculada a este professor.</p>';
+      }
+      
+      console.log(`✅ ${data.disciplinas?.length || 0} disciplinas vinculadas`);
+    } catch (error) {
+      console.error('❌ Erro ao carregar disciplinas vinculadas:', error);
+      const listaDiv = document.getElementById('lista-disciplinas-vinculadas');
+      if (listaDiv) {
+        listaDiv.innerHTML = '<p style="margin:0; color:#dc3545;">Erro ao carregar disciplinas vinculadas.</p>';
+      }
     }
   }
 
@@ -588,3 +739,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // Para compatibilidade com onclick no HTML
 window.carregarTurmas = () => window.adminApp?.carregarTurmas();
 window.excluirTurma = (id) => window.adminApp?.excluirTurma(id);
+// ✅ CORREÇÃO: Novas exportações globais para as funções de exclusão
+window.excluirProfessor = (id) => window.adminApp?.excluirProfessor(id);
+window.excluirAluno = (id) => window.adminApp?.excluirAluno(id);

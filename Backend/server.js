@@ -689,6 +689,492 @@ app.get('/api/alunos', verificarAdmin, async (req, res) => {
   }
 });
 
+
+// ========================================================================================
+// 🔧 CORREÇÕES COMPLETAS PARA O BACKEND - server.js
+// ========================================================================================
+// INSTRUÇÕES: Adicione estas rotas no arquivo Backend/server.js após a linha 670
+// (logo após a rota POST /api/turmas)
+// ========================================================================================
+
+// ========================================================================================
+// PROBLEMA #1: VINCULAR PROFESSOR À TURMA
+// ========================================================================================
+// Rota: POST /api/professor-turma
+// Descrição: Vincula um professor a uma turma específica
+// Tabela: professor_turma (id_professor, id_turma)
+// ========================================================================================
+
+app.post('/api/professor-turma', verificarAuth, verificarAdmin, async (req, res) => {
+  const { professor_id, turma_id } = req.body;
+  
+  console.log('🔄 [VINCULAR] Professor à Turma:', { professor_id, turma_id });
+  
+  try {
+    // Validação 1: Verificar se professor existe e é do tipo professor
+    const [professor] = await db.execute(
+      'SELECT id, nome FROM usuarios WHERE id = ? AND tipo = "professor"', 
+      [professor_id]
+    );
+    
+    if (professor.length === 0) {
+      console.log('❌ Professor não encontrado ou tipo inválido');
+      return res.status(400).json({ 
+        sucesso: false, 
+        erro: 'Professor não encontrado ou usuário não é do tipo professor' 
+      });
+    }
+    
+    // Validação 2: Verificar se turma existe
+    const [turma] = await db.execute(
+      'SELECT id, nome FROM turmas WHERE id = ?', 
+      [turma_id]
+    );
+    
+    if (turma.length === 0) {
+      console.log('❌ Turma não encontrada');
+      return res.status(400).json({ 
+        sucesso: false, 
+        erro: 'Turma não encontrada' 
+      });
+    }
+    
+    // Validação 3: Verificar se já existe vínculo
+    const [vinculoExistente] = await db.execute(
+      'SELECT id FROM professor_turma WHERE id_professor = ? AND id_turma = ?',
+      [professor_id, turma_id]
+    );
+    
+    if (vinculoExistente.length > 0) {
+      console.log('⚠️ Vínculo já existe');
+      return res.status(400).json({ 
+        sucesso: false, 
+        erro: 'Professor já está vinculado a esta turma' 
+      });
+    }
+    
+    // Inserir vínculo
+    await db.execute(
+      'INSERT INTO professor_turma (id_professor, id_turma) VALUES (?, ?)',
+      [professor_id, turma_id]
+    );
+    
+    console.log(`✅ Professor "${professor[0].nome}" vinculado à turma "${turma[0].nome}"`);
+    
+    res.json({ 
+      sucesso: true, 
+      mensagem: `Professor ${professor[0].nome} vinculado à turma ${turma[0].nome} com sucesso!` 
+    });
+    
+  } catch (err) {
+    console.error('❌ Erro ao vincular professor à turma:', err);
+    res.status(500).json({ 
+      sucesso: false, 
+      erro: 'Erro ao vincular professor à turma: ' + err.message 
+    });
+  }
+});
+
+// ========================================================================================
+// PROBLEMA #1: VINCULAR DISCIPLINAS AO PROFESSOR
+// ========================================================================================
+// Rota: POST /api/professor-disciplinas
+// Descrição: Vincula múltiplas disciplinas a um professor
+// Tabela: professor_disciplina (professor_id, disciplina_id)
+// ========================================================================================
+
+app.post('/api/professor-disciplinas', verificarAuth, verificarAdmin, async (req, res) => {
+  const { professor_id, disciplinas_ids } = req.body;
+  
+  console.log('🔄 [VINCULAR] Disciplinas ao Professor:', { professor_id, disciplinas_ids });
+  
+  try {
+    // Validação 1: Verificar se professor existe e é do tipo professor
+    const [professor] = await db.execute(
+      'SELECT id, nome FROM usuarios WHERE id = ? AND tipo = "professor"', 
+      [professor_id]
+    );
+    
+    if (professor.length === 0) {
+      console.log('❌ Professor não encontrado');
+      return res.status(400).json({ 
+        sucesso: false, 
+        erro: 'Professor não encontrado ou usuário não é do tipo professor' 
+      });
+    }
+    
+    // Validação 2: Verificar se disciplinas foram selecionadas
+    if (!Array.isArray(disciplinas_ids) || disciplinas_ids.length === 0) {
+      console.log('❌ Nenhuma disciplina selecionada');
+      return res.status(400).json({ 
+        sucesso: false, 
+        erro: 'Selecione pelo menos uma disciplina' 
+      });
+    }
+    
+    // Validação 3: Verificar se todas as disciplinas existem
+    const placeholders = disciplinas_ids.map(() => '?').join(',');
+    const [disciplinasValidas] = await db.execute(
+      `SELECT id, nome FROM disciplinas WHERE id IN (${placeholders})`,
+      disciplinas_ids
+    );
+    
+    if (disciplinasValidas.length !== disciplinas_ids.length) {
+      console.log('❌ Algumas disciplinas não foram encontradas');
+      return res.status(400).json({ 
+        sucesso: false, 
+        erro: 'Uma ou mais disciplinas não foram encontradas' 
+      });
+    }
+    
+    // Remover vínculos antigos do professor
+    await db.execute(
+      'DELETE FROM professor_disciplina WHERE professor_id = ?', 
+      [professor_id]
+    );
+    
+    console.log(`🗑️ Vínculos antigos removidos para professor "${professor[0].nome}"`);
+    
+    // Inserir novos vínculos
+    for (const disciplina_id of disciplinas_ids) {
+      await db.execute(
+        'INSERT INTO professor_disciplina (professor_id, disciplina_id) VALUES (?, ?)',
+        [professor_id, disciplina_id]
+      );
+    }
+    
+    const nomeDisciplinas = disciplinasValidas.map(d => d.nome).join(', ');
+    console.log(`✅ Disciplinas vinculadas: ${nomeDisciplinas}`);
+    
+    res.json({ 
+      sucesso: true, 
+      mensagem: `${disciplinas_ids.length} disciplina(s) vinculada(s) ao professor ${professor[0].nome} com sucesso!`,
+      disciplinas: disciplinasValidas
+    });
+    
+  } catch (err) {
+    console.error('❌ Erro ao vincular disciplinas ao professor:', err);
+    res.status(500).json({ 
+      sucesso: false, 
+      erro: 'Erro ao vincular disciplinas: ' + err.message 
+    });
+  }
+});
+
+// ========================================================================================
+// PROBLEMA #3: LISTAR TODAS AS DISCIPLINAS
+// ========================================================================================
+// Rota: GET /api/disciplinas
+// Descrição: Retorna lista de todas as disciplinas disponíveis
+// Tabela: disciplinas
+// ========================================================================================
+
+app.get('/api/disciplinas', verificarAuth, verificarAdmin, async (req, res) => {
+  try {
+    console.log('🔄 [LISTAR] Carregando disciplinas...');
+    
+    const [disciplinas] = await db.execute(
+      'SELECT id, nome FROM disciplinas ORDER BY nome'
+    );
+    
+    console.log(`✅ ${disciplinas.length} disciplinas encontradas`);
+    
+    res.json({ 
+      sucesso: true, 
+      disciplinas 
+    });
+    
+  } catch (err) {
+    console.error('❌ Erro ao carregar disciplinas:', err);
+    res.status(500).json({ 
+      sucesso: false, 
+      erro: 'Erro ao carregar disciplinas: ' + err.message 
+    });
+  }
+});
+
+// ========================================================================================
+// PROBLEMA #2: EXCLUIR TURMA
+// ========================================================================================
+// Rota: DELETE /api/turmas/:id
+// Descrição: Exclui uma turma do sistema
+// Tabela: turmas
+// ========================================================================================
+
+app.delete('/api/turmas/:id', verificarAuth, verificarAdmin, async (req, res) => {
+  const { id } = req.params;
+  
+  console.log(`🔄 [EXCLUIR] Turma ID: ${id}`);
+  
+  try {
+    // Validação 1: Verificar se turma existe
+    const [turma] = await db.execute(
+      'SELECT id, nome FROM turmas WHERE id = ?', 
+      [id]
+    );
+    
+    if (turma.length === 0) {
+      console.log('❌ Turma não encontrada');
+      return res.status(404).json({ 
+        sucesso: false, 
+        erro: 'Turma não encontrada' 
+      });
+    }
+    
+    // Validação 2: Verificar se há alunos vinculados
+    const [alunosVinculados] = await db.execute(
+      'SELECT COUNT(*) as total FROM usuarios WHERE turma_id = ? AND tipo = "aluno"',
+      [id]
+    );
+    
+    if (alunosVinculados[0].total > 0) {
+      console.log(`⚠️ Turma possui ${alunosVinculados[0].total} alunos vinculados`);
+      return res.status(400).json({ 
+        sucesso: false, 
+        erro: `Não é possível excluir a turma "${turma[0].nome}" pois ela possui ${alunosVinculados[0].total} aluno(s) vinculado(s). Remova os alunos primeiro.` 
+      });
+    }
+    
+    // Remover vínculos com professores
+    await db.execute(
+      'DELETE FROM professor_turma WHERE id_turma = ?',
+      [id]
+    );
+    
+    console.log('🗑️ Vínculos com professores removidos');
+    
+    // Excluir turma
+    await db.execute(
+      'DELETE FROM turmas WHERE id = ?',
+      [id]
+    );
+    
+    console.log(`✅ Turma "${turma[0].nome}" excluída com sucesso`);
+    
+    res.json({ 
+      sucesso: true, 
+      mensagem: `Turma "${turma[0].nome}" excluída com sucesso!` 
+    });
+    
+  } catch (err) {
+    console.error('❌ Erro ao excluir turma:', err);
+    res.status(500).json({ 
+      sucesso: false, 
+      erro: 'Erro ao excluir turma: ' + err.message 
+    });
+  }
+});
+
+// ========================================================================================
+// PROBLEMA #6: EXCLUIR PROFESSOR
+// ========================================================================================
+// Rota: DELETE /api/professores/:id
+// Descrição: Exclui um professor do sistema
+// Tabela: usuarios
+// ========================================================================================
+
+app.delete('/api/professores/:id', verificarAuth, verificarAdmin, async (req, res) => {
+  const { id } = req.params;
+  
+  console.log(`🔄 [EXCLUIR] Professor ID: ${id}`);
+  
+  try {
+    // Validação 1: Verificar se professor existe
+    const [professor] = await db.execute(
+      'SELECT id, nome FROM usuarios WHERE id = ? AND tipo = "professor"', 
+      [id]
+    );
+    
+    if (professor.length === 0) {
+      console.log('❌ Professor não encontrado');
+      return res.status(404).json({ 
+        sucesso: false, 
+        erro: 'Professor não encontrado' 
+      });
+    }
+    
+    // Remover vínculos com turmas
+    await db.execute(
+      'DELETE FROM professor_turma WHERE id_professor = ?',
+      [id]
+    );
+    
+    // Remover vínculos com disciplinas
+    await db.execute(
+      'DELETE FROM professor_disciplina WHERE professor_id = ?',
+      [id]
+    );
+    
+    console.log('🗑️ Vínculos removidos');
+    
+    // Excluir professor
+    await db.execute(
+      'DELETE FROM usuarios WHERE id = ? AND tipo = "professor"',
+      [id]
+    );
+    
+    console.log(`✅ Professor "${professor[0].nome}" excluído com sucesso`);
+    
+    res.json({ 
+      sucesso: true, 
+      mensagem: `Professor "${professor[0].nome}" excluído com sucesso!` 
+    });
+    
+  } catch (err) {
+    console.error('❌ Erro ao excluir professor:', err);
+    res.status(500).json({ 
+      sucesso: false, 
+      erro: 'Erro ao excluir professor: ' + err.message 
+    });
+  }
+});
+
+// ========================================================================================
+// PROBLEMA #6: EXCLUIR ALUNO
+// ========================================================================================
+// Rota: DELETE /api/alunos/:id
+// Descrição: Exclui um aluno do sistema
+// Tabela: usuarios
+// ========================================================================================
+
+app.delete('/api/alunos/:id', verificarAuth, verificarAdmin, async (req, res) => {
+  const { id } = req.params;
+  
+  console.log(`🔄 [EXCLUIR] Aluno ID: ${id}`);
+  
+  try {
+    // Validação 1: Verificar se aluno existe
+    const [aluno] = await db.execute(
+      'SELECT id, nome FROM usuarios WHERE id = ? AND tipo = "aluno"', 
+      [id]
+    );
+    
+    if (aluno.length === 0) {
+      console.log('❌ Aluno não encontrado');
+      return res.status(404).json({ 
+        sucesso: false, 
+        erro: 'Aluno não encontrado' 
+      });
+    }
+    
+    // Verificar se há registros de notas ou frequência
+    const [temNotas] = await db.execute(
+      'SELECT COUNT(*) as total FROM notas WHERE aluno_id = ?',
+      [id]
+    );
+    
+    const [temFrequencia] = await db.execute(
+      'SELECT COUNT(*) as total FROM frequencia WHERE aluno_id = ?',
+      [id]
+    );
+    
+    if (temNotas[0].total > 0 || temFrequencia[0].total > 0) {
+      console.log(`⚠️ Aluno possui registros acadêmicos (notas: ${temNotas[0].total}, frequência: ${temFrequencia[0].total})`);
+      return res.status(400).json({ 
+        sucesso: false, 
+        erro: `Não é possível excluir o aluno "${aluno[0].nome}" pois ele possui registros de notas ou frequência. Considere desativar o aluno ao invés de excluí-lo.` 
+      });
+    }
+    
+    // Excluir aluno
+    await db.execute(
+      'DELETE FROM usuarios WHERE id = ? AND tipo = "aluno"',
+      [id]
+    );
+    
+    console.log(`✅ Aluno "${aluno[0].nome}" excluído com sucesso`);
+    
+    res.json({ 
+      sucesso: true, 
+      mensagem: `Aluno "${aluno[0].nome}" excluído com sucesso!` 
+    });
+    
+  } catch (err) {
+    console.error('❌ Erro ao excluir aluno:', err);
+    res.status(500).json({ 
+      sucesso: false, 
+      erro: 'Erro ao excluir aluno: ' + err.message 
+    });
+  }
+});
+
+// ========================================================================================
+// PROBLEMA #5 (OPCIONAL): VISUALIZAR DISCIPLINAS VINCULADAS AO PROFESSOR
+// ========================================================================================
+// Rota: GET /api/professor/:professor_id/disciplinas
+// Descrição: Retorna disciplinas vinculadas a um professor específico
+// Tabela: professor_disciplina JOIN disciplinas
+// ========================================================================================
+
+app.get('/api/professor/:professor_id/disciplinas', verificarAuth, verificarAdmin, async (req, res) => {
+  const { professor_id } = req.params;
+  
+  try {
+    console.log(`🔄 [LISTAR] Disciplinas do professor ${professor_id}...`);
+    
+    const [disciplinas] = await db.execute(`
+      SELECT d.id, d.nome 
+      FROM disciplinas d
+      INNER JOIN professor_disciplina pd ON d.id = pd.disciplina_id
+      WHERE pd.professor_id = ?
+      ORDER BY d.nome
+    `, [professor_id]);
+    
+    console.log(`✅ ${disciplinas.length} disciplinas encontradas`);
+    
+    res.json({ 
+      sucesso: true, 
+      disciplinas 
+    });
+    
+  } catch (err) {
+    console.error('❌ Erro ao carregar disciplinas do professor:', err);
+    res.status(500).json({ 
+      sucesso: false, 
+      erro: 'Erro ao carregar disciplinas: ' + err.message 
+    });
+  }
+});
+
+// ========================================================================================
+// ROTAS ADICIONAIS (BÔNUS): DESVINCULAR
+// ========================================================================================
+
+// Desvincular professor de turma
+app.delete('/api/professor-turma', verificarAuth, verificarAdmin, async (req, res) => {
+  const { professor_id, turma_id } = req.body;
+  
+  console.log('🔄 [DESVINCULAR] Professor da Turma:', { professor_id, turma_id });
+  
+  try {
+    const [result] = await db.execute(
+      'DELETE FROM professor_turma WHERE id_professor = ? AND id_turma = ?',
+      [professor_id, turma_id]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ 
+        sucesso: false, 
+        erro: 'Vínculo não encontrado' 
+      });
+    }
+    
+    console.log('✅ Professor desvinculado da turma');
+    
+    res.json({ 
+      sucesso: true, 
+      mensagem: 'Professor desvinculado da turma com sucesso!' 
+    });
+    
+  } catch (err) {
+    console.error('❌ Erro ao desvincular professor da turma:', err);
+    res.status(500).json({ 
+      sucesso: false, 
+      erro: 'Erro ao desvincular professor: ' + err.message 
+    });
+  }
+});
+
 // ========================
 // ROTAS DO PROFESSOR - DIÁRIO
 // ========================
