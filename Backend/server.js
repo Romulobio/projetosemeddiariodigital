@@ -28,9 +28,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
-// ✅ Middleware para pré-voo (preflight)
+// O middleware de pré-voo (preflight) também deve usar a variável
 app.options('*', cors({
-  origin: true,
+  origin: FRONTEND_URL,
   credentials: true,
 }));
 
