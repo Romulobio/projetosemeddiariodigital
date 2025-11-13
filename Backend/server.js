@@ -188,7 +188,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// ========================
 // FUNÇÕES AUXILIARES
+// ========================
 function fazerLogin(usuario, res, req) {
   req.session.usuario = { 
     id: usuario.id, 
@@ -197,37 +199,6 @@ function fazerLogin(usuario, res, req) {
     tipo: usuario.tipo.toLowerCase(),
     pode_criar_admin: Boolean(usuario.pode_criar_admin)
   };
-  
-  // 💡 CORREÇÃO: Usar req.session.regenerate() para garantir que o cookie seja redefinido
-  req.session.regenerate((err) => {
-    if (err) {
-      console.error('❌ Erro ao regenerar sessão:', err);
-      return res.status(500).json({ 
-        sucesso: false, 
-        erro: 'Erro ao criar sessão' 
-      });
-    }
-    
-    // Salva a sessão após a regeneração
-    req.session.save((err) => {
-      if (err) {
-        console.error('❌ Erro ao salvar sessão:', err);
-        return res.status(500).json({ 
-          sucesso: false, 
-          erro: 'Erro ao criar sessão' 
-        });
-      }
-      
-      console.log('✅ Sessão criada para:', usuario.email);
-      // O cookie será enviado automaticamente na resposta HTTP
-      res.status(200).json({ 
-        sucesso: true, 
-        mensagem: 'Login realizado com sucesso!', 
-        usuario: req.session.usuario 
-      });
-    });
-  });
-
   
   // Salva a sessão antes de enviar resposta
   req.session.save((err) => {
