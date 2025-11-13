@@ -22,30 +22,22 @@ const MySQLStore = MySQLStoreImport(session);
 // ========================
 // ⚙️ CONFIGURAÇÃO DO CORS (ACEITA QUALQUER REQUISIÇÃO)
 // ========================
+// URL do seu frontend no Vercel
+const VERCEL_FRONTEND_URL = 'https://projetosemeddiariodigital-lwz1.vercel.app';
+
 app.use(cors({
-  // 💡 CORREÇÃO: Use a variável local FRONTEND_URL em AMBOS os lugares
-  origin: FRONTEND_URL, 
+  // 💡 CORREÇÃO: Usando a URL direta para evitar problemas de process.env
+  origin: VERCEL_FRONTEND_URL, 
   credentials: true,      // Permite envio de cookies/autenticação
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+} ));
+
+// O middleware de pré-voo (preflight) também deve usar a URL direta
+app.options('*', cors({
+  origin: VERCEL_FRONTEND_URL,
+  credentials: true,
 }));
-
-// Backend/server.js (Adicionar após o app.use(cors))
-
-// 💡 SOLUÇÃO FORÇADA PARA PROBLEMAS DE PROXY/CORS
-app.use((req, res, next) => {
-    // Garante que o cabeçalho seja enviado para o seu frontend
-    res.header('Access-Control-Allow-Origin', FRONTEND_URL);
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    
-    // Intercepta a requisição OPTIONS (preflight) e responde imediatamente
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(200);
-    }
-    next();
-});
 
 // ========================
 // CONFIGURAÇÕES EXPRESS
