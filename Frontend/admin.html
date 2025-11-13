@@ -425,9 +425,11 @@ window.excluirTurma = async function(id) {
 // carregar turmas assim que abrir o painel
 window.addEventListener('DOMContentLoaded', carregarTurmas);
 </script>
-<script src="/api-service.js"></script>
-<script src="/script-admin.js"></script>
-
+<script type="module">
+  import ApiService from './api-service.js';
+  window.apiService = ApiService;
+</script>
+<script src="./script-admin.js"></script>
 
 </body>
 </html>
