@@ -30,11 +30,22 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
-// O middleware de pré-voo (preflight) também deve usar a variável
-app.options('*', cors({
-  origin: FRONTEND_URL, // ✅ Já estava correto
-  credentials: true,
-}));
+// Backend/server.js (Adicionar após o app.use(cors))
+
+// 💡 SOLUÇÃO FORÇADA PARA PROBLEMAS DE PROXY/CORS
+app.use((req, res, next) => {
+    // Garante que o cabeçalho seja enviado para o seu frontend
+    res.header('Access-Control-Allow-Origin', FRONTEND_URL);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    
+    // Intercepta a requisição OPTIONS (preflight) e responde imediatamente
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
 
 // ========================
 // CONFIGURAÇÕES EXPRESS
