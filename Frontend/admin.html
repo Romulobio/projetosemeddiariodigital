@@ -362,74 +362,10 @@
   </div>
 </div>
 
-<!-- Inclua o JavaScript das senhas -->
+      
+<script type="module" src="api-service.js"></script>
+<script type="module" src="script-admin.js"></script>
 <script src="senhas-admin.js"></script>
-      <!-- ================= RELATÓRIOS ================= -->
-      
-
-      
-<!-- ================= SCRIPT JS ================= -->
-<script>
-async function carregarTurmas() {
-  try {
-    // ✅ CORRIGIDO: Usando apiService em vez de apiFetch
-    const data = await apiService.getTurmas();
-    if (!data.sucesso) throw new Error(data.erro || "Erro ao carregar turmas");
-
-    const tbody = document.querySelector("#table-turmas tbody");
-    tbody.innerHTML = "";
-    
-    data.turmas.forEach((turma) => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td><strong>${turma.nome}</strong></td>
-        <td>${turma.ano}</td>
-        <td>${turma.turno}</td>
-        <td>${turma.professores || "<span style='color:#666; font-style:italic;'>Sem professor</span>"}</td>
-        <td style="text-align:right">
-          <button class="btn small danger" onclick="excluirTurma(${turma.id})">🗑️</button>
-        </td>
-      `;
-      tbody.appendChild(row);
-    });
-
-    document.getElementById("count-turmas").textContent = data.turmas.length;
-  } catch (error) {
-    console.error("Erro ao carregar turmas:", error);
-    alert("Erro ao carregar turmas!");
-  }
-}
-
-// ================== EXCLUIR TURMA ==================
-window.excluirTurma = async function(id) {
-  if (!confirm('Tem certeza que deseja excluir esta turma?')) return;
-  
-  try {
-    // ✅ CORRIGIDO: Usando apiService em vez de apiFetch
-    const data = await apiService.excluirTurma(id);
-    
-    if (data.sucesso) {
-      alert('Turma excluída com sucesso!');
-      carregarTurmas();
-      carregarSelectsTurmas();
-      atualizarContagens();
-    } else {
-      alert(data.erro || 'Erro ao excluir turma');
-    }
-  } catch (err) {
-    console.error('Erro ao excluir turma:', err);
-    alert('Erro ao excluir turma');
-  }
-}
-
-// carregar turmas assim que abrir o painel
-window.addEventListener('DOMContentLoaded', carregarTurmas);
-</script>
-<script type="module">
-  import ApiService from 'api-service.js';
-  window.apiService = ApiService;
-</script>
-<script src="script-admin.js"></script>
 
 </body>
 </html>

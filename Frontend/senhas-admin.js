@@ -1,11 +1,17 @@
-// Detecta automaticamente se está em localhost ou produção
-const API_URL = process.env.API_URL || "https://prosemeddiariodigital-production.up.railway.app";
+// senhas-admin.js - Sistema de Gerenciamento de Senhas CORRIGIDO
 
-// ✅ SERVIÇO DE API SIMPLIFICADO
-const apiService = {
+// ================== CONFIGURAÇÃO ==================
+// Usa a mesma base URL do api-service
+const API_BASE_URL = window.location.hostname.includes('localhost') 
+  ? 'http://localhost:8080' 
+  : 'https://prosemeddiariodigital-production.up.railway.app';
+
+// ================== SERVIÇO DE API ==================
+const senhasApiService = {
     async request(endpoint, options = {}) {
         try {
             const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                method: options.method || 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                     ...options.headers,
@@ -52,8 +58,6 @@ const apiService = {
     }
 };
 
-// senhas-admin.js - Sistema de Gerenciamento de Senhas
-
 // ================== ALTERAR PRÓPRIA SENHA ==================
 async function alterarMinhaSenha() {
     const senhaAtual = document.getElementById('senhaAtual').value;
@@ -80,7 +84,7 @@ async function alterarMinhaSenha() {
     try {
         mostrarMensagemSenha('⏳ Alterando senha...', 'info', mensagemDiv);
 
-        const data = await apiService.alterarSenha({
+        const data = await senhasApiService.alterarSenha({
             senha_atual: senhaAtual,
             nova_senha: novaSenha,
             confirmar_senha: confirmarSenha
@@ -105,7 +109,7 @@ async function alterarMinhaSenha() {
 async function redefinirSenhaUsuario() {
     const usuarioId = document.getElementById('selectUsuarioSenha').value;
     const novaSenha = document.getElementById('novaSenhaUsuario').value;
-    const mensagemDiv = document.getElementById('mensagemSenha');
+    const mensagemDiv = document.getElementById('mensagemSenha') || document.createElement('div');
 
     // Validações
     if (!usuarioId) {
@@ -127,7 +131,7 @@ async function redefinirSenhaUsuario() {
     try {
         mostrarMensagemSenha('⏳ Redefinindo senha...', 'info', mensagemDiv);
 
-        const data = await apiService.redefinirSenhaAdmin({
+        const data = await senhasApiService.redefinirSenhaAdmin({
             usuario_id: usuarioId,
             nova_senha: novaSenha
         });
@@ -149,9 +153,11 @@ async function redefinirSenhaUsuario() {
 async function carregarUsuariosParaRedefinicao() {
     try {
         const select = document.getElementById('selectUsuarioSenha');
+        if (!select) return;
+        
         select.innerHTML = '<option value="">Carregando usuários...</option>';
 
-        const data = await apiService.getUsuariosAdmin();
+        const data = await senhasApiService.getUsuariosAdmin();
 
         if (data.sucesso) {
             select.innerHTML = '<option value="">Selecione um usuário</option>';
@@ -171,31 +177,42 @@ async function carregarUsuariosParaRedefinicao() {
     } catch (error) {
         console.error('Erro ao carregar usuários:', error);
         const select = document.getElementById('selectUsuarioSenha');
-        select.innerHTML = '<option value="">Erro ao carregar</option>';
+        if (select) {
+            select.innerHTML = '<option value="">Erro ao carregar</option>';
+        }
     }
 }
 
 // ================== VERIFICAR PERMISSÕES DE ADMIN MASTER ==================
 async function verificarPermissoesAdminMaster() {
     try {
-        const result = await apiService.verificarPermissaoAdmin();
+        const result = await senhasApiService.verificarPermissaoAdmin();
         
         const secaoAdminMaster = document.getElementById('secaoAdminMaster');
+        if (!secaoAdminMaster) return;
         
-        if (result.sucesso && result.tem_permissao) {
+        if (result.sucesso && result.is_master) {
             secaoAdminMaster.style.display = 'block';
-            carregarUsuariosParaRedefinicao();
+            await carregarUsuariosParaRedefinicao();
         } else {
             secaoAdminMaster.style.display = 'none';
         }
     } catch (error) {
         console.error('Erro ao verificar permissões:', error);
-        document.getElementById('secaoAdminMaster').style.display = 'none';
+        const secaoAdminMaster = document.getElementById('secaoAdminMaster');
+        if (secaoAdminMaster) {
+            secaoAdminMaster.style.display = 'none';
+        }
     }
 }
 
 // ================== FUNÇÃO AUXILIAR PARA MOSTRAR MENSAGENS ==================
 function mostrarMensagemSenha(texto, tipo, elemento) {
+    if (!elemento) {
+        console.error('Elemento de mensagem não encontrado');
+        return;
+    }
+    
     elemento.innerHTML = texto;
     
     // Remove classes anteriores
@@ -207,7 +224,7 @@ function mostrarMensagemSenha(texto, tipo, elemento) {
     // Mostra o elemento
     elemento.style.display = 'block';
     
-    // Esconde a mensagem após 5 segundos (exceto para mensagens de sucesso)
+    // Esconde a mensagem após 5 segundos (exceto para mensagens de info)
     if (tipo !== 'info') {
         setTimeout(() => {
             elemento.style.display = 'none';
@@ -219,6 +236,58 @@ function mostrarMensagemSenha(texto, tipo, elemento) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ Sistema de senhas carregado!');
     
+    // Adiciona estilos CSS para as mensagens (se não existirem)
+    if (!document.querySelector('#senhas-styles')) {
+        const style = document.createElement('style');
+        style.id = 'senhas-styles';
+        style.textContent = `
+            .mensagem-senha {
+                padding: 12px;
+                border-radius: 6px;
+                margin-top: 15px;
+                text-align: center;
+                display: none;
+                font-weight: 500;
+            }
+            
+            .mensagem-senha.sucesso {
+                background: #d4edda;
+                color: #155724;
+                border: 1px solid #c3e6cb;
+            }
+            
+            .mensagem-senha.erro {
+                background: #f8d7da;
+                color: #721c24;
+                border: 1px solid #f5c6cb;
+            }
+            
+            .mensagem-senha.info {
+                background: #d1ecf1;
+                color: #0c5460;
+                border: 1px solid #bee5eb;
+            }
+            
+            .card-section.senha-propria,
+            .card-section.senha-admin {
+                margin-bottom: 24px;
+                padding: 20px;
+                background: #f8f9fa;
+                border-radius: 8px;
+                border-left: 4px solid;
+            }
+            
+            .card-section.senha-propria {
+                border-left-color: #28a745;
+            }
+            
+            .card-section.senha-admin {
+                border-left-color: #007bff;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
     // Verifica permissões quando a aba de senhas for aberta
     const senhasView = document.getElementById('view-Senhas');
     if (senhasView) {
@@ -236,52 +305,20 @@ document.addEventListener('DOMContentLoaded', function() {
         observer.observe(senhasView, { attributes: true });
     }
 
-    // Adiciona estilos CSS para as mensagens
-    const style = document.createElement('style');
-    style.textContent = `
-        .mensagem-senha {
-            padding: 12px;
-            border-radius: 6px;
-            margin-top: 15px;
-            text-align: center;
-            display: none;
-            font-weight: 500;
-        }
-        
-        .mensagem-senha.sucesso {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .mensagem-senha.erro {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .mensagem-senha.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-        
-        .card-section.senha-propria,
-        .card-section.senha-admin {
-            margin-bottom: 24px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border-left: 4px solid;
-        }
-        
-        .card-section.senha-propria {
-            border-left-color: #28a745;
-        }
-        
-        .card-section.senha-admin {
-            border-left-color: #007bff;
-        }
-    `;
-    document.head.appendChild(style);
+    // Configura eventos dos botões
+    const btnAlterarSenha = document.querySelector('[onclick="alterarMinhaSenha()"]');
+    if (btnAlterarSenha) {
+        btnAlterarSenha.onclick = alterarMinhaSenha;
+    }
+
+    const btnRedefinirSenha = document.querySelector('[onclick="redefinirSenhaUsuario()"]');
+    if (btnRedefinirSenha) {
+        btnRedefinirSenha.onclick = redefinirSenhaUsuario;
+    }
 });
+
+// ================== EXPORTA FUNÇÕES GLOBAIS ==================
+window.alterarMinhaSenha = alterarMinhaSenha;
+window.redefinirSenhaUsuario = redefinirSenhaUsuario;
+window.carregarUsuariosParaRedefinicao = carregarUsuariosParaRedefinicao;
+window.verificarPermissoesAdminMaster = verificarPermissoesAdminMaster;
