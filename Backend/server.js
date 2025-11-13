@@ -43,6 +43,34 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ========================
+// CONFIGURAÇÃO DE SESSÃO
+// ========================
+const sessionStore = new MySQLStore({
+  host: process.env.MYSQLHOST,
+  port: process.env.MYSQLPORT,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE,
+  clearExpired: true,
+  checkExpirationInterval: 900000,
+  expiration: 86400000
+});
+
+app.use(session({
+  key: 'session_cookie_name',
+  secret: process.env.SESSION_SECRET || crypto.randomBytes(64).toString('hex'),
+  store: sessionStore,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+  }
+}));
+
+// ========================
 // 🔍 ROTA DE TESTE CORS
 // ========================
 app.get("/api/test-cors", (req, res) => {
@@ -109,34 +137,6 @@ const db = mysql.createPool(dbConfig);
     }
   }
 })();
-
-// ========================
-// CONFIGURAÇÃO DE SESSÃO
-// ========================
-const sessionStore = new MySQLStore({
-  host: process.env.MYSQLHOST,
-  port: process.env.MYSQLPORT,
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE,
-  clearExpired: true,
-  checkExpirationInterval: 900000,
-  expiration: 86400000
-});
-
-app.use(session({
-  key: 'session_cookie_name',
-  secret: process.env.SESSION_SECRET || crypto.randomBytes(64).toString('hex'),
-  store: sessionStore,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
-  }
-}));
 
 // ========================
 // MIDDLEWARES DE AUTENTICAÇÃO
