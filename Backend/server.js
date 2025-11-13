@@ -1262,7 +1262,22 @@ app.get('/', (req, res) => {
 app.get('/api/test-cors', (req, res) => {
   res.json({ message: 'CORS funcionando corretamente 🚀' });
 });
+// ========================
+// SERVIR ARQUIVOS ESTÁTICOS DO FRONTEND
+// ========================
+import { dirname } from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
+// Caminho para a pasta do front-end (ajuste se necessário)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ========================
+// ROTA PADRÃO (para o index.html do front)
+// ========================
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 // ========================
 // INICIAR SERVIDOR
 // ========================
