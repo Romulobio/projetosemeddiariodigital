@@ -1,7 +1,7 @@
 // ==================================================
-// 📡 Usa o ApiService carregado antes (via <script> api-service.js )
+// 📡 Importa o serviço da API (deve estar com type="module" no HTML)
 // ==================================================
-const api = new ApiService();
+import { apiService } from './api-service.js';
 
 // ==================================================
 // 🔐 Login do Administrador
@@ -19,7 +19,7 @@ async function loginAdmin(event) {
 
   try {
     const dados = { email, senha };
-    const resposta = await api.post('/api/login', dados);
+    const resposta = await apiService.apiFetch('/api/login', dados, 'POST');
 
     if (resposta.success) {
       alert('✅ Login realizado com sucesso!');
@@ -51,7 +51,7 @@ async function cadastrarUsuario(event) {
 
   try {
     const novoUsuario = { nome, email, senha, tipo };
-    const resposta = await api.post('/api/cadastrar', novoUsuario);
+    const resposta = await apiService.apiFetch('/api/cadastrar', novoUsuario, 'POST');
 
     if (resposta.success) {
       alert('✅ Usuário cadastrado com sucesso!');
@@ -71,7 +71,7 @@ async function cadastrarUsuario(event) {
 // ==================================================
 async function carregarUsuarios() {
   try {
-    const usuarios = await api.get('/api/usuarios');
+    const usuarios = await apiService.apiGet('/api/usuarios');
 
     const tabela = document.getElementById('tabelaUsuarios');
     if (!tabela) return;
@@ -105,7 +105,7 @@ async function excluirUsuario(id) {
   if (!confirm('Tem certeza que deseja excluir este usuário?')) return;
 
   try {
-    const resposta = await api.delete(`/api/usuarios/${id}`);
+    const resposta = await apiService.apiDelete(`/api/usuarios/${id}`);
     if (resposta.success) {
       alert('Usuário excluído com sucesso.');
       carregarUsuarios();
@@ -126,7 +126,7 @@ async function editarUsuario(id) {
   if (!novoNome) return;
 
   try {
-    const resposta = await api.put(`/api/usuarios/${id}`, { nome: novoNome });
+    const resposta = await apiService.apiPut(`/api/usuarios/${id}`, { nome: novoNome });
     if (resposta.success) {
       alert('Usuário atualizado!');
       carregarUsuarios();
@@ -144,7 +144,7 @@ async function editarUsuario(id) {
 // ==================================================
 async function logout() {
   try {
-    const resposta = await api.post('/api/logout');
+    const resposta = await apiService.apiFetch('/api/logout', {}, 'POST');
     if (resposta.success) {
       alert('Logout realizado.');
       window.location.href = 'index.html';
@@ -160,12 +160,10 @@ async function logout() {
 // ⚡ Inicialização da Página
 // ==================================================
 document.addEventListener('DOMContentLoaded', () => {
-  // Carrega a lista se houver tabela
   if (document.getElementById('tabelaUsuarios')) {
     carregarUsuarios();
   }
 
-  // Liga eventos se os formulários existirem
   const formLogin = document.getElementById('formLogin');
   if (formLogin) formLogin.addEventListener('submit', loginAdmin);
 
@@ -176,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnLogout) btnLogout.addEventListener('click', logout);
 });
 
-// Torna as funções acessíveis globalmente (caso sejam chamadas no HTML)
+// 🔄 Expõe funções globalmente (para botões inline no HTML)
 window.carregarUsuarios = carregarUsuarios;
 window.excluirUsuario = excluirUsuario;
 window.editarUsuario = editarUsuario;

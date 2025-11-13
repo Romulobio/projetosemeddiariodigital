@@ -7,7 +7,7 @@ const BASE_URL = window.location.hostname.includes('localhost')
   ? 'http://localhost:8080'
   : 'https://prosemeddiariodigital-production.up.railway.app';
 
-// Função genérica para requisições POST (ou PUT quando necessário)
+// Função genérica para requisições
 async function apiFetch(endpoint, data = {}, method = 'POST') {
   try {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
@@ -17,14 +17,12 @@ async function apiFetch(endpoint, data = {}, method = 'POST') {
       credentials: 'include', // permite enviar cookies/sessões
     });
 
-    // Se o servidor não respondeu OK, lança erro
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Erro HTTP ${response.status}: ${errorText}`);
       throw new Error(`Erro HTTP ${response.status}`);
     }
 
-    // Tenta converter para JSON
     const json = await response.json();
     return json;
   } catch (error) {
@@ -34,17 +32,15 @@ async function apiFetch(endpoint, data = {}, method = 'POST') {
   }
 }
 
-// Função GET
+// Métodos auxiliares
 async function apiGet(endpoint) {
   return apiFetch(endpoint, {}, 'GET');
 }
 
-// Função PUT
 async function apiPut(endpoint, data) {
   return apiFetch(endpoint, data, 'PUT');
 }
 
-// Função DELETE
 async function apiDelete(endpoint) {
   try {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
@@ -67,8 +63,8 @@ async function apiDelete(endpoint) {
   }
 }
 
-// Exporta as funções globalmente (para serem acessadas em outros scripts)
-window.apiService = {
+// ✅ Exporta como módulo (para ser importado com ES Modules)
+export const apiService = {
   apiFetch,
   apiGet,
   apiPut,
