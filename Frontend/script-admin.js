@@ -1,7 +1,8 @@
 // ==================================================
 // 📡 Importa o serviço da API (deve estar com type="module" no HTML)
 // ==================================================
-import { apiService } from './api-service.js';
+import ApiService from './api-service.js';
+const api = ApiService;
 
 // ==================================================
 // 🔐 Login do Administrador
