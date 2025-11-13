@@ -1,12 +1,13 @@
-// api-service.js - Código corrigido
-const BASE_URL = 'https://prosemeddiariodigital-production.up.railway.app';
+const BASE_URL = window.location.hostname.includes('localhost') 
+  ? 'http://localhost:8080' 
+  : 'https://prosemeddiariodigital-production.up.railway.app';
 
 class ApiService {
   static async request(endpoint, options = {}) {
     try {
       const url = `${BASE_URL}${endpoint}`;
       console.log(`🔄 Fazendo requisição para: ${url}`);
-      
+
       const config = {
         method: options.method || 'GET',
         headers: {
@@ -22,9 +23,17 @@ class ApiService {
       }
 
       const response = await fetch(url, config);
-      
+
+      // Se a resposta não for ok, tenta obter a mensagem de erro do body
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.erro || errorMessage;
+        } catch (e) {
+          // Ignora se não for JSON
+        }
+        throw new Error(errorMessage);
       }
 
       return await response.json();
@@ -34,7 +43,6 @@ class ApiService {
     }
   }
 
-  // Métodos específicos para facilitar
   static getTurmas() {
     return this.request('/api/turmas');
   }
@@ -51,11 +59,7 @@ class ApiService {
     return this.request('/api/turmas', { method: 'POST', body: data });
   }
 
-  static cadastrarProfessor(data) {
-    return this.request('/api/cadastro', { method: 'POST', body: data });
-  }
-
-  static cadastrarAluno(data) {
+  static cadastrarUsuario(data) {
     return this.request('/api/cadastro', { method: 'POST', body: data });
   }
 

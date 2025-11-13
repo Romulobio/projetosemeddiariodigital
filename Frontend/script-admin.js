@@ -42,7 +42,7 @@ class AdminApp {
     });
 
     // Logout
-    document.getElementById('btn-logout').addEventListener('click', () => this.fazerLogout());
+    document.getElementById('btn-logout')?.addEventListener('click', () => this.fazerLogout());
 
     // Formulários
     document.getElementById('form-turma')?.addEventListener('submit', (e) => this.cadastrarTurma(e));
@@ -54,6 +54,17 @@ class AdminApp {
     document.getElementById('btn-vincular')?.addEventListener('click', () => this.vincularProfessorTurma());
     document.getElementById('btn-vincular-disciplinas')?.addEventListener('click', () => this.vincularDisciplinasProfessor());
     document.getElementById('btn-toggle-admin')?.addEventListener('click', () => this.alternarPermissaoAdmin());
+
+    // Botões de senha (se existirem)
+    const btnAlterarSenha = document.querySelector('[onclick="alterarMinhaSenha()"]');
+    if (btnAlterarSenha) {
+      btnAlterarSenha.onclick = () => window.alterarMinhaSenha?.();
+    }
+
+    const btnRedefinirSenha = document.querySelector('[onclick="redefinirSenhaUsuario()"]');
+    if (btnRedefinirSenha) {
+      btnRedefinirSenha.onclick = () => window.redefinirSenhaUsuario?.();
+    }
   }
 
   async carregarDadosIniciais() {
@@ -138,7 +149,7 @@ class AdminApp {
       console.log('✅ Turmas carregadas:', data.turmas.length);
     } catch (error) {
       console.error("❌ Erro ao carregar turmas:", error);
-      alert("Erro ao carregar turmas: " + error.message);
+      this.mostrarErroNaTabela("table-turmas", "Erro ao carregar turmas: " + error.message);
     }
   }
 
@@ -166,7 +177,7 @@ class AdminApp {
       }
     } catch (error) {
       console.error('❌ Erro ao cadastrar turma:', error);
-      alert('Erro ao cadastrar turma: ' + error.message);
+      alert('Erro ao cadastrar turma: ' + this.obterMensagemErro(error));
     }
   }
 
@@ -186,7 +197,7 @@ class AdminApp {
       }
     } catch (err) {
       console.error('❌ Erro ao excluir turma:', err);
-      alert('Erro ao excluir turma: ' + err.message);
+      alert('Erro ao excluir turma: ' + this.obterMensagemErro(err));
     }
   }
 
@@ -227,7 +238,7 @@ class AdminApp {
       console.log('✅ Professores carregados:', data.professores.length);
     } catch (error) {
       console.error("❌ Erro ao carregar professores:", error);
-      alert("Erro ao carregar professores: " + error.message);
+      this.mostrarErroNaTabela("table-professores", "Erro ao carregar professores: " + error.message);
     }
   }
 
@@ -239,7 +250,7 @@ class AdminApp {
       const data = {
         nome: formData.get('nome'),
         email: formData.get('email'),
-        senha: 'senha123', // Senha padrão
+        senha: 'senha123',
         tipo: 'professor'
       };
 
@@ -256,13 +267,13 @@ class AdminApp {
       }
     } catch (error) {
       console.error('❌ Erro ao cadastrar professor:', error);
-      alert('Erro ao cadastrar professor: ' + error.message);
+      alert('Erro ao cadastrar professor: ' + this.obterMensagemErro(error));
     }
   }
 
   async vincularProfessorTurma() {
-    const professorId = document.getElementById('select-professor').value;
-    const turmaId = document.getElementById('select-turma-vinculo').value;
+    const professorId = document.getElementById('select-professor')?.value;
+    const turmaId = document.getElementById('select-turma-vinculo')?.value;
     const mensagemDiv = document.getElementById('vinculos-msg');
 
     if (!professorId || !turmaId) {
@@ -273,6 +284,7 @@ class AdminApp {
     try {
       this.mostrarMensagemVinculo('⏳ Vinculando...', 'info', mensagemDiv);
       
+      // AJUSTE: Esta rota pode não existir no seu backend - verifique
       const resultado = await apiService.request('/api/professor-turma', {
         method: 'POST',
         body: { professor_id: professorId, turma_id: turmaId }
@@ -286,12 +298,12 @@ class AdminApp {
       }
     } catch (error) {
       console.error('❌ Erro ao vincular professor:', error);
-      this.mostrarMensagemVinculo('❌ Erro ao vincular professor', 'erro', mensagemDiv);
+      this.mostrarMensagemVinculo('❌ Erro ao vincular professor: ' + this.obterMensagemErro(error), 'erro', mensagemDiv);
     }
   }
 
   async vincularDisciplinasProfessor() {
-    const professorId = document.getElementById('select-professor-disciplina').value;
+    const professorId = document.getElementById('select-professor-disciplina')?.value;
     const disciplinasCheckboxes = document.querySelectorAll('#disciplinas-container input[type="checkbox"]:checked');
     
     if (!professorId || disciplinasCheckboxes.length === 0) {
@@ -302,6 +314,7 @@ class AdminApp {
     const disciplinasIds = Array.from(disciplinasCheckboxes).map(cb => cb.value);
 
     try {
+      // AJUSTE: Esta rota pode não existir no seu backend - verifique
       const resultado = await apiService.request('/api/professor-disciplinas', {
         method: 'POST',
         body: { professor_id: professorId, disciplinas_ids: disciplinasIds }
@@ -309,13 +322,13 @@ class AdminApp {
 
       if (resultado.sucesso) {
         alert('✅ Disciplinas vinculadas com sucesso!');
-        await this.carregarDisciplinasVinculadas(professorId);
+        // await this.carregarDisciplinasVinculadas(professorId);
       } else {
         alert('❌ Erro: ' + resultado.erro);
       }
     } catch (error) {
       console.error('❌ Erro ao vincular disciplinas:', error);
-      alert('Erro ao vincular disciplinas: ' + error.message);
+      alert('Erro ao vincular disciplinas: ' + this.obterMensagemErro(error));
     }
   }
 
@@ -354,7 +367,7 @@ class AdminApp {
       console.log('✅ Alunos carregados:', data.alunos.length);
     } catch (error) {
       console.error("❌ Erro ao carregar alunos:", error);
-      alert("Erro ao carregar alunos: " + error.message);
+      this.mostrarErroNaTabela("table-alunos", "Erro ao carregar alunos: " + this.obterMensagemErro(error));
     }
   }
 
@@ -383,7 +396,7 @@ class AdminApp {
       }
     } catch (error) {
       console.error('❌ Erro ao cadastrar aluno:', error);
-      alert('Erro ao cadastrar aluno: ' + error.message);
+      alert('Erro ao cadastrar aluno: ' + this.obterMensagemErro(error));
     }
   }
 
@@ -397,7 +410,8 @@ class AdminApp {
         if (select) {
           select.innerHTML = '<option value="">Selecione um administrador</option>';
           data.administradores.forEach(admin => {
-            select.innerHTML += `<option value="${admin.id}">${admin.nome} (${admin.email})</option>`;
+            const isMaster = admin.pode_criar_admin ? ' (Master)' : '';
+            select.innerHTML += `<option value="${admin.id}">${admin.nome} (${admin.email})${isMaster}</option>`;
           });
         }
       }
@@ -429,12 +443,12 @@ class AdminApp {
       }
     } catch (error) {
       console.error('❌ Erro ao cadastrar administrador:', error);
-      alert('Erro ao cadastrar administrador: ' + error.message);
+      alert('Erro ao cadastrar administrador: ' + this.obterMensagemErro(error));
     }
   }
 
   async alternarPermissaoAdmin() {
-    const adminId = document.getElementById('select-admins').value;
+    const adminId = document.getElementById('select-admins')?.value;
     
     if (!adminId) {
       alert('❌ Selecione um administrador!');
@@ -442,9 +456,14 @@ class AdminApp {
     }
 
     try {
+      const adminSelect = document.getElementById('select-admins');
+      const selectedOption = adminSelect.options[adminSelect.selectedIndex];
+      const isCurrentlyMaster = selectedOption.text.includes('(Master)');
+      const novaPermissao = !isCurrentlyMaster;
+
       const resultado = await apiService.request('/api/admin/toggle-permission', {
         method: 'POST',
-        body: { admin_id: adminId, pode_criar_admin: true }
+        body: { admin_id: adminId, pode_criar_admin: novaPermissao }
       });
 
       if (resultado.sucesso) {
@@ -455,7 +474,7 @@ class AdminApp {
       }
     } catch (error) {
       console.error('❌ Erro ao alternar permissão:', error);
-      alert('Erro ao alternar permissão: ' + error.message);
+      alert('Erro ao alternar permissão: ' + this.obterMensagemErro(error));
     }
   }
 
@@ -520,6 +539,33 @@ class AdminApp {
         elemento.style.display = 'none';
       }, 5000);
     }
+  }
+
+  mostrarErroNaTabela(tabelaId, mensagem) {
+    const tbody = document.querySelector(`#${tabelaId} tbody`);
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" style="text-align: center; color: #dc3545; padding: 20px;">
+            ❌ ${mensagem}<br>
+            <small>Verifique sua conexão com a internet e tente novamente.</small>
+          </td>
+        </tr>
+      `;
+    }
+  }
+
+  obterMensagemErro(error) {
+    if (error.message.includes('Failed to fetch')) {
+      return 'Erro de conexão com o servidor. Verifique sua internet.';
+    }
+    if (error.message.includes('404')) {
+      return 'Recurso não encontrado no servidor.';
+    }
+    if (error.message.includes('401') || error.message.includes('403')) {
+      return 'Sem permissão para acessar este recurso.';
+    }
+    return error.message || 'Erro desconhecido';
   }
 
   async fazerLogout() {
