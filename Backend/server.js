@@ -59,6 +59,8 @@ const sessionStore = new MySQLStore({
   expiration: 86400000
 });
 
+// Backend/server.js (Bloco de Sessão)
+
 app.use(session({
   key: 'session_cookie_name',
   secret: process.env.SESSION_SECRET || crypto.randomBytes(64).toString('hex'),
@@ -66,12 +68,20 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    // 💡 CORREÇÃO 1: Forçar 'secure: true'
+    // Em ambientes de produção (HTTPS), 'secure' deve ser true.
+    // Isso é obrigatório quando 'sameSite' é 'none'.
+    secure: true, 
+    
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    
+    // 💡 CORREÇÃO 2: Forçar 'sameSite: 'none''
+    // Essencial para permitir que o cookie seja enviado entre domínios diferentes (Vercel -> Railway ).
+    sameSite: 'none' 
   }
 }));
+
 
 // ========================
 // 🔍 ROTA DE TESTE CORS
