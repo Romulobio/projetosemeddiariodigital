@@ -1,7 +1,5 @@
-// CORREÇÃO: Mude para isso no api-service.js
-const BASE_URL = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
-  ? 'http://localhost:8080'
-  : 'https://prosemeddiariodigital-production.up.railway.app';
+// api-service.js - Código corrigido
+const BASE_URL = 'https://prosemeddiariodigital-production.up.railway.app';
 
 class ApiService {
   static async request(endpoint, options = {}) {
