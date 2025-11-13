@@ -21,7 +21,8 @@ const MySQLStore = MySQLStoreImport(session);
 // ⚙️ CONFIGURAÇÃO DO CORS (ACEITA QUALQUER REQUISIÇÃO)
 // ========================
 app.use(cors({
-  origin: true,           // Aceita qualquer origem dinamicamente
+  // Use a variável de ambiente para o domínio do frontend
+  origin: process.env.FRONTEND_URL, 
   credentials: true,      // Permite envio de cookies/autenticação
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
