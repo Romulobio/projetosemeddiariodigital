@@ -1,4 +1,12 @@
-// CORREÇÃO: script-admin.js completo e corrigido
+// ==================================================
+// 📡 Importa o serviço da API (deve estar com type="module" no HTML)
+// ==================================================
+import ApiService from './api-service.js';
+const apiService = ApiService;
+
+// ==================================================
+// 🔐 Aplicação do Administrador
+// ==================================================
 class AdminApp {
   constructor() {
     this.currentView = 'dashboard';
@@ -15,13 +23,13 @@ class AdminApp {
     try {
       const response = await apiService.request('/check-auth');
       if (!response.sucesso || response.usuario.tipo !== 'administrador') {
-        window.location.href = 'login.html';
+        window.location.href = 'index.html'; // Redireciona para a página inicial
         return;
       }
       document.getElementById('admin-name').textContent = response.usuario.nome;
     } catch (error) {
       console.error('Erro de autenticação:', error);
-      window.location.href = 'login.html';
+      window.location.href = 'index.html'; // Redireciona para a página inicial
     }
   }
 
@@ -34,7 +42,7 @@ class AdminApp {
     });
 
     // Logout
-    document.getElementById('btn-logout').addEventListener('click', this.fazerLogout);
+    document.getElementById('btn-logout').addEventListener('click', () => this.fazerLogout());
 
     // Formulários
     document.getElementById('form-turma').addEventListener('submit', (e) => this.cadastrarTurma(e));
@@ -361,10 +369,10 @@ class AdminApp {
   async fazerLogout() {
     try {
       await apiService.request('/logout', { method: 'POST' });
-      window.location.href = 'login.html';
+      window.location.href = 'index.html'; // Redireciona para a página inicial
     } catch (error) {
       console.error('Erro no logout:', error);
-      window.location.href = 'login.html';
+      window.location.href = 'index.html'; // Redireciona para a página inicial
     }
   }
 }
