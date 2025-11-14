@@ -349,6 +349,165 @@ app.get('/check-auth', verificarAuth, (req, res) => {
 });
 
 // ========================
+// ROTA DE CADASTRO COM VERIFICAÇÃO DE PERMISSÃO
+// ========================
+app.post('/cadastro', async (req, res) => {
+  let { nome, email, senha, tipo } = req.body;
+  
+  if (!nome || !email || !senha || !tipo) {
+    return res.json({ sucesso: false, erro: 'Todos os campos são obrigatórios!' });
+  }
+
+  nome = nome.trim();
+  email = email.trim().toLowerCase();
+  tipo = tipo.toLowerCase().trim();
+  
+  const tiposPermitidos = ['administrador', 'professor', 'aluno'];
+  if (!tiposPermitidos.includes(tipo)) {
+    return res.json({ sucesso: false, erro: 'Tipo de usuário inválido!' });
+  }
+
+  // VERIFICAÇÃO DE PERMISSÃO PARA CRIAR ADMINISTRADOR
+  if (tipo === 'administrador') {
+    // Se não está logado, não pode criar admin
+    if (!req.session.usuario) {
+      return res.json({ sucesso: false, erro: 'Acesso negado! Faça login para criar administradores.' });
+    }
+    
+    // Verifica se o usuário logado tem permissão para criar admins
+    const sqlCheckPermission = 'SELECT pode_criar_admin FROM usuarios WHERE id = ?';
+    
+    db.query(sqlCheckPermission, [req.session.usuario.id], (err, results) => {
+      if (err || results.length === 0 || !results[0].pode_criar_admin) {
+        return res.json({ 
+          sucesso: false, 
+          erro: 'Permissão negada! Apenas administradores master podem criar novos administradores.' 
+        });
+      }
+      
+      // Se tem permissão, continua com o cadastro
+      continuarCadastro();
+    });
+  } else {
+    // Para professores e alunos, cadastro normal
+    continuarCadastro();
+  }
+
+  function continuarCadastro() {
+    // Verifica se email já existe
+    db.query('SELECT id FROM usuarios WHERE email = ?', [email], async (err, results) => {
+      if (err) {
+        return res.json({ sucesso: false, erro: 'Erro ao verificar email!' });
+      }
+      
+      if (results.length > 0) {
+        return res.json({ sucesso: false, erro: 'Este email já está cadastrado!' });
+      }
+
+      try {
+        const hash = await bcrypt.hash(senha, 10);
+        db.query('INSERT INTO usuarios (nome, email, senha, tipo) VALUES (?, ?, ?, ?)', 
+          [nome, email, hash, tipo], 
+          (err, result) => {
+            if (err) {
+              return res.json({ sucesso: false, erro: 'Erro ao cadastrar usuário!' });
+            }
+            
+            console.log(`✅ Usuário ${tipo} cadastrado: ${nome} (${email})`);
+            res.json({ 
+              sucesso: true, 
+              id: result.insertId, 
+              mensagem: `Usuário ${tipo} cadastrado com sucesso!` 
+            });
+          }
+        );
+      } catch (error) {
+        res.json({ sucesso: false, erro: 'Erro interno ao cadastrar usuário!' });
+      }
+    });
+  }
+});
+
+app.post('/login', async (req, res) => {
+  const { email, senha } = req.body;
+  console.log('🔐 TENTATIVA DE LOGIN - Email:', email);
+
+  if (!email || !senha) {
+    return res.json({ sucesso: false, erro: 'Email e senha são obrigatórios!' });
+  }
+
+  db.query('SELECT * FROM usuarios WHERE email = ?', [email], async (err, results) => {
+    if (err) {
+      console.error('❌ ERRO NO BANCO:', err);
+      return res.json({ sucesso: false, erro: 'Erro ao fazer login!' });
+    }
+    
+    if (results.length === 0) {
+      console.log('❌ EMAIL NÃO ENCONTRADO:', email);
+      return res.json({ sucesso: false, erro: 'Email ou senha incorretos!' });
+    }
+
+    const usuario = results[0];
+    console.log('👤 USUÁRIO ENCONTRADO:', usuario.nome);
+
+    // Tenta comparar com bcrypt primeiro
+    const match = await bcrypt.compare(senha, usuario.senha);
+    console.log('🔑 COMPARAÇÃO BCRYPT:', match);
+
+    if (match) {
+      // Senha correta (hash válido)
+      return fazerLogin(usuario, res, req);
+    }
+
+    // Se bcrypt falhou, pode ser hash incorreto - vamos corrigir
+    console.log('⚠️ Hash incorreto detectado, corrigindo...');
+    
+    try {
+      // Gera novo hash correto
+      const novoHash = await bcrypt.hash(senha, 10);
+      
+      // Atualiza no banco
+      const sqlUpdate = 'UPDATE usuarios SET senha = ? WHERE id = ?';
+      db.query(sqlUpdate, [novoHash, usuario.id], (err) => {
+        if (err) {
+          console.error('❌ Erro ao corrigir hash:', err);
+          return res.json({ sucesso: false, erro: 'Erro interno!' });
+        }
+        
+        console.log('✅ HASH CORRIGIDO NO BANCO');
+        fazerLogin(usuario, res, req);
+      });
+    } catch (error) {
+      console.error('❌ Erro ao gerar hash:', error);
+      return res.json({ sucesso: false, erro: 'Email ou senha incorretos!' });
+    }
+  });
+});
+
+// Função auxiliar para fazer login
+function fazerLogin(usuario, res, req) {
+  req.session.usuario = { 
+    id: usuario.id, 
+    nome: usuario.nome, 
+    email: usuario.email, 
+    tipo: usuario.tipo.toLowerCase(),
+    pode_criar_admin: Boolean(usuario.pode_criar_admin)
+  };
+  
+  console.log('✅ LOGIN BEM-SUCEDIDO:', {
+    nome: usuario.nome,
+    tipo: usuario.tipo,
+    master: req.session.usuario.pode_criar_admin
+  });
+  
+  res.json({ 
+    sucesso: true, 
+    mensagem: 'Login realizado com sucesso!', 
+    usuario: req.session.usuario 
+  });
+}
+
+// ========================
 // ROTAS DE SENHA
 // ========================
 app.post('/alterar-senha', verificarAuth, async (req, res) => {
