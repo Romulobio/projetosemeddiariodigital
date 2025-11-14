@@ -8,42 +8,6 @@ const BASE_URL = window.location.hostname.includes('localhost')
 
 console.log("🌐 Backend ativo:", BASE_URL);
 
-// ======================================
-// Função genérica de requisição à API
-// ======================================
-async function apiFetch(endpoint, data) {
-  try {
-    console.log(`📨 Enviando requisição para: ${BASE_URL}${endpoint}`);
-    
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(data),
-      credentials: 'include',
-      mode: 'cors'
-    });
-
-    console.log(`📨 Resposta recebida - Status: ${response.status}`);
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
-    }
-
-    const result = await response.json();
-    console.log('✅ Resposta da API:', result);
-    return result;
-    
-  } catch (error) {
-    console.error(`❌ Erro na requisição para ${endpoint}:`, error);
-    if (error.message.includes('Failed to fetch')) {
-      alert('Erro de conexão com o servidor. Verifique CORS ou domínio.');
-    }
-    throw error;
-  }
-}
 
 // ======================================
 // Função de teste de CORS e conexão
