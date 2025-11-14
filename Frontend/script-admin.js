@@ -20,19 +20,47 @@ class AdminApp {
   }
 
   async verificarAutenticacao() {
+  try {
+    // Verifica primeiro se há token no localStorage
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    console.log('🔐 Verificando autenticação no admin:');
+    console.log('- Token:', token);
+    console.log('- User:', user);
+    
+    if (!token || !user) {
+      console.log('❌ Token ou user não encontrados, redirecionando...');
+      window.location.href = 'index.html';
+      return;
+    }
+    
+    // Tenta verificar com a API
     try {
-      const response = await apiService.request('/check-auth');
-      if (!response.sucesso || response.usuario.tipo !== 'administrador') {
-        window.location.href = 'index.html';
+      const response = await apiService.request('/api/check-auth');
+      if (response.sucesso && response.usuario.tipo === 'administrador') {
+        document.getElementById('admin-name').textContent = response.usuario.nome;
         return;
       }
-      document.getElementById('admin-name').textContent = response.usuario.nome;
-    } catch (error) {
-      console.error('Erro de autenticação:', error);
+    } catch (apiError) {
+      console.log('⚠️ API de auth falhou, usando fallback...');
+    }
+    
+    // Fallback: verifica dados do localStorage
+    const userData = JSON.parse(user);
+    if (userData.tipo === 'administrador' || userData.tipo === 'admin') {
+      document.getElementById('admin-name').textContent = userData.nome || userData.email || 'Administrador';
+      console.log('✅ Autenticação via localStorage bem-sucedida');
+    } else {
+      console.log('❌ Usuário não é administrador');
       window.location.href = 'index.html';
     }
+    
+  } catch (error) {
+    console.error('Erro de autenticação:', error);
+    window.location.href = 'index.html';
   }
-
+}
   setupEventListeners() {
     // Navegação
     document.querySelectorAll('#menu button').forEach(btn => {

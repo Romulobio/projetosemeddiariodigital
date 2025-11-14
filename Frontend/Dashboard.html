@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dashboard do Sistema</h1>
+        <p>Usuário: <span id="userEmail"></span></p>
+        <button onclick="logout()">Sair</button>
+    </div>
+
+    <script>
+        // Verifica autenticação
+        const token = localStorage.getItem('token');
+        const user = localStorage.getItem('user');
+        
+        if (!token) {
+            window.location.href = 'index.html';
+        } else {
+            const userData = JSON.parse(user || '{}');
+            document.getElementById('userEmail').textContent = userData.email || 'N/A';
+        }
+        
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

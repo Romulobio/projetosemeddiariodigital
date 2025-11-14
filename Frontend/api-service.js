@@ -1,6 +1,8 @@
-const BASE_URL = window.location.hostname.includes('localhost') 
-  ? 'http://localhost:8080' 
-  : 'https://prosemeddiariodigital-production.up.railway.app';
+const BASE_URL = window.location.hostname.includes('localhost')
+  ? 'http://localhost:5000' 
+  : 'https://projetosemeddiariodigital-production.up.railway.app';
+
+console.log("🌐 API Service - Backend URL:", BASE_URL);
 
 class ApiService {
   static async request(endpoint, options = {}) {
@@ -24,15 +26,12 @@ class ApiService {
 
       const response = await fetch(url, config);
 
-      // Se a resposta não for ok, tenta obter a mensagem de erro do body
       if (!response.ok) {
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         try {
           const errorData = await response.json();
           errorMessage = errorData.erro || errorMessage;
-        } catch (e) {
-          // Ignora se não for JSON
-        }
+        } catch (e) {}
         throw new Error(errorMessage);
       }
 
@@ -41,6 +40,20 @@ class ApiService {
       console.error('❌ Erro na requisição:', error);
       throw error;
     }
+  }
+
+  // ============================
+  // ✔️ Função para verificar autenticação
+  // ============================
+  static async checkAuth() {
+    return this.request('/api/check-auth');
+  }
+
+  // ============================
+  // ✔️ Função de login
+  // ============================
+  static async login(data) {
+    return this.request('/api/login', { method: 'POST', body: data });
   }
 
   static getTurmas() {
@@ -68,6 +81,5 @@ class ApiService {
   }
 }
 
-// Para compatibilidade
 window.apiService = ApiService;
 export default ApiService;

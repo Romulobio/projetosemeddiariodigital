@@ -8,7 +8,49 @@ const BASE_URL = window.location.hostname.includes('localhost')
 
 console.log("🌐 Backend ativo:", BASE_URL);
 
+// ======================================
+// ✅ ADICIONE ESTA FUNÇÃO API FETCH QUE ESTÁ FALTANDO
+// ======================================
+async function apiFetch(endpoint, data) {
+  try {
+    console.log(`📨 Enviando requisição para: ${BASE_URL}${endpoint}`);
+    console.log('📤 Dados enviados:', data);
+    
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
 
+    console.log(`📨 Resposta - Status: ${response.status}`);
+    
+    // Lê a resposta como texto primeiro
+    const responseText = await response.text();
+    console.log('📨 Resposta - Texto bruto:', responseText);
+
+    let result;
+    try {
+      result = responseText ? JSON.parse(responseText) : {};
+    } catch (e) {
+      console.error('❌ Erro ao parsear JSON:', e);
+      result = { message: responseText };
+    }
+
+    if (!response.ok) {
+      throw new Error(result.message || result.error || `Erro HTTP: ${response.status}`);
+    }
+
+    console.log('✅ Resposta parseada:', result);
+    return result;
+    
+  } catch (error) {
+    console.error(`❌ Erro na requisição para ${endpoint}:`, error);
+    throw error;
+  }
+}
 // ======================================
 // Função de teste de CORS e conexão
 // ======================================
@@ -119,105 +161,97 @@ window.fazerLogin = async function (tipo) {
 
     console.log('🔐 Tentando login para:', email);
     
-    // Testa a conexão primeiro
-    const conexaoOk = await testarConexao();
-    if (!conexaoOk) {
-      alert('❌ Servidor indisponível. Verifique sua conexão.');
-      bloquearBotao(btnId, false);
-      return;
+    // ✅ TESTE DE CONEXÃO
+    try {
+      await fetch(`${BASE_URL}/api/login`, { method: 'OPTIONS' });
+      console.log('✅ CORS funcionando');
+    } catch (e) {
+      console.warn('⚠️ Teste CORS falhou, mas continuando...');
     }
 
-    const data = await apiFetch('/api/login', { email, senha, tipo });
+    // ✅ TENTA "password" E "senha"
+    let data;
+    try {
+      data = await apiFetch('/api/login', { 
+        email: email, 
+        password: senha,
+        tipo: tipo 
+      });
+    } catch (error) {
+      // Se falhar, tenta com "senha"
+      console.log('🔄 Tentando com campo "senha"...');
+      data = await apiFetch('/api/login', { 
+        email: email, 
+        senha: senha,
+        tipo: tipo 
+      });
+    }
 
-    if (data?.sucesso) {
-      console.log('✅ Login bem-sucedido! Usuário:', data.usuario);
-      localStorage.setItem('usuarioLogado', JSON.stringify(data.usuario));
+    console.log('📨 Resposta completa do login:', data);
+
+    // ✅ VERIFICA DIFERENTES ESTRUTURAS
+    const token = data.token || data.access_token;
+    const user = data.user || data.usuario;
+    
+    if (token || data.sucesso) {
+      console.log('✅ Login bem-sucedido!');
       
-      // Pequeno delay para feedback visual
+      // ✅ SALVA OS DADOS
+      if (token) {
+        localStorage.setItem('token', token);
+      }
+      
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user));
+      } else if (data.sucesso) {
+        // Cria objeto de usuário básico
+        localStorage.setItem('user', JSON.stringify({
+          email: email,
+          tipo: tipo,
+          nome: email.split('@')[0]
+        }));
+      }
+      
+      console.log('💾 Dados salvos:');
+      console.log('- Token:', localStorage.getItem('token'));
+      console.log('- User:', localStorage.getItem('user'));
+      
+      // ✅ REDIRECIONAMENTO
       setTimeout(() => {
-        if (data.usuario.tipo === 'administrador') {
+        const userData = JSON.parse(localStorage.getItem('user') || '{}');
+        const userTipo = userData.tipo || tipo;
+        
+        console.log('🔄 Redirecionando para:', userTipo);
+        
+        if (userTipo === 'administrador' || userTipo === 'admin') {
           window.location.href = 'admin.html';
-        } else if (data.usuario.tipo === 'professor') {
+        } else if (userTipo === 'professor') {
           window.location.href = 'pagina-professor.html';
         } else {
-          alert('Tipo de usuário não reconhecido: ' + data.usuario.tipo);
+          window.location.href = 'dashboard.html';
         }
-      }, 500);
+      }, 1000);
       
     } else {
-      // Se a API retornou sucesso: false mas não lançou erro
-      alert(data?.erro || 'Erro desconhecido no login');
+      console.error('❌ Estrutura inesperada:', data);
+      alert(data?.message || data?.erro || 'Erro desconhecido');
     }
     
   } catch (error) {
-    console.error('❌ Falha no processo de login:', error);
+    console.error('❌ Falha no login:', error);
     
-    // Mensagens de erro mais amigáveis
-    if (error.message.includes('Timeout') || error.message.includes('não respondeu')) {
-      alert('⏰ Servidor demorou para responder. Tente novamente.');
+    if (error.message.includes('401')) {
+      alert('❌ Email ou senha incorretos!');
     } else if (error.message.includes('Failed to fetch')) {
-      alert('🔌 Erro de conexão. Verifique se o servidor está online.');
+      alert('🔌 Erro de conexão. Verifique: \n1. Servidor online\n2. URL correta\n3. Problemas de CORS');
     } else {
-      alert('❌ Erro ao fazer login: ' + error.message);
+      alert('❌ Erro: ' + error.message);
     }
     
   } finally {
     bloquearBotao(btnId, false);
   }
 };
-
-// ======================================
-// LÓGICA DE LOGIN
-// ======================================
-async function fazerLogin(tipo) {
-  const btnId = `btn-login-${tipo}`;
-  bloquearBotao(btnId, true);
-
-  try {
-    const email = document.getElementById(`login-${tipo}-email`)?.value.trim();
-    const senha = document.getElementById(`login-${tipo}-senha`)?.value;
-
-    if (!email || !senha) {
-      alert('Preencha e-mail e senha!');
-      bloquearBotao(btnId, false);
-      return;
-    }
-
-    console.log('🔐 Tentando login para:', email);
-    
-    const data = await apiFetch('/api/login', { email, senha, tipo });
-
-    if (data?.sucesso) {
-      console.log('✅ Login bem-sucedido! Usuário:', data.usuario);
-      localStorage.setItem('usuarioLogado', JSON.stringify(data.usuario));
-      
-      setTimeout(() => {
-        if (data.usuario.tipo === 'administrador') {
-          window.location.href = 'admin.html';
-        } else if (data.usuario.tipo === 'professor') {
-          window.location.href = 'pagina-professor.html';
-        } else {
-          alert('Tipo de usuário não reconhecido: ' + data.usuario.tipo);
-        }
-      }, 500);
-      
-    } else {
-      alert(data?.erro || 'Erro desconhecido no login');
-    }
-    
-  } catch (error) {
-    console.error('❌ Falha no processo de login:', error);
-    
-    if (error.message.includes('Failed to fetch')) {
-      alert('🔌 Erro de conexão. Verifique se o servidor está online na porta 5000.');
-    } else {
-      alert('❌ Erro ao fazer login: ' + error.message);
-    }
-    
-  } finally {
-    bloquearBotao(btnId, false);
-  }
-}
 
 // ======================================
 // LÓGICA DE CADASTRO
