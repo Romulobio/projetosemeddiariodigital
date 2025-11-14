@@ -288,14 +288,6 @@ async function fazerCadastro(tipo) {
   }
 }
 
-// ======================================
-// INICIALIZAÇÃO
-// ======================================
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('✅ Sistema de login carregado e pronto.');
-  mostrarTela('tipo-login-container');
-});
-
 // Tornar funções globais para o HTML
 window.mostrarLogin = mostrarLogin;
 window.mostrarCadastro = mostrarCadastro;
