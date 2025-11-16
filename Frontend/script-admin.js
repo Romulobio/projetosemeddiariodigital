@@ -1,8 +1,4 @@
-// ==================================================
-// 📡 Importa o serviço da API
-// ==================================================
-import ApiService from './api-service.js';
-const apiService = ApiService;
+import { API_BASE_URL } from "./api-service.js";
 
 // ==================================================
 // 🔐 Aplicação do Administrador - VERSÃO CORRIGIDA

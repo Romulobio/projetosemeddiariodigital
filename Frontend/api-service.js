@@ -1,12 +1,6 @@
-// =============================== 
-// BASE URL AUTOMÁTICA
-// ===============================
 
-// Se estiver rodando no VS Code → localhost
-// Caso contrário → Railway
-const BASE_URL = window.location.hostname.includes("localhost")
-  ? "http://localhost:5000"
-  : "https://projetosemeddiariodigital-production.up.railway.app";
+export const API_BASE_URL = "https://prosemeddiariodigital-production.up.railway.app";
+
 
 console.log("🌐 API Service - Backend URL:", BASE_URL);
 
