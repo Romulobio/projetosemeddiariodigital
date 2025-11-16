@@ -183,6 +183,22 @@ class ApiService {
     });
   }
 }
+function abrirFrequencia() {
+  window.location.href = "professor-frequencia.html";
+}
+
+function abrirDiario() {
+  window.location.href = "professor-diario.html";
+}
+
+function abrirRelatorios() {
+  window.location.href = "professor-relatorios.html";
+}
+
+function abrirNotas() {
+  window.location.href = "professor-notas.html";
+}
+
 
 window.apiService = ApiService;
 export default ApiService;
