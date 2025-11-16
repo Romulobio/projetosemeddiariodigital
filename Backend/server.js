@@ -20,26 +20,7 @@ const MySQLStore = MySQLStoreImport(session);
 // ========================
 // ⚙️ CONFIGURAÇÃO DO CORS 
 // ========================
-
-const allowedOrigins = [
-  "http://127.0.0.1:5500",
-  "http://localhost:5500",
-  "https://projetosemeddiariodigital-production.up.railway.app"
-  // coloque aqui o domínio final do frontend quando publicar
-];
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // permite ferramentas e testes
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  })
-);
+app.use(cors());
 
 // ========================
 // CONFIGURAÇÕES EXPRESS
@@ -84,20 +65,6 @@ app.use(session({
     sameSite: 'none' 
   }
 }));
-
-
-// ========================
-// 🔍 ROTA DE TESTE CORS
-// ========================
-app.get("/api/test-cors", (req, res) => {
-  console.log("✅ [CORS] Teste recebido de:", req.headers.origin);
-  res.json({
-    success: true,
-    message: "✅ CORS funcionando corretamente!",
-    origin: req.headers.origin,
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
 
 
 // ========================
