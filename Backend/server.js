@@ -52,17 +52,10 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    // 💡 CORREÇÃO 1: Forçar 'secure: true'
-    // Em ambientes de produção (HTTPS), 'secure' deve ser true.
-    // Isso é obrigatório quando 'sameSite' é 'none'.
-    secure: true, 
-    
+    secure: false,       // FUNCIONA LOCALHOST E PRODUÇÃO
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
-    
-    // 💡 CORREÇÃO 2: Forçar 'sameSite: 'none''
-    // Essencial para permitir que o cookie seja enviado entre domínios diferentes (Vercel -> Railway ).
-    sameSite: 'none' 
+    sameSite: 'lax',     // NÃO BLOQUEIA
+    maxAge: 24 * 60 * 60 * 1000 
   }
 }));
 
