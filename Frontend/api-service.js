@@ -1,4 +1,3 @@
-
 export const API_BASE_URL = "https://prosemeddiariodigital-production.up.railway.app";
 
 console.log("🌐 API Service - Backend URL:", API_BASE_URL);
@@ -8,7 +7,7 @@ class ApiService {
   // ===============================
   // FUNÇÃO CENTRAL DE REQUISIÇÃO
   // ===============================
-    static async request(endpoint, options = {}) {
+  static async request(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
 
     console.log(`🔄 Requisição → ${url}`);
@@ -19,7 +18,7 @@ class ApiService {
         "Content-Type": "application/json",
         ...options.headers,
       },
-      credentials: "include", // permite cookies/sessões
+      credentials: "include",
     };
 
     if (options.body) {
@@ -61,12 +60,13 @@ class ApiService {
     });
   }
 
+  // 🔥 CORRIGIDO → backend usa /logout (SEM /api)
   static logout() {
-    return this.request("/api/logout", { method: "POST" });
+    return this.request("/logout", { method: "POST" });
   }
 
   // ============================
-  // TURMAS
+  // TURMAS  (você ainda vai criar no backend)
   // ============================
   static getTurmas() {
     return this.request("/api/turmas");
@@ -113,7 +113,7 @@ class ApiService {
   }
 
   // ============================
-  // DISCIPLINAS
+  // DISCIPLINAS (você ainda vai criar)
   // ============================
   static getDisciplinas() {
     return this.request("/api/disciplinas");
@@ -151,29 +151,35 @@ class ApiService {
   }
 
   // ============================
-  // ADMINS E PERMISSÕES
+  // ADMINS E PERMISSÕES (🔥 CORRIGIDOS)
   // ============================
+  
+  // BACKEND: GET /api/admin/administradores
   static getAdmins() {
-    return this.request("/api/admins");
+    return this.request("/api/admin/administradores");
   }
 
+  // BACKEND: POST /api/cadastro (não existe rota /api/admins)
   static cadastroAdmin(data) {
-    return this.request("/api/admins", {
+    return this.request("/api/cadastro", {
       method: "POST",
       body: data,
     });
   }
 
-  static alternarPermissao(id) {
-    return this.request(`/api/admins/${id}/toggle`, {
-      method: "PUT",
+  // BACKEND: POST /api/admin/toggle-permission
+  static alternarPermissao(data) {
+    return this.request("/api/admin/toggle-permission", {
+      method: "POST",
+      body: data,
     });
   }
 
   // ============================
-  // SENHAS
+  // SENHAS (não existem no backend ainda)
   // ============================
   static alterarMinhaSenha(data) {
+    console.warn("⚠️ Rota /api/senhas/alterar não existe no backend!");
     return this.request("/api/senhas/alterar", {
       method: "POST",
       body: data,
@@ -181,6 +187,7 @@ class ApiService {
   }
 
   static redefinirSenhaUsuario(data) {
+    console.warn("⚠️ Rota /api/senhas/redefinir não existe no backend!");
     return this.request("/api/senhas/redefinir", {
       method: "POST",
       body: data,
@@ -188,6 +195,5 @@ class ApiService {
   }
 }
 
-// Disponível globalmente
 window.apiService = ApiService;
 export default ApiService;

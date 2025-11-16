@@ -1,5 +1,7 @@
 
-import { API_BASE_URL } from "./api-service.js";
+import { apiService, API_BASE_URL } from "./api-service.js";
+window.apiService = apiService; // garante funcionamento nos onclick="adminApp..."
+
 // ==================================================
 // 🔐 Aplicação do Administrador - VERSÃO CORRIGIDA
 // ==================================================
