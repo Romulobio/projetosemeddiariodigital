@@ -1,6 +1,4 @@
-const BASE_URL = window.location.hostname.includes('localhost')
-  ? 'http://localhost:8080'
-  : 'https://prosemeddiariodigital-production.up.railway.app';
+import { API_BASE_URL } from "./api-service.js";
 
 
 // ✅ SERVIÇO DE API SIMPLIFICADO

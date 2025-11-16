@@ -1,5 +1,5 @@
-import { API_BASE_URL } from "./api-service.js";
 
+import { API_BASE_URL } from "./api-service.js";
 // ==================================================
 // 🔐 Aplicação do Administrador - VERSÃO CORRIGIDA
 // ==================================================

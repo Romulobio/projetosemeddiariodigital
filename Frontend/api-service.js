@@ -1,16 +1,15 @@
 
 export const API_BASE_URL = "https://prosemeddiariodigital-production.up.railway.app";
 
-
-console.log("🌐 API Service - Backend URL:", BASE_URL);
+console.log("🌐 API Service - Backend URL:", API_BASE_URL);
 
 class ApiService {
 
   // ===============================
   // FUNÇÃO CENTRAL DE REQUISIÇÃO
   // ===============================
-  static async request(endpoint, options = {}) {
-    const url = `${BASE_URL}${endpoint}`;
+    static async request(endpoint, options = {}) {
+    const url = `${API_BASE_URL}${endpoint}`;
 
     console.log(`🔄 Requisição → ${url}`);
 
