@@ -1,52 +1,5 @@
-const BASE_URL = window.location.hostname.includes('localhost')
-  ? 'http://localhost:8080'
-  : 'https://prosemeddiariodigital-production.up.railway.app';
+console.log('✅ Script de frequência carregado!');
 
-
-// Função genérica de requisição à API (MESMA DO script-login.js)
-async function apiFetch(endpoint, data) {
-  try {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-      credentials: 'include',
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Erro na comunicação com o servidor:', error);
-    alert('Erro ao conectar ao servidor.');
-    throw error;
-  }
-}
-
-// Funções específicas para GET
-async function apiGet(endpoint) {
-  try {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Erro na comunicação com o servidor:', error);
-    alert('Erro ao conectar ao servidor.');
-    throw error;
-  }
-}
-
-// Variáveis globais
 let mesAtual = new Date().getMonth();
 let anoAtual = new Date().getFullYear();
 let turmaSelecionada = null;
@@ -200,8 +153,15 @@ async function carregarTurmasProfessor() {
         
         selectTurma.innerHTML = '<option value="">Carregando turmas...</option>';
         
-        const data = await apiGet('/api/professor/turmas-alunos');
-        console.log('📡 Resposta da API:', data);
+        const response = await fetch(`${API_URL}/api/alunos-turma-professor`);
+        console.log('📡 Resposta da API:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Erro HTTP: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('📊 Dados recebidos:', data);
         
         if (data.sucesso) {
             selectTurma.innerHTML = '<option value="">Selecione uma turma</option>';
@@ -273,7 +233,7 @@ function abrirListaAlunos(dia, mes, ano) {
     }
     
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-                  'Jullo', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+                  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     
     const dataSelecionada = `${dia} de ${meses[mes]} de ${ano}`;
     
@@ -392,14 +352,19 @@ async function salvarFrequencia() {
     try {
         console.log('Enviando frequências:', { dia, mes, ano, turma_id: turmaIdSelecionada, frequencias });
         
-        const result = await apiFetch('/api/frequencia', { 
-            dia, 
-            mes, 
-            ano, 
-            turma_id: turmaIdSelecionada, 
-            frequencias 
+        const response = await fetch(`${API_URL}/salvar-frequencias`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                dia, 
+                mes, 
+                ano, 
+                turma_id: turmaIdSelecionada, 
+                frequencias 
+            })
         });
         
+        const result = await response.json();
         console.log('Resposta do servidor:', result);
         
         if (result.sucesso) {
@@ -416,7 +381,8 @@ async function salvarFrequencia() {
 
 async function carregarFrequenciaServidor(dia, mes, ano, turmaId) {
     try {
-        const result = await apiGet(`/api/frequencia?dia=${dia}&mes=${mes}&ano=${ano}&turma_id=${turmaId}`);
+        const response = await fetch(`${API_URL}/obter-frequencia?dia=${dia}&mes=${mes}&ano=${ano}&turma_id=${turmaId}`);
+        const result = await response.json();
         
         if (!result.sucesso) return;
 

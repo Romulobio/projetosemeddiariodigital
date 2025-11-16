@@ -24,14 +24,52 @@ app.use(cors({
   origin: [
     "https://projetosemeddiariodigital-lwzl1.vercel.app",
     "http://localhost:5173",
-    "http://localhost:3000"
+    "http://localhost:3000",
+    'http://127.0.0.1:5500',
   ],
   methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
+  credentials: true,
+  allowedHeaders: ["Content-Type"]
 }));
 
 // MUITO IMPORTANTE
-app.options("*", cors()); // libera preflight OPTIONS
+app.options('*', cors({
+    origin: [
+        "http://127.0.0.1:5500",
+        "http://localhost:5500",
+        "http://localhost:3000",
+        "http://localhost:5000",
+        "https://prosemeddiariodigital-lwz1.vercel.app"
+    ],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"]
+}));
+app.use((req, res, next) => {
+    const allowedOrigins = [
+        "http://127.0.0.1:5500",
+        "http://localhost:5500",
+        "http://localhost:3000", 
+        "http://localhost:5000",
+        "https://prosemeddiariodigital-lwz1.vercel.app"
+    ];
+    
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+    }
+    
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    
+    // Responder imediatamente para requisições OPTIONS
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    
+    next();
+});
 
 // ========================
 // CONFIGURAÇÕES EXPRESS
@@ -322,6 +360,7 @@ app.get('/frequencia.html', verificarProfessor, (req, res) => res.sendFile(path.
 app.get('/relatorios.html', verificarProfessor, (req, res) => res.sendFile(path.join(__dirname, 'relatorios.html')));
 app.get('/notas.html', verificarProfessor, (req, res) => res.sendFile(path.join(__dirname, 'notas.html')));
 
+
 // ========================
 // ROTAS DE TURMAS E PROFESSORES
 // ========================
@@ -441,7 +480,7 @@ app.delete('/api/alunos/:id', verificarAdmin, (req, res) => {
 });
 
 // Cadastrar turma
-app.post('/api/turmas', verificarAdmin, (req, res) => {
+app.post('/turmas', verificarAdmin, (req, res) => {
   let { nome, ano, turno } = req.body;
   if (!nome || !ano || !turno) return res.status(400).json({ sucesso: false, erro: 'Todos os campos são obrigatórios!' });
 
@@ -1765,8 +1804,6 @@ app.delete('/api/professores/:id', verificarAdmin, async (req, res) => {
 // ========================
 // SISTEMA DE RECUPERAÇÃO DE SENHA
 // ========================
-
-const crypto = require('crypto');
 
 // Rota para solicitar recuperação de senha
 app.post('/solicitar-recuperacao', async (req, res) => {

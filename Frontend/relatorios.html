@@ -28,28 +28,29 @@
     <!-- Filtros -->
     <section class="filtros-section">
         <div class="filtros-container">
-            <div class="filtro-group">
-                <label>Turma:</label>
-                <select id="filtro-turma">
-                    <option value="">Carregando turmas...</option>
-                </select>
-            </div>
-            
+               <div class="filtro-group">
+            <label>Turma:</label>
+            <select id="filtro-turma">
+                <option value="">Carregando turmas...</option>
+            </select>
+        </div>
+        
+    
             <div class="filtro-group">
                 <label>Mês:</label>
                 <select id="filtro-mes">
-                    <option value="1">Janeiro</option>
-                    <option value="2">Fevereiro</option>
-                    <option value="3">Março</option>
-                    <option value="4">Abril</option>
-                    <option value="5">Maio</option>
-                    <option value="6">Junho</option>
-                    <option value="7">Julho</option>
-                    <option value="8">Agosto</option>
-                    <option value="9">Setembro</option>
-                    <option value="10">Outubro</option>
-                    <option value="11">Novembro</option>
-                    <option value="12">Dezembro</option>
+                    <option value="0">Janeiro</option>
+                    <option value="1">Fevereiro</option>
+                    <option value="2">Março</option>
+                    <option value="3">Abril</option>
+                    <option value="4">Maio</option>
+                    <option value="5">Junho</option>
+                    <option value="6">Julho</option>
+                    <option value="7">Agosto</option>
+                    <option value="8">Setembro</option>
+                    <option value="9">Outubro</option>
+                    <option value="10">Novembro</option>
+                    <option value="11">Dezembro</option>
                 </select>
             </div>
             
@@ -139,7 +140,13 @@
             <!-- Detalhes por data serão preenchidos pelo JavaScript -->
         </div>
     </section>
-<script src="api-service.js"></script>
+
+    <!-- ⭐⭐ ADICIONE ESTE BLOCO ANTES DO script-relatorios.js ⭐⭐ -->
+    <script>
+    // URL da API no Render - SUBSTITUA pelo seu URL real do Render
+    const API_URL = 'https://projetosemed2.onrender.com';
+    </script>
+
     <script src="script-relatorios.js"></script>
 </body>
 </html>

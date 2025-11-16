@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles-frequencia.css">
     <title>Controle de Frequência</title>
- 
 </head>
 <body>
     
@@ -78,8 +77,52 @@
             <button onclick="fecharListaAlunos()" class="btn-cancelar">❌ Cancelar</button>
         </div>
     </section>
-<script src="api-service.js"></script>
- <script src="script-frequencia.js"></script>
 
+    <!-- ⭐⭐ BLOCO DA API_URL - DEVE VIR ANTES do script-frequencia.js ⭐⭐ -->
+    <script>
+    // URL da API no Render - SUBSTITUA pelo seu URL real do Render
+    const API_URL = 'https://projetosemed2.onrender.com';
+
+    // Função para verificar se o professor está logado
+    async function verificarSessao() {
+      try {
+        const response = await fetch(`${API_URL}/api/dados-usuario`, {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Sessão expirada');
+        }
+        
+        const data = await response.json();
+        if (!data.sucesso || data.usuario.tipo !== 'professor') {
+          throw new Error('Acesso negado');
+        }
+        
+        return data.usuario;
+      } catch (error) {
+        console.error('Erro na verificação de sessão:', error);
+        localStorage.removeItem('usuarioLogado');
+        window.location.href = 'index.html';
+      }
+    }
+
+    // Verificar sessão quando a página carregar
+    document.addEventListener('DOMContentLoaded', async function() {
+      const usuario = await verificarSessao();
+      if (usuario) {
+        console.log('Professor logado:', usuario.nome);
+        // O script-frequencia.js continuará o carregamento das turmas
+      }
+    });
+
+    // Função para voltar para a página do professor
+    function voltarParaProfessor() {
+      window.location.href = 'pagina-professor.html';
+    }
+    </script>
+
+    <!-- ⭐⭐ SÓ UM script-frequencia.js ⭐⭐ -->
+    <script src="./script-frequencia.js"></script>
 </body>
 </html>

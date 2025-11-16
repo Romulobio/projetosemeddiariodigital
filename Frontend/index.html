@@ -12,7 +12,6 @@
   <!-- CSS principal -->
   <link rel="stylesheet" href="styles.css" />
 
-  </div>
   <title>Diário Escolar Digital - Login</title>
 </head>
 
@@ -22,6 +21,10 @@
   <img src="./img/logocd2.png" alt="Logo do Diário Escolar Digital" class="logo" />
 
   <h1 class="titulo">Diário Escolar Digital</h1>
+
+  <!-- Status de Conexão -->
+  <div id="status-conexao" style="position: fixed; top: 10px; right: 10px; padding: 5px 10px; border-radius: 15px; font-size: 12px; display: none;">
+  </div>
 
   <!-- Seleção de Tipo -->
   <section class="login-container" id="tipo-login-container">
@@ -39,7 +42,7 @@
   </section>
 
   <!-- Login Professor -->
-  <section class="login-container" id="login-professor-container" hidden>
+  <section class="login-container" id="login-professor-container" style="display: none;">
     <h2>Login Professor</h2>
     <div class="input-box">
       <img src="./img/iconsusuario.png" class="icon" alt="Ícone usuário" />
@@ -61,7 +64,7 @@
   </section>
 
   <!-- Login Administrador -->
-  <section class="login-container" id="login-admin-container" hidden>
+  <section class="login-container" id="login-admin-container" style="display: none;">
     <h2>Login Administrador</h2>
     <div class="input-box">
       <img src="./img/iconsusuario.png" class="icon" alt="Ícone usuário" />
@@ -83,7 +86,7 @@
   </section>
 
   <!-- Cadastro Professor -->
-  <section class="login-container" id="cadastro-professor-container" hidden>
+  <section class="login-container" id="cadastro-professor-container" style="display: none;">
     <h2>Cadastro de Professor</h2>
     <div class="input-box">
       <img src="./img/iconsusuario.png" class="icon" alt="Ícone nome" />
@@ -104,7 +107,7 @@
   </section>
 
   <!-- Cadastro Administrador -->
-  <section class="login-container" id="cadastro-admin-container" hidden>
+  <section class="login-container" id="cadastro-admin-container" style="display: none;">
     <h2>Cadastro de Administrador</h2>
     <div class="input-box">
       <img src="./img/iconsusuario.png" class="icon" alt="Ícone nome" />
@@ -123,11 +126,8 @@
       <p><a href="#" onclick="mostrarLogin('admin')">← Voltar para login</a></p>
     </div>
   </section>
-<!-- No cabeçalho ou em algum lugar visível -->
-<div id="status-conexao" style="position: fixed; top: 10px; right: 10px; padding: 5px 10px; border-radius: 15px; font-size: 12px; display: none;">
+
   <!-- Scripts -->
-   
- <script src="script.js" defer></script>
- 
+  <script src="./script.js"></script>
 </body>
 </html>

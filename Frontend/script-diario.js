@@ -1,52 +1,5 @@
-const BASE_URL = window.location.hostname.includes('localhost')
-  ? 'http://localhost:8080'
-  : 'https://prosemeddiariodigital-production.up.railway.app';
+console.log('✅ Script de Objetos de Conhecimento carregado!');
 
-
-// Função genérica de requisição à API (MESMA DO script-login.js)
-async function apiFetch(endpoint, data) {
-  try {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-      credentials: 'include',
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Erro na comunicação com o servidor:', error);
-    alert('Erro ao conectar ao servidor.');
-    throw error;
-  }
-}
-
-// Funções específicas para GET
-async function apiGet(endpoint) {
-  try {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Erro na comunicação com o servidor:', error);
-    alert('Erro ao conectar ao servidor.');
-    throw error;
-  }
-}
-
-// Variáveis globais
 let mesAtual = new Date().getMonth();
 let anoAtual = new Date().getFullYear();
 let turmaSelecionada = null;
@@ -58,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ DOM completamente carregado');
     console.log('📍 Iniciando funções...');
     
-    carregarNomeProfessor();
+    carregarNomeProfessor(); // ← CARREGA O NOME DO PROFESSOR
     atualizarDataHora();
     carregarTurmasProfessor();
     carregarDisciplinasProfessor();
@@ -85,11 +38,13 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(atualizarDataHora, 1000);
 });
 
-// FUNÇÃO PARA CARREGAR O NOME DO PROFESSOR
+// FUNÇÃO NOVA PARA CARREGAR O NOME DO PROFESSOR
 async function carregarNomeProfessor() {
     try {
-        const data = await apiGet('/api/dados-usuario');
+        const response = await fetch('/api/dados-usuario');
+        if (!response.ok) throw new Error('Erro ao carregar dados');
         
+        const data = await response.json();
         if (data.sucesso) {
             document.getElementById('professor-nome').textContent = data.usuario.nome;
             console.log('✅ Nome do professor carregado:', data.usuario.nome);
@@ -221,8 +176,16 @@ async function carregarTurmasProfessor() {
         const selectTurma = document.getElementById('select-turma');
         selectTurma.innerHTML = '<option value="">Carregando turmas...</option>';
         
-        const data = await apiGet('/api/professor/turmas');
-        console.log('📡 Resposta da API turmas:', data);
+        // MUDEI A ROTA PARA A NOVA
+        const response = await fetch('/api/turmas-professor');
+        console.log('📡 Resposta da API turmas:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Erro HTTP: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('📊 Dados turmas recebidos:', data);
         
         if (data.sucesso) {
             selectTurma.innerHTML = '<option value="">Selecione uma turma</option>';
@@ -230,7 +193,7 @@ async function carregarTurmasProfessor() {
             if (data.turmas && data.turmas.length > 0) {
                 data.turmas.forEach(turma => {
                     const option = document.createElement('option');
-                    option.value = turma.id;
+                    option.value = turma.id; // USA O ID
                     option.textContent = turma.nome;
                     selectTurma.appendChild(option);
                 });
@@ -255,7 +218,13 @@ async function carregarDisciplinasProfessor() {
     console.log('📍 Carregando disciplinas do professor...');
     
     try {
-        const data = await apiGet('/api/professor/disciplinas');
+        const response = await fetch('/api/disciplinas-professor');
+        
+        if (!response.ok) {
+            throw new Error(`Erro HTTP: ${response.status}`);
+        }
+        
+        const data = await response.json();
         
         if (data.sucesso && data.disciplinas) {
             const selectDisciplina = document.getElementById('select-disciplina');
@@ -301,7 +270,13 @@ async function carregarObjetosConhecimento() {
     });
     
     try {
-        const data = await apiGet(`/api/objetos-conhecimento?turma=${turmaSelecionada}&disciplina=${disciplinaSelecionada}&mes=${mesAtual + 1}&ano=${anoAtual}`);
+        const response = await fetch(`/api/objetos-conhecimento?turma=${turmaSelecionada}&disciplina=${disciplinaSelecionada}&mes=${mesAtual + 1}&ano=${anoAtual}`);
+        
+        if (!response.ok) {
+            throw new Error(`Erro HTTP: ${response.status}`);
+        }
+        
+        const data = await response.json();
         
         if (data.sucesso) {
             objetosCarregados = data.objetos || {};
@@ -365,13 +340,26 @@ async function salvarObjetosConhecimento() {
             return;
         }
         
-        const result = await apiFetch('/api/objetos-conhecimento', {
-            turma: turmaSelecionada,
-            disciplina: disciplinaSelecionada,
-            mes: mesAtual + 1, // +1 porque JavaScript usa 0-11
-            ano: anoAtual,
-            objetos: objetos
+        const response = await fetch('/api/salvar-objetos-conhecimento', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                turma: turmaSelecionada,
+                disciplina: disciplinaSelecionada,
+                mes: mesAtual + 1, // +1 porque JavaScript usa 0-11
+                ano: anoAtual,
+                objetos: objetos
+            })
         });
+        
+        // Verifica se a resposta é JSON válido
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.erro || `Erro HTTP: ${response.status}`);
+        }
         
         if (result.sucesso) {
             mostrarMensagem(`✅ ${result.mensagem}`, 'sucesso');
@@ -399,6 +387,7 @@ async function salvarObjetosConhecimento() {
         btnSalvar.innerHTML = textoOriginal;
     }
 }
+
 
 function limparCampos() {
     if (!confirm('Tem certeza que deseja limpar todos os campos deste mês?')) {

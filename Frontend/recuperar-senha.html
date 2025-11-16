@@ -154,9 +154,59 @@
 
         <div class="links">
              <p><a href="javascript:window.history.back()">← Voltar</a></p>
+  </div>
         </div>
     </div>
-<script src="api-service.js"></script>
-    <script src="script-recuperar-senha.js"></script>
+
+    <script>
+        document.getElementById('recoveryForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value.trim();
+            const messageDiv = document.getElementById('message');
+            
+            if (!email) {
+                showMessage('Por favor, informe seu email.', 'error');
+                return;
+            }
+
+            try {
+                showMessage('Enviando solicitação...', 'info');
+                
+                const response = await fetch('/solicitar-recuperacao', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await response.json();
+                
+                if (data.sucesso) {
+                    showMessage(data.mensagem, 'success');
+                    document.getElementById('recoveryForm').reset();
+                    
+                    // Se estiver em desenvolvimento, mostra o link no console
+                    if (data.link_teste) {
+                        console.log('🔗 Link de recuperação (desenvolvimento):', data.link_teste);
+                        showMessage(data.mensagem + '<br><br><strong>Link para testes:</strong><br>' + data.link_teste, 'info');
+                    }
+                } else {
+                    showMessage(data.erro, 'error');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                showMessage('Erro de conexão. Tente novamente.', 'error');
+            }
+        });
+
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = text;
+            messageDiv.className = 'message ' + type;
+            messageDiv.style.display = 'block';
+        }
+    </script>
 </body>
 </html>

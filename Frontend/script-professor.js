@@ -1,204 +1,156 @@
-export const API_BASE_URL = "https://prosemeddiariodigital-production.up.railway.app";
 
-console.log("🌐 API Service - Backend URL:", API_BASE_URL);
+// script-professor.js - VERSÃO CORRIGIDA
+console.log('✅ Script do professor carregado!');
 
-class ApiService {
-
-  static async request(endpoint, options = {}) {
-    const url = `${API_BASE_URL}${endpoint}`;
-
-    console.log(`🔄 Requisição → ${url}`);
-
-    const config = {
-      method: options.method || "GET",
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-      credentials: "include",
-    };
-
-    if (options.body) {
-      config.body = JSON.stringify(options.body);
-    }
-
+// Verificar autenticação ao carregar a página
+async function verificarAutenticacao() {
     try {
-      const response = await fetch(url, config);
-
-      let data = null;
-      try {
-        data = await response.json();
-      } catch {
-        console.warn("⚠️ Resposta não era JSON.");
-      }
-
-      if (!response.ok) {
-        throw new Error(data?.erro || data?.error || `Erro ${response.status}`);
-      }
-
-      return data;
-    } catch (err) {
-      console.error("❌ Erro na API:", err);
-      throw err;
+        console.log('🔐 Verificando autenticação...');
+        
+        const response = await fetch('/check-auth');
+        const data = await response.json();
+        
+        console.log('📊 Resposta da autenticação:', data);
+        
+        if (data.sucesso && data.usuario) {
+            if (data.usuario.tipo === 'professor') {
+                console.log('✅ Professor autenticado:', data.usuario.nome);
+                carregarDadosProfessor(data.usuario);
+                return true;
+            } else {
+                console.error('❌ Usuário não é professor. Tipo:', data.usuario.tipo);
+                alert('Acesso permitido apenas para professores!');
+                window.location.href = '/';
+                return false;
+            }
+        } else {
+            console.error('❌ Não autenticado:', data.erro);
+            alert('Sessão expirada! Faça login novamente.');
+            window.location.href = '/';
+            return false;
+        }
+    } catch (error) {
+        console.error('💥 Erro ao verificar autenticação:', error);
+        alert('Erro de conexão! Verifique o servidor.');
+        return false;
     }
-  }
-
-  // ============================
-  // AUTENTICAÇÃO (SEM /api/)
-  // ============================
-  static checkAuth() {
-    return this.request("/check-auth");
-  }
-
-  static login(data) {
-    return this.request("/login", {
-      method: "POST",
-      body: data,
-    });
-  }
-
-  static logout() {
-    return this.request("/logout", { method: "POST" });
-  }
-
-  // ============================
-  // TURMAS
-  // ============================
-  static getTurmas() {
-    return this.request("/turmas");
-  }
-
-  static cadastrarTurma(data) {
-    return this.request("/turmas", {
-      method: "POST",
-      body: data,
-    });
-  }
-
-  static excluirTurma(id) {
-    return this.request(`/turmas/${id}`, {
-      method: "DELETE",
-    });
-  }
-
-  // ============================
-  // PROFESSORES
-  // ============================
-  static getProfessores() {
-    return this.request("/professores");
-  }
-
-  static cadastrarProfessor(data) {
-    return this.request("/professores", {
-      method: "POST",
-      body: data,
-    });
-  }
-
-  static excluirProfessor(id) {
-    return this.request(`/professores/${id}`, {
-      method: "DELETE",
-    });
-  }
-
-  static vincularProfessor(data) {
-    return this.request("/professores/vincular", {
-      method: "POST",
-      body: data,
-    });
-  }
-
-  // ============================
-  // DISCIPLINAS
-  // ============================
-  static getDisciplinas() {
-    return this.request("/disciplinas");
-  }
-
-  static vincularDisciplinas(data) {
-    return this.request("/professores/disciplinas", {
-      method: "POST",
-      body: data,
-    });
-  }
-
-  static getDisciplinasProfessor(id) {
-    return this.request(`/professores/${id}/disciplinas`);
-  }
-
-  // ============================
-  // ALUNOS
-  // ============================
-  static getAlunos() {
-    return this.request("/alunos");
-  }
-
-  static cadastrarAluno(data) {
-    return this.request("/alunos", {
-      method: "POST",
-      body: data,
-    });
-  }
-
-  static excluirAluno(id) {
-    return this.request(`/alunos/${id}`, {
-      method: "DELETE",
-    });
-  }
-
-  // ============================
-  // ADMINS
-  // ============================
-  static getAdmins() {
-    return this.request("/admins");
-  }
-
-  static cadastroAdmin(data) {
-    return this.request("/admins", {
-      method: "POST",
-      body: data,
-    });
-  }
-
-  static alternarPermissao(id) {
-    return this.request(`/admins/${id}/toggle`, {
-      method: "PUT",
-    });
-  }
-
-  // ============================
-  // SENHAS
-  // ============================
-  static alterarMinhaSenha(data) {
-    return this.request("/senhas/alterar", {
-      method: "POST",
-      body: data,
-    });
-  }
-
-  static redefinirSenhaUsuario(data) {
-    return this.request("/senhas/redefinir", {
-      method: "POST",
-      body: data,
-    });
-  }
 }
+
+// Carregar dados do professor
+function carregarDadosProfessor(usuario) {
+    console.log('👤 Carregando dados do professor:', usuario);
+    
+    document.getElementById('nome-professor').textContent = usuario.nome;
+    document.getElementById('colegio-professor').textContent = 'Colégio Municipal';
+    
+    // Também salva no localStorage para backup
+    localStorage.setItem('usuarioLogado', JSON.stringify(usuario));
+}
+
+// Atualizar data atual
+function atualizarData() {
+    const agora = new Date();
+    const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    };
+    const dataElement = document.getElementById('data-atual');
+    if (dataElement) {
+        dataElement.textContent = agora.toLocaleDateString('pt-BR', options);
+    }
+}
+
+// Menu dropdown
+function toggleMenu() {
+    const menu = document.getElementById('dropdownMenu');
+    if (menu) {
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+}
+
+// Fechar menu ao clicar fora
+document.addEventListener('click', function(event) {
+    const menu = document.getElementById('dropdownMenu');
+    const menuBtn = document.querySelector('.menu-btn');
+    
+    if (menu && menuBtn && !menu.contains(event.target) && !menuBtn.contains(event.target)) {
+        menu.style.display = 'none';
+    }
+});
+
+// Funções das funcionalidades
 function abrirFrequencia() {
-  window.location.href = "professor-frequencia.html";
-}
-
-function abrirDiario() {
-  window.location.href = "professor-diario.html";
+    console.log('📊 Abrindo frequência...');
+    alert('Sistema de Frequência - Em desenvolvimento');
 }
 
 function abrirRelatorios() {
-  window.location.href = "professor-relatorios.html";
+    console.log('📈 Abrindo relatórios...');
+    alert('Sistema de Relatórios - Em desenvolvimento');
+}
+
+function abrirDiario() {
+    console.log('📖 Abrindo diário digital...');
+    alert('Diário Digital - Em desenvolvimento');
 }
 
 function abrirNotas() {
-  window.location.href = "professor-notas.html";
+    console.log('📝 Abrindo sistema de notas...');
+    alert('Sistema de Notas - Em desenvolvimento');
 }
 
+// Funções do menu
+function alterarSenha() {
+    alert('Alterar Senha - Em desenvolvimento');
+}
 
-window.apiService = ApiService;
-export default ApiService;
+function abrirAjuda() {
+    alert('Sistema de Ajuda - Em desenvolvimento');
+}
+
+function faleConosco() {
+    alert('Fale Conosco - Em desenvolvimento');
+}
+
+// Sair do sistema
+async function sair() {
+    try {
+        console.log('🚪 Saindo do sistema...');
+        const response = await fetch('/logout', { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.sucesso) {
+            console.log('✅ Logout realizado com sucesso');
+            localStorage.removeItem('usuarioLogado');
+            window.location.href = '/';
+        } else {
+            console.error('❌ Erro no logout:', data.erro);
+            window.location.href = '/';
+        }
+    } catch (error) {
+        console.error('💥 Erro ao sair:', error);
+        window.location.href = '/';
+    }
+}
+
+// Inicialização quando a página carrega
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Página do professor inicializada');
+    
+    // Primeiro verifica autenticação, depois carrega o resto
+    verificarAutenticacao().then(autenticado => {
+        if (autenticado) {
+            atualizarData();
+            // Atualizar data a cada minuto
+            setInterval(atualizarData, 60000);
+        }
+    });
+});
