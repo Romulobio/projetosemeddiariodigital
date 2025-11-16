@@ -14,30 +14,32 @@ import { fileURLToPath } from 'url';
 
 dotenv.config();
 
-const FRONTEND_URL = process.env.FRONTEND_URL;
-
 const app = express();
 const MySQLStore = MySQLStoreImport(session);
 
 // ========================
-// ⚙️ CONFIGURAÇÃO DO CORS (ACEITA QUALQUER REQUISIÇÃO)
+// ⚙️ CONFIGURAÇÃO DO CORS 
 // ========================
-// URL do seu frontend no Vercel
-const VERCEL_FRONTEND_URL = 'https://projetosemeddiariodigital-lwz1.vercel.app';
 
-app.use(cors({
-  // 💡 CORREÇÃO: Usando a URL direta para evitar problemas de process.env
-  origin: VERCEL_FRONTEND_URL, 
-  credentials: true,      // Permite envio de cookies/autenticação
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-} ));
+const allowedOrigins = [
+  "http://127.0.0.1:5500",
+  "http://localhost:5500",
+  "https://projetosemeddiariodigital-production.up.railway.app"
+  // coloque aqui o domínio final do frontend quando publicar
+];
 
-// O middleware de pré-voo (preflight) também deve usar a URL direta
-app.options('*', cors({
-  origin: VERCEL_FRONTEND_URL,
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true); // permite ferramentas e testes
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 
 // ========================
 // CONFIGURAÇÕES EXPRESS
@@ -99,56 +101,31 @@ app.get("/api/test-cors", (req, res) => {
 
 
 // ========================
-// CONEXÃO COM O BANCO DE DADOS (SERVIÇOS SEPARADOS)
+// CONEXÃO COM O BANCO DE DADOS
 // ========================
-
-console.log('🔧 Configurando conexão com MySQL (serviços separados)...');
+console.log('🔧 Configurando conexão com MySQL...');
 
 const dbConfig = {
-  host: process.env.MYSQLHOST,        // Vem das variáveis Railway
-  port: process.env.MYSQLPORT,        // Vem das variáveis Railway  
-  user: process.env.MYSQLUSER,        // Vem das variáveis Railway
-  password: process.env.MYSQLPASSWORD, // Vem das variáveis Railway
-  database: process.env.MYSQLDATABASE, // Vem das variáveis Railway
+  host: process.env.MYSQLHOST,
+  port: process.env.MYSQLPORT,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 };
 
-console.log('📊 Configuração do banco (projetos separados):', {
-  host: dbConfig.host,
-  port: dbConfig.port,
-  user: dbConfig.user,
-  database: dbConfig.database
-});
-
-// Criar pool de conexão
 const db = mysql.createPool(dbConfig);
 
 // Testar conexão
 (async () => {
   try {
     const connection = await db.getConnection();
-    console.log('✅ Conectado ao MySQL Railway com sucesso! (projetos separados)');
-    
-    // Testar query básica
-    const [result] = await connection.execute('SELECT 1 + 1 AS test');
-    console.log('✅ Query teste executada:', result[0].test);
-    
+    console.log('✅ Conectado ao MySQL Railway com sucesso!');
     connection.release();
   } catch (err) {
-    console.error('❌ ERRO ao conectar ao MySQL Railway:');
-    console.error('   Código:', err.code);
-    console.error('   Mensagem:', err.message);
-    console.error('   Host:', dbConfig.host);
-    console.error('   Port:', dbConfig.port);
-    
-    if (err.code === 'ENOTFOUND') {
-      console.error('\n💡 ERRO CRÍTICO: Host não encontrado.');
-      console.error('   Verifique se as variáveis no Railway estão CORRETAS:');
-      console.error('   - MYSQLHOST deve ser: caboose.proxy.rlwy.net');
-      console.error('   - MYSQLPORT deve ser: 29311');
-    }
+    console.error('❌ ERRO ao conectar ao MySQL:', err.message);
   }
 })();
 
@@ -157,7 +134,7 @@ const db = mysql.createPool(dbConfig);
 // ========================
 function verificarAuth(req, res, next) {
   if (req.session && req.session.usuario) return next();
-  return res.status(403).json({ sucesso: false, erro: 'Acesso negado! Faça login primeiro.' });
+  return res.status(401).json({ sucesso: false, erro: 'Acesso negado! Faça login primeiro.' });
 }
 
 function verificarAdmin(req, res, next) {
@@ -165,29 +142,12 @@ function verificarAdmin(req, res, next) {
   return res.status(403).json({ sucesso: false, erro: 'Acesso negado! Apenas administradores.' });
 }
 
-function verificarProfessor(req, res, next) {
-  if (req.session?.usuario?.tipo === 'professor') return next();
-  return res.status(403).json({ sucesso: false, erro: 'Acesso negado! Apenas professores.' });
-}
-
-// ========================
-// MIDDLEWARE PARA VERIFICAR ADMIN MASTER
-// ========================
 function verificarAdminMaster(req, res, next) {
   if (req.session?.usuario?.tipo === 'administrador' && req.session?.usuario?.pode_criar_admin) {
     return next();
   }
   return res.status(403).json({ sucesso: false, erro: 'Acesso negado! Apenas administradores masters.' });
 }
-
-// ========================
-// MIDDLEWARE DE LOG PARA DEBUG
-// ========================
-app.use((req, res, next) => {
-  console.log(`📨 ${req.method} ${req.path}`);
-  console.log(`🌐 Origin: ${req.headers.origin}`);
-  next();
-});
 
 // ========================
 // FUNÇÕES AUXILIARES
@@ -201,7 +161,6 @@ function fazerLogin(usuario, res, req) {
     pode_criar_admin: Boolean(usuario.pode_criar_admin)
   };
   
-  // Salva a sessão antes de enviar resposta
   req.session.save((err) => {
     if (err) {
       console.error('❌ Erro ao salvar sessão:', err);
@@ -221,75 +180,18 @@ function fazerLogin(usuario, res, req) {
 }
 
 // ========================
-// ROTA DE TESTE CORS
+// ROTAS DE AUTENTICAÇÃO
 // ========================
-app.get('/api/test-cors', (req, res) => {
-  console.log('✅ Rota /api/test-cors acessada com sucesso');
+
+// Verificar autenticação
+app.get('/api/check-auth', verificarAuth, (req, res) => {
   res.json({ 
-    message: 'CORS está funcionando!',
-    timestamp: new Date().toISOString(),
-    origin: req.headers.origin,
-    environment: process.env.NODE_ENV || 'development'
+    sucesso: true, 
+    usuario: req.session.usuario 
   });
 });
 
-// ========================
-// ROTAS DE AUTENTICAÇÃO
-// ========================
-app.post('/api/cadastro', async (req, res) => {
-  let { nome, email, senha, tipo } = req.body;
-  
-  if (!nome || !email || !senha || !tipo) {
-    return res.json({ sucesso: false, erro: 'Todos os campos são obrigatórios!' });
-  }
-
-  nome = nome.trim();
-  email = email.trim().toLowerCase();
-  tipo = tipo.toLowerCase().trim();
-  
-  const tiposPermitidos = ['administrador', 'professor', 'aluno'];
-  if (!tiposPermitidos.includes(tipo)) {
-    return res.json({ sucesso: false, erro: 'Tipo de usuário inválido!' });
-  }
-
-  try {
-    // Verificar se email já existe
-    const [results] = await db.execute('SELECT id FROM usuarios WHERE email = ?', [email]);
-    if (results.length > 0) {
-      return res.json({ sucesso: false, erro: 'Este email já está cadastrado!' });
-    }
-
-    // CORREÇÃO: Permitir cadastro de primeiro administrador sem sessão
-    if (tipo === 'administrador') {
-      const [admins] = await db.execute('SELECT id FROM usuarios WHERE tipo = "administrador"');
-      if (admins.length === 0) {
-        // Primeiro administrador - permitir sem sessão
-        console.log('🆕 Criando primeiro administrador do sistema');
-      } else if (!req.session.usuario || req.session.usuario.tipo !== 'administrador' || !req.session.usuario.pode_criar_admin) {
-        return res.json({ sucesso: false, erro: 'Apenas administradores masters podem criar novos administradores.' });
-      }
-    }
-
-    // Criar hash da senha
-    const hash = await bcrypt.hash(senha, 10);
-    
-    // Inserir usuário
-    const [result] = await db.execute(
-      'INSERT INTO usuarios (nome, email, senha, tipo) VALUES (?, ?, ?, ?)', 
-      [nome, email, hash, tipo]
-    );
-    
-    res.json({ 
-      sucesso: true, 
-      id: result.insertId, 
-      mensagem: `Usuário ${tipo} cadastrado com sucesso!` 
-    });
-  } catch (err) {
-    console.error('Erro no cadastro:', err);
-    res.json({ sucesso: false, erro: 'Erro ao cadastrar usuário!' });
-  }
-});
-
+// Login
 app.post('/api/login', async (req, res) => {
   const { email, senha } = req.body;
   
@@ -331,27 +233,8 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// ... (o restante das suas rotas permanece igual)
-
-app.post('/logout', verificarAuth, (req, res) => {
-  req.session.destroy(err => {
-    if (err) {
-      console.error('Erro no logout:', err);
-      return res.json({ sucesso: false, erro: 'Erro ao fazer logout!' });
-    }
-    res.json({ sucesso: true, mensagem: 'Logout realizado com sucesso!' });
-  });
-});
-
-// Rota para verificar autenticação
-app.get('/check-auth', verificarAuth, (req, res) => {
-  res.json({ sucesso: true, usuario: req.session.usuario });
-});
-
-// ========================
-// ROTA DE CADASTRO COM VERIFICAÇÃO DE PERMISSÃO
-// ========================
-app.post('/cadastro', async (req, res) => {
+// Cadastro de usuário
+app.post('/api/cadastro', async (req, res) => {
   let { nome, email, senha, tipo } = req.body;
   
   if (!nome || !email || !senha || !tipo) {
@@ -367,341 +250,119 @@ app.post('/cadastro', async (req, res) => {
     return res.json({ sucesso: false, erro: 'Tipo de usuário inválido!' });
   }
 
-  // VERIFICAÇÃO DE PERMISSÃO PARA CRIAR ADMINISTRADOR
-  if (tipo === 'administrador') {
-    // Se não está logado, não pode criar admin
-    if (!req.session.usuario) {
-      return res.json({ sucesso: false, erro: 'Acesso negado! Faça login para criar administradores.' });
-    }
-    
-    // Verifica se o usuário logado tem permissão para criar admins
-    const sqlCheckPermission = 'SELECT pode_criar_admin FROM usuarios WHERE id = ?';
-    
-    db.query(sqlCheckPermission, [req.session.usuario.id], (err, results) => {
-      if (err || results.length === 0 || !results[0].pode_criar_admin) {
-        return res.json({ 
-          sucesso: false, 
-          erro: 'Permissão negada! Apenas administradores master podem criar novos administradores.' 
-        });
-      }
-      
-      // Se tem permissão, continua com o cadastro
-      continuarCadastro();
-    });
-  } else {
-    // Para professores e alunos, cadastro normal
-    continuarCadastro();
-  }
-
-  function continuarCadastro() {
-    // Verifica se email já existe
-    db.query('SELECT id FROM usuarios WHERE email = ?', [email], async (err, results) => {
-      if (err) {
-        return res.json({ sucesso: false, erro: 'Erro ao verificar email!' });
-      }
-      
-      if (results.length > 0) {
-        return res.json({ sucesso: false, erro: 'Este email já está cadastrado!' });
-      }
-
-      try {
-        const hash = await bcrypt.hash(senha, 10);
-        db.query('INSERT INTO usuarios (nome, email, senha, tipo) VALUES (?, ?, ?, ?)', 
-          [nome, email, hash, tipo], 
-          (err, result) => {
-            if (err) {
-              return res.json({ sucesso: false, erro: 'Erro ao cadastrar usuário!' });
-            }
-            
-            console.log(`✅ Usuário ${tipo} cadastrado: ${nome} (${email})`);
-            res.json({ 
-              sucesso: true, 
-              id: result.insertId, 
-              mensagem: `Usuário ${tipo} cadastrado com sucesso!` 
-            });
-          }
-        );
-      } catch (error) {
-        res.json({ sucesso: false, erro: 'Erro interno ao cadastrar usuário!' });
-      }
-    });
-  }
-});
-
-app.post('/login', async (req, res) => {
-  const { email, senha } = req.body;
-  console.log('🔐 TENTATIVA DE LOGIN - Email:', email);
-
-  if (!email || !senha) {
-    return res.json({ sucesso: false, erro: 'Email e senha são obrigatórios!' });
-  }
-
-  db.query('SELECT * FROM usuarios WHERE email = ?', [email], async (err, results) => {
-    if (err) {
-      console.error('❌ ERRO NO BANCO:', err);
-      return res.json({ sucesso: false, erro: 'Erro ao fazer login!' });
-    }
-    
-    if (results.length === 0) {
-      console.log('❌ EMAIL NÃO ENCONTRADO:', email);
-      return res.json({ sucesso: false, erro: 'Email ou senha incorretos!' });
-    }
-
-    const usuario = results[0];
-    console.log('👤 USUÁRIO ENCONTRADO:', usuario.nome);
-
-    // Tenta comparar com bcrypt primeiro
-    const match = await bcrypt.compare(senha, usuario.senha);
-    console.log('🔑 COMPARAÇÃO BCRYPT:', match);
-
-    if (match) {
-      // Senha correta (hash válido)
-      return fazerLogin(usuario, res, req);
-    }
-
-    // Se bcrypt falhou, pode ser hash incorreto - vamos corrigir
-    console.log('⚠️ Hash incorreto detectado, corrigindo...');
-    
-    try {
-      // Gera novo hash correto
-      const novoHash = await bcrypt.hash(senha, 10);
-      
-      // Atualiza no banco
-      const sqlUpdate = 'UPDATE usuarios SET senha = ? WHERE id = ?';
-      db.query(sqlUpdate, [novoHash, usuario.id], (err) => {
-        if (err) {
-          console.error('❌ Erro ao corrigir hash:', err);
-          return res.json({ sucesso: false, erro: 'Erro interno!' });
-        }
-        
-        console.log('✅ HASH CORRIGIDO NO BANCO');
-        fazerLogin(usuario, res, req);
-      });
-    } catch (error) {
-      console.error('❌ Erro ao gerar hash:', error);
-      return res.json({ sucesso: false, erro: 'Email ou senha incorretos!' });
-    }
-  });
-});
-
-// Função auxiliar para fazer login
-function fazerLogin(usuario, res, req) {
-  req.session.usuario = { 
-    id: usuario.id, 
-    nome: usuario.nome, 
-    email: usuario.email, 
-    tipo: usuario.tipo.toLowerCase(),
-    pode_criar_admin: Boolean(usuario.pode_criar_admin)
-  };
-  
-  console.log('✅ LOGIN BEM-SUCEDIDO:', {
-    nome: usuario.nome,
-    tipo: usuario.tipo,
-    master: req.session.usuario.pode_criar_admin
-  });
-  
-  res.json({ 
-    sucesso: true, 
-    mensagem: 'Login realizado com sucesso!', 
-    usuario: req.session.usuario 
-  });
-}
-// ROTA PARA CRIAR NOVO ADMIN (útil para testes)
-app.post('/criar-novo-admin', async (req, res) => {
   try {
-    const hashSenha = await bcrypt.hash('admin123', 10);
-    
-    const sql = `INSERT INTO usuarios (nome, email, senha, tipo, pode_criar_admin) 
-                 VALUES (?, ?, ?, 'administrador', TRUE)`;
-    
-    db.query(sql, ['Novo Admin Master', 'novoadmin@escola.com', hashSenha], (err, result) => {
-      if (err) {
-        console.error('❌ Erro ao criar admin:', err);
-        return res.json({ sucesso: false, erro: 'Erro ao criar administrador' });
+    // Verificar se email já existe
+    const [results] = await db.execute('SELECT id FROM usuarios WHERE email = ?', [email]);
+    if (results.length > 0) {
+      return res.json({ sucesso: false, erro: 'Este email já está cadastrado!' });
+    }
+
+    // Permitir cadastro de primeiro administrador sem sessão
+    if (tipo === 'administrador') {
+      const [admins] = await db.execute('SELECT id FROM usuarios WHERE tipo = "administrador"');
+      if (admins.length === 0) {
+        console.log('🆕 Criando primeiro administrador do sistema');
+      } else if (!req.session.usuario || req.session.usuario.tipo !== 'administrador' || !req.session.usuario.pode_criar_admin) {
+        return res.json({ sucesso: false, erro: 'Apenas administradores masters podem criar novos administradores.' });
       }
-      
-      console.log('✅ Novo admin master criado!');
-      res.json({ 
-        sucesso: true, 
-        mensagem: 'Novo admin criado! Use: novoadmin@escola.com / admin123',
-        credenciais: {
-          email: 'novoadmin@escola.com',
-          senha: 'admin123'
-        }
-      });
+    }
+
+    // Criar hash da senha
+    const hash = await bcrypt.hash(senha, 10);
+    
+    // Inserir usuário
+    const [result] = await db.execute(
+      'INSERT INTO usuarios (nome, email, senha, tipo) VALUES (?, ?, ?, ?)', 
+      [nome, email, hash, tipo]
+    );
+    
+    res.json({ 
+      sucesso: true, 
+      id: result.insertId, 
+      mensagem: `Usuário ${tipo} cadastrado com sucesso!` 
     });
-  } catch (error) {
-    res.json({ sucesso: false, erro: 'Erro interno' });
+  } catch (err) {
+    console.error('Erro no cadastro:', err);
+    res.json({ sucesso: false, erro: 'Erro ao cadastrar usuário!' });
   }
 });
 
+// Logout
 app.post('/logout', verificarAuth, (req, res) => {
   req.session.destroy(err => {
-    if (err) return res.json({ sucesso: false, erro: 'Erro ao fazer logout!' });
+    if (err) {
+      console.error('Erro no logout:', err);
+      return res.json({ sucesso: false, erro: 'Erro ao fazer logout!' });
+    }
     res.json({ sucesso: true, mensagem: 'Logout realizado com sucesso!' });
   });
 });
 
 // ========================
-// ROTAS DE PÁGINAS
+// ROTAS DE ADMINISTRAÇÃO
 // ========================
-app.get('/admin.html', verificarAdmin, (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
-app.get('/pagina-professor.html', verificarProfessor, (req, res) => res.sendFile(path.join(__dirname, 'pagina-professor.html')));
-app.get('/frequencia.html', verificarProfessor, (req, res) => res.sendFile(path.join(__dirname, 'frequencia.html')));
-app.get('/relatorios.html', verificarProfessor, (req, res) => res.sendFile(path.join(__dirname, 'relatorios.html')));
-app.get('/notas.html', verificarProfessor, (req, res) => res.sendFile(path.join(__dirname, 'notas.html')));
 
-// ========================
-// ROTAS DE SENHA
-// ========================
-app.post('/alterar-senha', verificarAuth, async (req, res) => {
-  const { senha_atual, nova_senha, confirmar_senha } = req.body;
-  const usuarioId = req.session.usuario.id;
-
-  if (!senha_atual || !nova_senha || !confirmar_senha) {
-    return res.json({ sucesso: false, erro: 'Todos os campos são obrigatórios!' });
+// Listar todos os administradores
+app.get('/api/admin/administradores', verificarAuth, verificarAdmin, async (req, res) => {
+  try {
+    const [results] = await db.execute(
+      `SELECT id, nome, email, tipo, pode_criar_admin, created_at 
+       FROM usuarios 
+       WHERE tipo = 'administrador' 
+       ORDER BY nome`
+    );
+    
+    res.json({ 
+      sucesso: true, 
+      administradores: results 
+    });
+  } catch (err) {
+    console.error('❌ Erro ao carregar administradores:', err);
+    res.status(500).json({ 
+      sucesso: false, 
+      erro: 'Erro ao carregar administradores.' 
+    });
   }
+});
+
+// Alternar permissão de admin master
+app.post('/api/admin/toggle-permission', verificarAuth, verificarAdmin, async (req, res) => {
+  const { admin_id, pode_criar_admin } = req.body;
   
-  if (nova_senha !== confirmar_senha) {
-    return res.json({ sucesso: false, erro: 'Nova senha e confirmação não coincidem!' });
+  if (!admin_id || typeof pode_criar_admin === 'undefined') {
+    return res.json({ 
+      sucesso: false, 
+      erro: 'Dados incompletos!' 
+    });
   }
-  
-  if (nova_senha.length < 6) {
-    return res.json({ sucesso: false, erro: 'A nova senha deve ter pelo menos 6 caracteres!' });
-  }
 
-  try {
-    const [results] = await db.execute('SELECT * FROM usuarios WHERE id = ?', [usuarioId]);
-    
-    if (results.length === 0) {
-      return res.json({ sucesso: false, erro: 'Erro ao verificar senha atual!' });
-    }
-
-    const usuario = results[0];
-    const senhaAtualCorreta = await bcrypt.compare(senha_atual, usuario.senha);
-    
-    if (!senhaAtualCorreta) {
-      return res.json({ sucesso: false, erro: 'Senha atual incorreta!' });
-    }
-
-    const hashNovaSenha = await bcrypt.hash(nova_senha, 10);
-    await db.execute('UPDATE usuarios SET senha = ? WHERE id = ?', [hashNovaSenha, usuarioId]);
-    
-    res.json({ sucesso: true, mensagem: 'Senha alterada com sucesso!' });
-  } catch (err) {
-    console.error('Erro ao alterar senha:', err);
-    res.json({ sucesso: false, erro: 'Erro ao alterar senha!' });
-  }
-});
-
-// ========================
-// ROTAS DE RECUPERAÇÃO DE SENHA
-// ========================
-
-// Solicitar recuperação de senha
-app.post('/api/recuperar-senha', async (req, res) => {
-  const { email } = req.body;
-
-  if (!email) {
-    return res.json({ sucesso: false, erro: 'Email é obrigatório.' });
+  if (parseInt(admin_id) === req.session.usuario.id) {
+    return res.json({ 
+      sucesso: false, 
+      erro: 'Você não pode alterar suas próprias permissões!' 
+    });
   }
 
   try {
-    // Verificar se o email existe
-    const [usuarios] = await db.execute('SELECT id, nome, email FROM usuarios WHERE email = ?', [email]);
+    await db.execute(
+      'UPDATE usuarios SET pode_criar_admin = ? WHERE id = ? AND tipo = "administrador"',
+      [pode_criar_admin ? 1 : 0, admin_id]
+    );
     
-    if (usuarios.length === 0) {
-      return res.json({ sucesso: false, erro: 'Email não encontrado.' });
-    }
-
-    const usuario = usuarios[0];
-
-    // Em um sistema real, aqui você enviaria um email com link de recuperação
-    // Por enquanto, vamos simular retornando um link fictício para desenvolvimento
-    const token = crypto.randomBytes(32).toString('hex');
-    const linkRedefinicao = `https://divine-tranquility-production.up.railway.app/redefinir-senha.html?token=${token}`;
-
-    console.log(`🔐 Link de recuperação para ${email}: ${linkRedefinicao}`);
-
     res.json({ 
       sucesso: true, 
-      mensagem: 'Se o email existir em nosso sistema, você receberá um link de recuperação.',
-      link_teste: linkRedefinicao // Apenas para desenvolvimento
+      mensagem: `Permissões ${pode_criar_admin ? 'concedidas' : 'revogadas'} com sucesso!` 
     });
   } catch (err) {
-    console.error('Erro ao solicitar recuperação de senha:', err);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao solicitar recuperação de senha.' });
-  }
-});
-
-// Validar token de recuperação
-app.get('/api/validar-token-recuperacao', async (req, res) => {
-  const { token } = req.query;
-
-  if (!token) {
-    return res.json({ sucesso: false, erro: 'Token é obrigatório.' });
-  }
-
-  try {
-    // Em um sistema real, você validaria o token no banco de dados
-    // Por enquanto, vamos simular uma validação básica
-    if (token.length < 10) {
-      return res.json({ sucesso: false, erro: 'Token inválido.' });
-    }
-
-    // Simular dados do usuário (em produção, buscar do banco baseado no token)
+    console.error('❌ Erro ao atualizar permissões:', err);
     res.json({ 
-      sucesso: true, 
-      usuario: {
-        id: 1,
-        nome: 'Usuário de Teste',
-        email: 'teste@email.com'
-      }
+      sucesso: false, 
+      erro: 'Erro ao atualizar permissões.' 
     });
-  } catch (err) {
-    console.error('Erro ao validar token:', err);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao validar token.' });
   }
 });
 
-// Redefinir senha com token
-app.post('/api/redefinir-senha-token', async (req, res) => {
-  const { token, nova_senha, confirmar_senha } = req.body;
-
-  if (!token || !nova_senha || !confirmar_senha) {
-    return res.json({ sucesso: false, erro: 'Todos os campos são obrigatórios.' });
-  }
-
-  if (nova_senha !== confirmar_senha) {
-    return res.json({ sucesso: false, erro: 'As senhas não coincidem.' });
-  }
-
-  if (nova_senha.length < 6) {
-    return res.json({ sucesso: false, erro: 'A senha deve ter pelo menos 6 caracteres.' });
-  }
-
-  try {
-    // Em produção, você validaria o token e atualizaria a senha no banco
-    const hashNovaSenha = await bcrypt.hash(nova_senha, 10);
-    
-    // Aqui você atualizaria a senha no banco baseado no token válido
-    console.log(`🔐 Senha redefinida com sucesso para o token: ${token}`);
-
-    res.json({ 
-      sucesso: true, 
-      mensagem: 'Senha redefinida com sucesso!'
-    });
-  } catch (err) {
-    console.error('Erro ao redefinir senha:', err);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao redefinir senha.' });
-  }
-});
-
-// ========================
-// ROTAS DE ADMINISTRAÇÃO MASTER
-// ========================
-
-// Rota para verificar se o usuário atual é admin master
+// Verificar se é admin master
 app.get('/api/admin/verificar-master', verificarAuth, async (req, res) => {
   try {
     const [results] = await db.execute(
@@ -722,2215 +383,6 @@ app.get('/api/admin/verificar-master', verificarAuth, async (req, res) => {
   }
 });
 
-// Listar todos os administradores
-app.get('/api/admin/administradores', verificarAuth, verificarAdminMaster, async (req, res) => {
-  try {
-    const [results] = await db.execute(
-      'SELECT id, nome, email, tipo, pode_criar_admin, created_at FROM usuarios WHERE tipo = "administrador" ORDER BY nome'
-    );
-    res.json({ sucesso: true, administradores: results });
-  } catch (err) {
-    console.error('Erro ao carregar administradores:', err);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao carregar administradores.' });
-  }
-});
-
-// Alternar permissão de admin master
-app.post('/api/admin/toggle-permission', verificarAuth, verificarAdminMaster, async (req, res) => {
-  const { admin_id, pode_criar_admin } = req.body;
-  
-  if (!admin_id || typeof pode_criar_admin === 'undefined') {
-    return res.json({ sucesso: false, erro: 'Dados incompletos!' });
-  }
-
-  // Impedir que o próprio usuário remova suas permissões
-  if (parseInt(admin_id) === req.session.usuario.id) {
-    return res.json({ sucesso: false, erro: 'Você não pode alterar suas próprias permissões!' });
-  }
-
-  try {
-    await db.execute(
-      'UPDATE usuarios SET pode_criar_admin = ? WHERE id = ? AND tipo = "administrador"',
-      [pode_criar_admin ? 1 : 0, admin_id]
-    );
-    
-    res.json({ 
-      sucesso: true, 
-      mensagem: `Permissões ${pode_criar_admin ? 'concedidas' : 'revogadas'} com sucesso!` 
-    });
-  } catch (err) {
-    console.error('Erro ao atualizar permissões:', err);
-    res.json({ sucesso: false, erro: 'Erro ao atualizar permissões.' });
-  }
-});
-
-// Redefinir senha de usuários (apenas admin master)
-app.post('/admin/redefinir-senha', verificarAuth, verificarAdminMaster, async (req, res) => {
-  const { usuario_id, nova_senha } = req.body;
-  
-  if (!usuario_id || !nova_senha) {
-    return res.json({ sucesso: false, erro: 'ID do usuário e nova senha são obrigatórios!' });
-  }
-
-  if (nova_senha.length < 6) {
-    return res.json({ sucesso: false, erro: 'A senha deve ter pelo menos 6 caracteres!' });
-  }
-
-  try {
-    // Verificar se o usuário existe
-    const [usuario] = await db.execute('SELECT id FROM usuarios WHERE id = ?', [usuario_id]);
-    if (usuario.length === 0) {
-      return res.json({ sucesso: false, erro: 'Usuário não encontrado!' });
-    }
-
-    // Criar hash da nova senha
-    const hashNovaSenha = await bcrypt.hash(nova_senha, 10);
-
-    // Atualizar senha do usuário
-    await db.execute('UPDATE usuarios SET senha = ? WHERE id = ?', [hashNovaSenha, usuario_id]);
-
-    res.json({ sucesso: true, mensagem: 'Senha redefinida com sucesso!' });
-  } catch (err) {
-    console.error('Erro ao redefinir senha:', err);
-    res.json({ sucesso: false, erro: 'Erro ao redefinir senha!' });
-  }
-});
-
-// Listar todos os usuários para redefinição de senha
-app.get('/api/admin/todos-usuarios', verificarAuth, verificarAdminMaster, async (req, res) => {
-  try {
-    const [results] = await db.execute(
-      'SELECT id, nome, email, tipo FROM usuarios ORDER BY tipo, nome'
-    );
-    res.json({ sucesso: true, usuarios: results });
-  } catch (err) {
-    console.error('Erro ao carregar usuários:', err);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao carregar usuários.' });
-  }
-});
-
-// Excluir usuário (apenas admin master)
-app.delete('/api/admin/usuarios', verificarAuth, verificarAdminMaster, async (req, res) => {
-  const usuarioId = req.params.id;
-  
-  // Impedir que o próprio usuário se exclua
-  if (parseInt(usuarioId) === req.session.usuario.id) {
-    return res.json({ sucesso: false, erro: 'Você não pode excluir sua própria conta!' });
-  }
-
-  try {
-    await db.execute('DELETE FROM usuarios WHERE id = ?', [usuarioId]);
-    res.json({ sucesso: true, mensagem: 'Usuário excluído com sucesso!' });
-  } catch (err) {
-    console.error('Erro ao excluir usuário:', err);
-    res.json({ sucesso: false, erro: 'Erro ao excluir usuário.' });
-  }
-});
-
-// ========================
-// ROTAS DE USUÁRIO
-// ========================
-app.get('/api/dados-usuario', verificarAuth, (req, res) => {
-  res.json({ 
-    sucesso: true, 
-    usuario: req.session.usuario 
-  });
-});
-
-// ========================
-// ROTAS DE ADMINISTRAÇÃO
-// ========================
-app.get('/api/turmas', verificarAdmin, async (req, res) => {
-  try {
-    const [results] = await db.execute(`
-      SELECT 
-        t.id, 
-        t.nome, 
-        t.ano, 
-        t.turno, 
-        COALESCE(GROUP_CONCAT(u.nome SEPARATOR ', '), 'Sem professor') AS professores
-      FROM turmas t
-      LEFT JOIN professor_turma pt ON t.id = pt.id_turma
-      LEFT JOIN usuarios u ON u.id = pt.id_professor
-      GROUP BY t.id, t.nome, t.ano, t.turno
-      ORDER BY t.ano ASC, t.nome ASC
-    `);
-    res.json({ sucesso: true, turmas: results });
-  } catch (err) {
-    console.error('Erro ao carregar turmas:', err);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao carregar turmas.' });
-  }
-});
-
-app.post('/api/turmas', verificarAdmin, async (req, res) => {
-  const { nome, ano, turno } = req.body;
-  
-  if (!nome || !ano || !turno) {
-    return res.status(400).json({ sucesso: false, erro: 'Todos os campos são obrigatórios!' });
-  }
-
-  try {
-    const [rows] = await db.execute('SELECT id FROM turmas WHERE nome = ? AND ano = ?', [nome, ano]);
-    
-    if (rows.length > 0) {
-      return res.status(409).json({ sucesso: false, erro: 'Turma já existe.' });
-    }
-
-    const [result] = await db.execute('INSERT INTO turmas (nome, ano, turno) VALUES (?, ?, ?)', [nome, ano, turno]);
-    
-    res.json({ 
-      sucesso: true, 
-      mensagem: 'Turma cadastrada com sucesso!', 
-      id: result.insertId 
-    });
-  } catch (err) {
-    console.error('Erro ao cadastrar turma:', err);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao cadastrar turma.' });
-  }
-});
-
-app.get('/api/professores', verificarAdmin, async (req, res) => {
-  try {
-    const [rows] = await db.execute('SELECT id, nome, email FROM usuarios WHERE tipo = "professor" ORDER BY nome');
-    res.json({ sucesso: true, professores: rows });
-  } catch (err) {
-    console.error('Erro ao carregar professores:', err);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao carregar professores.' });
-  }
-});
-
-app.get('/api/alunos', verificarAdmin, async (req, res) => {
-  try {
-    const [rows] = await db.execute('SELECT id, nome, email FROM usuarios WHERE tipo = "aluno" ORDER BY nome');
-    res.json({ sucesso: true, alunos: rows });
-  } catch (err) {
-    console.error('Erro ao carregar alunos:', err);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao carregar alunos.' });
-  }
-});
-
-// ========================
-// ROTAS DE TURMAS E PROFESSORES
-// ========================
-
-// Listar turmas com professores
-app.get('/api/turmas', verificarAdmin, (req, res) => {
-  const sql = `
-    SELECT 
-      t.id, 
-      t.nome, 
-      t.ano, 
-      t.turno, 
-      COALESCE(GROUP_CONCAT(u.nome SEPARATOR ', '), 'Sem professor') AS professores
-    FROM turmas t
-    LEFT JOIN professor_turma pt ON t.id = pt.id_turma
-    LEFT JOIN usuarios u ON u.id = pt.id_professor
-    GROUP BY t.id, t.nome, t.ano, t.turno
-    ORDER BY t.ano ASC, t.nome ASC;
-  `;
-  db.query(sql, (err, results) => {
-    if (err) return res.status(500).json({ sucesso: false, erro: 'Erro ao carregar turmas.' });
-    res.json({ sucesso: true, turmas: results });
-  });
-});
-
-// Listar professores com turmas
-app.get('/api/professores', verificarAdmin, (req, res) => {
-  const sql = `
-    SELECT 
-      u.id,
-      u.nome,
-      u.email,
-      COALESCE(GROUP_CONCAT(t.nome SEPARATOR ', '), 'Nenhuma turma vinculada') AS turmas
-    FROM usuarios u
-    LEFT JOIN professor_turma pt ON pt.id_professor = u.id
-    LEFT JOIN turmas t ON t.id = pt.id_turma
-    WHERE u.tipo = 'professor'
-    GROUP BY u.id, u.nome, u.email
-    ORDER BY u.nome ASC;
-  `;
-  db.query(sql, (err, results) => {
-    if (err) return res.status(500).json({ sucesso: false, erro: 'Erro ao carregar professores.' });
-    res.json({ sucesso: true, professores: results });
-  });
-});
-
-// Listar turmas para o dropdown
-app.get('/api/turmas-dropdown', verificarAdmin, (req, res) => {
-  const sql = 'SELECT id, nome FROM turmas ORDER BY nome ASC';
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error('Erro ao carregar turmas:', err);
-      return res.status(500).json({ sucesso: false, erro: 'Erro ao carregar turmas.' });
-    }
-    res.json({ sucesso: true, turmas: results });
-  });
-});
-
-// Listar alunos cadastrados
-app.get('/api/alunos', verificarAdmin, (req, res) => {
-  const sql = `
-    SELECT 
-      a.id, 
-      a.nome, 
-      t.nome AS turma,
-      t.id AS turma_id
-    FROM alunos a
-    LEFT JOIN turmas t ON a.turma_id = t.id
-    ORDER BY 
-      t.nome ASC,  -- Ordena por nome da turma primeiro
-      a.nome ASC   -- Depois por nome do aluno
-  `;
-  
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error('Erro ao carregar alunos:', err);
-      return res.status(500).json({ sucesso: false, erro: 'Erro ao carregar alunos.' });
-    }
-    res.json({ sucesso: true, alunos: results });
-  });
-});
-
-// Cadastrar aluno
-app.post('/api/alunos', verificarAdmin, (req, res) => {
-  const { nome, turma_id } = req.body;
-
-  if (!nome || !turma_id) {
-    return res.status(400).json({ sucesso: false, erro: 'Nome e turma são obrigatórios!' });
-  }
-
-  const sqlInsert = 'INSERT INTO alunos (nome, turma_id) VALUES (?, ?)';
-  db.query(sqlInsert, [nome.trim(), parseInt(turma_id, 10)], (err, result) => {
-    if (err) {
-      console.error('Erro ao cadastrar aluno:', err);
-      return res.status(500).json({ sucesso: false, erro: 'Erro ao cadastrar aluno.' });
-    }
-    res.json({ sucesso: true, mensagem: 'Aluno cadastrado com sucesso!', id: result.insertId });
-  });
-});
-
-app.delete('/api/alunos/:id', verificarAdmin, (req, res) => {
-  const alunoId = req.params.id;
-  
-  const sql = 'DELETE FROM alunos WHERE id = ?';
-  db.query(sql, [alunoId], (err, result) => {
-    if (err) {
-      console.error('Erro ao excluir aluno:', err);
-      return res.status(500).json({ sucesso: false, erro: 'Erro ao excluir aluno.' });
-    }
-    
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ sucesso: false, erro: 'Aluno não encontrado.' });
-    }
-    
-    res.json({ sucesso: true, mensagem: 'Aluno excluído com sucesso!' });
-  });
-});
-
-// Cadastrar turma
-app.post('/api/turmas', verificarAdmin, (req, res) => {
-  let { nome, ano, turno } = req.body;
-  if (!nome || !ano || !turno) return res.status(400).json({ sucesso: false, erro: 'Todos os campos são obrigatórios!' });
-
-  const sqlCheck = 'SELECT id FROM turmas WHERE nome = ? AND ano = ?';
-  db.query(sqlCheck, [nome, ano], (err, rows) => {
-    if (err) return res.status(500).json({ sucesso: false, erro: 'Erro ao verificar turma.' });
-    if (rows.length > 0) return res.status(409).json({ sucesso: false, erro: 'Turma já existe.' });
-
-    const sqlInsert = 'INSERT INTO turmas (nome, ano, turno) VALUES (?, ?, ?)';
-    db.query(sqlInsert, [nome, ano, turno], (err, result) => {
-      if (err) return res.status(500).json({ sucesso: false, erro: 'Erro ao cadastrar turma.' });
-      console.log(`✅ Turma cadastrada: ${nome} (${ano} - ${turno})`);
-      res.json({ sucesso: true, mensagem: 'Turma cadastrada com sucesso!', id: result.insertId });
-    });
-  });
-});
-
-// Vincular professor à turma
-app.post('/api/vincular', verificarAdmin, (req, res) => {
-  const { professorId, turmaId } = req.body;
-  if (!professorId || !turmaId) return res.status(400).json({ success: false, message: 'Professor e/ou turma não selecionados' });
-
-  const sqlCheck = 'SELECT * FROM professor_turma WHERE id_professor = ? AND id_turma = ?';
-  db.query(sqlCheck, [professorId, turmaId], (err, results) => {
-    if (err) return res.status(500).json({ success: false, message: 'Erro ao verificar vínculo' });
-    if (results.length > 0) return res.status(400).json({ success: false, message: 'Esse professor já está vinculado a essa turma.' });
-
-    const sqlInsert = 'INSERT INTO professor_turma (id_professor, id_turma) VALUES (?, ?)';
-    db.query(sqlInsert, [professorId, turmaId], (err) => {
-      if (err) return res.status(500).json({ success: false, message: 'Erro ao vincular professor à turma.' });
-      console.log(`✅ Professor ${professorId} vinculado à turma ${turmaId}`);
-      res.json({ success: true, message: 'Professor vinculado à turma com sucesso!' });
-    });
-  });
-});
-
-// ========================================================================================
-// 🔧 CORREÇÕES COMPLETAS PARA O BACKEND - server.js
-// ========================================================================================
-// INSTRUÇÕES: Adicione estas rotas no arquivo Backend/server.js após a linha 670
-// (logo após a rota POST /api/turmas)
-// ========================================================================================
-
-// ========================================================================================
-// PROBLEMA #1: VINCULAR PROFESSOR À TURMA
-// ========================================================================================
-// Rota: POST /api/professor-turma
-// Descrição: Vincula um professor a uma turma específica
-// Tabela: professor_turma (id_professor, id_turma)
-// ========================================================================================
-
-app.post('/api/professor-turma', verificarAuth, verificarAdmin, async (req, res) => {
-  const { professor_id, turma_id } = req.body;
-  
-  console.log('🔄 [VINCULAR] Professor à Turma:', { professor_id, turma_id });
-  
-  try {
-    // Validação 1: Verificar se professor existe e é do tipo professor
-    const [professor] = await db.execute(
-      'SELECT id, nome FROM usuarios WHERE id = ? AND tipo = "professor"', 
-      [professor_id]
-    );
-    
-    if (professor.length === 0) {
-      console.log('❌ Professor não encontrado ou tipo inválido');
-      return res.status(400).json({ 
-        sucesso: false, 
-        erro: 'Professor não encontrado ou usuário não é do tipo professor' 
-      });
-    }
-    
-    // Validação 2: Verificar se turma existe
-    const [turma] = await db.execute(
-      'SELECT id, nome FROM turmas WHERE id = ?', 
-      [turma_id]
-    );
-    
-    if (turma.length === 0) {
-      console.log('❌ Turma não encontrada');
-      return res.status(400).json({ 
-        sucesso: false, 
-        erro: 'Turma não encontrada' 
-      });
-    }
-    
-    // Validação 3: Verificar se já existe vínculo
-    const [vinculoExistente] = await db.execute(
-      'SELECT id FROM professor_turma WHERE id_professor = ? AND id_turma = ?',
-      [professor_id, turma_id]
-    );
-    
-    if (vinculoExistente.length > 0) {
-      console.log('⚠️ Vínculo já existe');
-      return res.status(400).json({ 
-        sucesso: false, 
-        erro: 'Professor já está vinculado a esta turma' 
-      });
-    }
-    
-    // Inserir vínculo
-    await db.execute(
-      'INSERT INTO professor_turma (id_professor, id_turma) VALUES (?, ?)',
-      [professor_id, turma_id]
-    );
-    
-    console.log(`✅ Professor "${professor[0].nome}" vinculado à turma "${turma[0].nome}"`);
-    
-    res.json({ 
-      sucesso: true, 
-      mensagem: `Professor ${professor[0].nome} vinculado à turma ${turma[0].nome} com sucesso!` 
-    });
-    
-  } catch (err) {
-    console.error('❌ Erro ao vincular professor à turma:', err);
-    res.status(500).json({ 
-      sucesso: false, 
-      erro: 'Erro ao vincular professor à turma: ' + err.message 
-    });
-  }
-});
-
-// ========================================================================================
-// PROBLEMA #1: VINCULAR DISCIPLINAS AO PROFESSOR
-// ========================================================================================
-// Rota: POST /api/professor-disciplinas
-// Descrição: Vincula múltiplas disciplinas a um professor
-// Tabela: professor_disciplina (professor_id, disciplina_id)
-// ========================================================================================
-
-app.post('/api/professor-disciplinas', verificarAuth, verificarAdmin, async (req, res) => {
-  const { professor_id, disciplinas_ids } = req.body;
-  
-  console.log('🔄 [VINCULAR] Disciplinas ao Professor:', { professor_id, disciplinas_ids });
-  
-  try {
-    // Validação 1: Verificar se professor existe e é do tipo professor
-    const [professor] = await db.execute(
-      'SELECT id, nome FROM usuarios WHERE id = ? AND tipo = "professor"', 
-      [professor_id]
-    );
-    
-    if (professor.length === 0) {
-      console.log('❌ Professor não encontrado');
-      return res.status(400).json({ 
-        sucesso: false, 
-        erro: 'Professor não encontrado ou usuário não é do tipo professor' 
-      });
-    }
-    
-    // Validação 2: Verificar se disciplinas foram selecionadas
-    if (!Array.isArray(disciplinas_ids) || disciplinas_ids.length === 0) {
-      console.log('❌ Nenhuma disciplina selecionada');
-      return res.status(400).json({ 
-        sucesso: false, 
-        erro: 'Selecione pelo menos uma disciplina' 
-      });
-    }
-    
-    // Validação 3: Verificar se todas as disciplinas existem
-    const placeholders = disciplinas_ids.map(() => '?').join(',');
-    const [disciplinasValidas] = await db.execute(
-      `SELECT id, nome FROM disciplinas WHERE id IN (${placeholders})`,
-      disciplinas_ids
-    );
-    
-    if (disciplinasValidas.length !== disciplinas_ids.length) {
-      console.log('❌ Algumas disciplinas não foram encontradas');
-      return res.status(400).json({ 
-        sucesso: false, 
-        erro: 'Uma ou mais disciplinas não foram encontradas' 
-      });
-    }
-    
-    // Remover vínculos antigos do professor
-    await db.execute(
-      'DELETE FROM professor_disciplina WHERE professor_id = ?', 
-      [professor_id]
-    );
-    
-    console.log(`🗑️ Vínculos antigos removidos para professor "${professor[0].nome}"`);
-    
-    // Inserir novos vínculos
-    for (const disciplina_id of disciplinas_ids) {
-      await db.execute(
-        'INSERT INTO professor_disciplina (professor_id, disciplina_id) VALUES (?, ?)',
-        [professor_id, disciplina_id]
-      );
-    }
-    
-    const nomeDisciplinas = disciplinasValidas.map(d => d.nome).join(', ');
-    console.log(`✅ Disciplinas vinculadas: ${nomeDisciplinas}`);
-    
-    res.json({ 
-      sucesso: true, 
-      mensagem: `${disciplinas_ids.length} disciplina(s) vinculada(s) ao professor ${professor[0].nome} com sucesso!`,
-      disciplinas: disciplinasValidas
-    });
-    
-  } catch (err) {
-    console.error('❌ Erro ao vincular disciplinas ao professor:', err);
-    res.status(500).json({ 
-      sucesso: false, 
-      erro: 'Erro ao vincular disciplinas: ' + err.message 
-    });
-  }
-});
-
-// ========================================================================================
-// PROBLEMA #3: LISTAR TODAS AS DISCIPLINAS
-// ========================================================================================
-// Rota: GET /api/disciplinas
-// Descrição: Retorna lista de todas as disciplinas disponíveis
-// Tabela: disciplinas
-// ========================================================================================
-
-app.get('/api/disciplinas', verificarAuth, verificarAdmin, async (req, res) => {
-  try {
-    console.log('🔄 [LISTAR] Carregando disciplinas...');
-    
-    const [disciplinas] = await db.execute(
-      'SELECT id, nome FROM disciplinas ORDER BY nome'
-    );
-    
-    console.log(`✅ ${disciplinas.length} disciplinas encontradas`);
-    
-    res.json({ 
-      sucesso: true, 
-      disciplinas 
-    });
-    
-  } catch (err) {
-    console.error('❌ Erro ao carregar disciplinas:', err);
-    res.status(500).json({ 
-      sucesso: false, 
-      erro: 'Erro ao carregar disciplinas: ' + err.message 
-    });
-  }
-});
-
-// ========================================================================================
-// PROBLEMA #2: EXCLUIR TURMA
-// ========================================================================================
-// Rota: DELETE /api/turmas/:id
-// Descrição: Exclui uma turma do sistema
-// Tabela: turmas
-// ========================================================================================
-
-app.delete('/api/turmas/:id', verificarAuth, verificarAdmin, async (req, res) => {
-  const { id } = req.params;
-  
-  console.log(`🔄 [EXCLUIR] Turma ID: ${id}`);
-  
-  try {
-    // Validação 1: Verificar se turma existe
-    const [turma] = await db.execute(
-      'SELECT id, nome FROM turmas WHERE id = ?', 
-      [id]
-    );
-    
-    if (turma.length === 0) {
-      console.log('❌ Turma não encontrada');
-      return res.status(404).json({ 
-        sucesso: false, 
-        erro: 'Turma não encontrada' 
-      });
-    }
-    
-    // Validação 2: Verificar se há alunos vinculados
-    const [alunosVinculados] = await db.execute(
-      'SELECT COUNT(*) as total FROM usuarios WHERE turma_id = ? AND tipo = "aluno"',
-      [id]
-    );
-    
-    if (alunosVinculados[0].total > 0) {
-      console.log(`⚠️ Turma possui ${alunosVinculados[0].total} alunos vinculados`);
-      return res.status(400).json({ 
-        sucesso: false, 
-        erro: `Não é possível excluir a turma "${turma[0].nome}" pois ela possui ${alunosVinculados[0].total} aluno(s) vinculado(s). Remova os alunos primeiro.` 
-      });
-    }
-    
-    // Remover vínculos com professores
-    await db.execute(
-      'DELETE FROM professor_turma WHERE id_turma = ?',
-      [id]
-    );
-    
-    console.log('🗑️ Vínculos com professores removidos');
-    
-    // Excluir turma
-    await db.execute(
-      'DELETE FROM turmas WHERE id = ?',
-      [id]
-    );
-    
-    console.log(`✅ Turma "${turma[0].nome}" excluída com sucesso`);
-    
-    res.json({ 
-      sucesso: true, 
-      mensagem: `Turma "${turma[0].nome}" excluída com sucesso!` 
-    });
-    
-  } catch (err) {
-    console.error('❌ Erro ao excluir turma:', err);
-    res.status(500).json({ 
-      sucesso: false, 
-      erro: 'Erro ao excluir turma: ' + err.message 
-    });
-  }
-});
-
-// ========================================================================================
-// PROBLEMA #6: EXCLUIR PROFESSOR
-// ========================================================================================
-// Rota: DELETE /api/professores/:id
-// Descrição: Exclui um professor do sistema
-// Tabela: usuarios
-// ========================================================================================
-
-app.delete('/api/professores/:id', verificarAuth, verificarAdmin, async (req, res) => {
-  const { id } = req.params;
-  
-  console.log(`🔄 [EXCLUIR] Professor ID: ${id}`);
-  
-  try {
-    // Validação 1: Verificar se professor existe
-    const [professor] = await db.execute(
-      'SELECT id, nome FROM usuarios WHERE id = ? AND tipo = "professor"', 
-      [id]
-    );
-    
-    if (professor.length === 0) {
-      console.log('❌ Professor não encontrado');
-      return res.status(404).json({ 
-        sucesso: false, 
-        erro: 'Professor não encontrado' 
-      });
-    }
-    
-    // Remover vínculos com turmas
-    await db.execute(
-      'DELETE FROM professor_turma WHERE id_professor = ?',
-      [id]
-    );
-    
-    // Remover vínculos com disciplinas
-    await db.execute(
-      'DELETE FROM professor_disciplina WHERE professor_id = ?',
-      [id]
-    );
-    
-    console.log('🗑️ Vínculos removidos');
-    
-    // Excluir professor
-    await db.execute(
-      'DELETE FROM usuarios WHERE id = ? AND tipo = "professor"',
-      [id]
-    );
-    
-    console.log(`✅ Professor "${professor[0].nome}" excluído com sucesso`);
-    
-    res.json({ 
-      sucesso: true, 
-      mensagem: `Professor "${professor[0].nome}" excluído com sucesso!` 
-    });
-    
-  } catch (err) {
-    console.error('❌ Erro ao excluir professor:', err);
-    res.status(500).json({ 
-      sucesso: false, 
-      erro: 'Erro ao excluir professor: ' + err.message 
-    });
-  }
-});
-
-// ========================================================================================
-// PROBLEMA #6: EXCLUIR ALUNO
-// ========================================================================================
-// Rota: DELETE /api/alunos/:id
-// Descrição: Exclui um aluno do sistema
-// Tabela: usuarios
-// ========================================================================================
-
-app.delete('/api/alunos/:id', verificarAuth, verificarAdmin, async (req, res) => {
-  const { id } = req.params;
-  
-  console.log(`🔄 [EXCLUIR] Aluno ID: ${id}`);
-  
-  try {
-    // Validação 1: Verificar se aluno existe
-    const [aluno] = await db.execute(
-      'SELECT id, nome FROM usuarios WHERE id = ? AND tipo = "aluno"', 
-      [id]
-    );
-    
-    if (aluno.length === 0) {
-      console.log('❌ Aluno não encontrado');
-      return res.status(404).json({ 
-        sucesso: false, 
-        erro: 'Aluno não encontrado' 
-      });
-    }
-    
-    // Verificar se há registros de notas ou frequência
-    const [temNotas] = await db.execute(
-      'SELECT COUNT(*) as total FROM notas WHERE aluno_id = ?',
-      [id]
-    );
-    
-    const [temFrequencia] = await db.execute(
-      'SELECT COUNT(*) as total FROM frequencia WHERE aluno_id = ?',
-      [id]
-    );
-    
-    if (temNotas[0].total > 0 || temFrequencia[0].total > 0) {
-      console.log(`⚠️ Aluno possui registros acadêmicos (notas: ${temNotas[0].total}, frequência: ${temFrequencia[0].total})`);
-      return res.status(400).json({ 
-        sucesso: false, 
-        erro: `Não é possível excluir o aluno "${aluno[0].nome}" pois ele possui registros de notas ou frequência. Considere desativar o aluno ao invés de excluí-lo.` 
-      });
-    }
-    
-    // Excluir aluno
-    await db.execute(
-      'DELETE FROM usuarios WHERE id = ? AND tipo = "aluno"',
-      [id]
-    );
-    
-    console.log(`✅ Aluno "${aluno[0].nome}" excluído com sucesso`);
-    
-    res.json({ 
-      sucesso: true, 
-      mensagem: `Aluno "${aluno[0].nome}" excluído com sucesso!` 
-    });
-    
-  } catch (err) {
-    console.error('❌ Erro ao excluir aluno:', err);
-    res.status(500).json({ 
-      sucesso: false, 
-      erro: 'Erro ao excluir aluno: ' + err.message 
-    });
-  }
-});
-
-// ========================================================================================
-// PROBLEMA #5 (OPCIONAL): VISUALIZAR DISCIPLINAS VINCULADAS AO PROFESSOR
-// ========================================================================================
-// Rota: GET /api/professor/:professor_id/disciplinas
-// Descrição: Retorna disciplinas vinculadas a um professor específico
-// Tabela: professor_disciplina JOIN disciplinas
-// ========================================================================================
-
-app.get('/api/professor/:professor_id/disciplinas', verificarAuth, verificarAdmin, async (req, res) => {
-  const { professor_id } = req.params;
-  
-  try {
-    console.log(`🔄 [LISTAR] Disciplinas do professor ${professor_id}...`);
-    
-    const [disciplinas] = await db.execute(`
-      SELECT d.id, d.nome 
-      FROM disciplinas d
-      INNER JOIN professor_disciplina pd ON d.id = pd.disciplina_id
-      WHERE pd.professor_id = ?
-      ORDER BY d.nome
-    `, [professor_id]);
-    
-    console.log(`✅ ${disciplinas.length} disciplinas encontradas`);
-    
-    res.json({ 
-      sucesso: true, 
-      disciplinas 
-    });
-    
-  } catch (err) {
-    console.error('❌ Erro ao carregar disciplinas do professor:', err);
-    res.status(500).json({ 
-      sucesso: false, 
-      erro: 'Erro ao carregar disciplinas: ' + err.message 
-    });
-  }
-});
-
-// ========================================================================================
-// ROTAS ADICIONAIS (BÔNUS): DESVINCULAR
-// ========================================================================================
-
-// Desvincular professor de turma
-app.delete('/api/professor-turma', verificarAuth, verificarAdmin, async (req, res) => {
-  const { professor_id, turma_id } = req.body;
-  
-  console.log('🔄 [DESVINCULAR] Professor da Turma:', { professor_id, turma_id });
-  
-  try {
-    const [result] = await db.execute(
-      'DELETE FROM professor_turma WHERE id_professor = ? AND id_turma = ?',
-      [professor_id, turma_id]
-    );
-    
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ 
-        sucesso: false, 
-        erro: 'Vínculo não encontrado' 
-      });
-    }
-    
-    console.log('✅ Professor desvinculado da turma');
-    
-    res.json({ 
-      sucesso: true, 
-      mensagem: 'Professor desvinculado da turma com sucesso!' 
-    });
-    
-  } catch (err) {
-    console.error('❌ Erro ao desvincular professor da turma:', err);
-    res.status(500).json({ 
-      sucesso: false, 
-      erro: 'Erro ao desvincular professor: ' + err.message 
-    });
-  }
-});
-
-// ========================
-// ROTAS DO PROFESSOR - DIÁRIO
-// ========================
-
-// Obter turmas do professor
-app.get('/api/professor/turmas', verificarAuth, verificarProfessor, async (req, res) => {
-  try {
-    const professorId = req.session.usuario.id;
-    
-    const [results] = await db.execute(`
-      SELECT DISTINCT t.id, t.nome 
-      FROM turmas t
-      INNER JOIN professor_turma pt ON t.id = pt.id_turma
-      WHERE pt.id_professor = ?
-      ORDER BY t.nome
-    `, [professorId]);
-    
-    res.json({ sucesso: true, turmas: results });
-  } catch (err) {
-    console.error('Erro ao carregar turmas do professor:', err);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao carregar turmas.' });
-  }
-});
-
-// Obter disciplinas do professor
-app.get('/api/professor/disciplinas', verificarAuth, verificarProfessor, async (req, res) => {
-  try {
-    const professorId = req.session.usuario.id;
-    
-    const [results] = await db.execute(`
-      SELECT d.id, d.nome 
-      FROM disciplinas d
-      INNER JOIN professor_disciplina pd ON d.id = pd.disciplina_id
-      WHERE pd.professor_id = ?
-      ORDER BY d.nome
-    `, [professorId]);
-    
-    res.json({ sucesso: true, disciplinas: results });
-  } catch (err) {
-    console.error('Erro ao carregar disciplinas do professor:', err);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao carregar disciplinas.' });
-  }
-});
-
-// Obter objetos de conhecimento
-app.get('/api/objetos-conhecimento', verificarAuth, verificarProfessor, async (req, res) => {
-  try {
-    const { turma, disciplina, mes, ano } = req.query;
-    
-    const [results] = await db.execute(`
-      SELECT dia, objeto 
-      FROM objetos_conhecimento 
-      WHERE turma_id = ? AND disciplina_id = ? AND mes = ? AND ano = ?
-      ORDER BY dia
-    `, [turma, disciplina, mes, ano]);
-    
-    const objetos = {};
-    results.forEach(item => {
-      objetos[item.dia] = item.objeto;
-    });
-    
-    res.json({ sucesso: true, objetos });
-  } catch (err) {
-    console.error('Erro ao carregar objetos de conhecimento:', err);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao carregar objetos.' });
-  }
-});
-
-// Salvar objetos de conhecimento
-app.post('/api/objetos-conhecimento', verificarAuth, verificarProfessor, async (req, res) => {
-  try {
-    const { turma, disciplina, mes, ano, objetos } = req.body;
-    const professorId = req.session.usuario.id;
-    
-    // Verificar se o professor tem acesso à turma e disciplina
-    const [verificacao] = await db.execute(`
-      SELECT 1 FROM professor_turma pt
-      INNER JOIN professor_disciplina pd ON pt.id_professor = pd.professor_id
-      WHERE pt.id_professor = ? AND pt.id_turma = ? AND pd.disciplina_id = ?
-    `, [professorId, turma, disciplina]);
-    
-    if (verificacao.length === 0) {
-      return res.json({ sucesso: false, erro: 'Acesso negado à turma ou disciplina.' });
-    }
-    
-    // Salvar/atualizar cada objeto
-    for (const [dia, objeto] of Object.entries(objetos)) {
-      const [existente] = await db.execute(`
-        SELECT id FROM objetos_conhecimento 
-        WHERE turma_id = ? AND disciplina_id = ? AND mes = ? AND ano = ? AND dia = ?
-      `, [turma, disciplina, mes, ano, dia]);
-      
-      if (existente.length > 0) {
-        // Atualizar
-        await db.execute(`
-          UPDATE objetos_conhecimento 
-          SET objeto = ?, atualizado_em = NOW() 
-          WHERE id = ?
-        `, [objeto, existente[0].id]);
-      } else {
-        // Inserir
-        await db.execute(`
-          INSERT INTO objetos_conhecimento (turma_id, disciplina_id, mes, ano, dia, objeto, professor_id)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, [turma, disciplina, mes, ano, dia, objeto, professorId]);
-      }
-    }
-    
-    res.json({ sucesso: true, mensagem: 'Objetos de conhecimento salvos com sucesso!' });
-  } catch (err) {
-    console.error('Erro ao salvar objetos de conhecimento:', err);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao salvar objetos.' });
-  }
-});
-
-// ========================
-// ROTAS DE FREQUÊNCIA
-// ========================
-
-// Buscar alunos da turma do professor
-app.get('/api/alunos-turma-professor', verificarProfessor, (req, res) => {
-    const idProfessor = req.session.usuario.id;
-
-    const sql = `
-        SELECT 
-            a.id, 
-            a.nome,
-            t.id AS turma_id,
-            t.nome AS turma_nome
-        FROM alunos a
-        INNER JOIN turmas t ON a.turma_id = t.id
-        INNER JOIN professor_turma pt ON pt.id_turma = t.id
-        WHERE pt.id_professor = ?
-        ORDER BY t.nome ASC, a.nome ASC
-    `;
-    
-    db.query(sql, [idProfessor], (err, results) => {
-        if (err) {
-            console.error('Erro ao buscar alunos da turma:', err);
-            return res.status(500).json({ sucesso: false, erro: 'Erro ao carregar alunos!' });
-        }
-
-        // Agrupar alunos por turma
-        const alunosPorTurma = {};
-        results.forEach(aluno => {
-            if (!alunosPorTurma[aluno.turma_nome]) {
-                alunosPorTurma[aluno.turma_nome] = [];
-            }
-            alunosPorTurma[aluno.turma_nome].push({
-                id: aluno.id,
-                nome: aluno.nome,
-                turma_id: aluno.turma_id
-            });
-        });
-
-        res.json({ 
-            sucesso: true, 
-            alunosPorTurma,
-            turmas: Object.keys(alunosPorTurma)
-        });
-    });
-});
-
-// Salvar frequências
-app.post('/salvar-frequencias', verificarProfessor, (req, res) => {
-    const { dia, mes, ano, frequencias, turma_id } = req.body;
-    const idProfessor = req.session.usuario.id;
-
-    if (!dia || !mes || !ano || !frequencias || !Array.isArray(frequencias) || !turma_id) {
-        return res.status(400).json({ sucesso: false, erro: 'Dados inválidos!' });
-    }
-
-    // Primeiro, remove frequências existentes para esta data e turma
-    const sqlDelete = 'DELETE FROM frequencias WHERE dia = ? AND mes = ? AND ano = ? AND id_professor = ? AND turma_id = ?';
-    db.query(sqlDelete, [dia, mes, ano, idProfessor, turma_id], (err) => {
-        if (err) {
-            console.error('Erro ao limpar frequências antigas:', err);
-            return res.status(500).json({ sucesso: false, erro: 'Erro ao salvar frequência!' });
-        }
-
-        // Se não há frequências para salvar, retorna sucesso
-        if (frequencias.length === 0) {
-            return res.json({ sucesso: true, mensagem: 'Frequência salva com sucesso!' });
-        }
-
-        // Insere as novas frequências
-        const sqlInsert = 'INSERT INTO frequencias (aluno, aluno_id, presente, observacao, dia, mes, ano, id_professor, turma_id) VALUES ?';
-        
-        const values = frequencias.map(freq => [
-            freq.aluno,
-            freq.aluno_id,
-            freq.presente ? 1 : 0,
-            freq.observacao || '',
-            dia,
-            mes,
-            ano,
-            idProfessor,
-            turma_id
-        ]);
-
-        db.query(sqlInsert, [values], (err, result) => {
-            if (err) {
-                console.error('Erro ao salvar frequências:', err);
-                return res.status(500).json({ sucesso: false, erro: 'Erro ao salvar frequência!' });
-            }
-            
-            console.log(`✅ Frequência salva: ${dia}/${mes+1}/${ano} - Turma ${turma_id} - ${frequencias.length} alunos`);
-            res.json({ sucesso: true, mensagem: 'Frequência salva com sucesso!' });
-        });
-    });
-});
-
-// Obter frequência por data e turma
-app.get('/obter-frequencia', verificarProfessor, (req, res) => {
-    const { dia, mes, ano, turma_id } = req.query;
-    const idProfessor = req.session.usuario.id;
-
-    if (!dia || !mes || !ano || !turma_id) {
-        return res.status(400).json({ sucesso: false, erro: 'Data ou turma inválida!' });
-    }
-
-    const sql = 'SELECT aluno_id, aluno, presente, observacao FROM frequencias WHERE dia = ? AND mes = ? AND ano = ? AND id_professor = ? AND turma_id = ?';
-    
-    db.query(sql, [parseInt(dia), parseInt(mes), parseInt(ano), idProfessor, turma_id], (err, results) => {
-        if (err) {
-            console.error('Erro ao buscar frequência:', err);
-            return res.status(500).json({ sucesso: false, erro: 'Erro ao buscar frequência!' });
-        }
-
-        const frequencias = results.map(row => ({
-            aluno_id: row.aluno_id,
-            aluno: row.aluno,
-            presente: row.presente === 1,
-            observacao: row.observacao
-        }));
-
-        res.json({ sucesso: true, frequencias });
-    });
-});
-
-// ROTA PARA GERAR RELATÓRIO
-app.get('/gerar-relatorio', verificarProfessor, (req, res) => {
-    const { mes, ano, aluno } = req.query;
-    const idProfessor = req.session.usuario.id;
-
-    if (!mes || !ano) {
-        return res.status(400).json({ sucesso: false, erro: 'Mês e ano são obrigatórios!' });
-    }
-
-    console.log(`📊 Gerando relatório: mes=${mes}, ano=${ano}, aluno=${aluno || 'todos'}, professor=${idProfessor}`);
-
-    let sql = `
-        SELECT 
-            aluno,
-            aluno_id,
-            presente,
-            observacao,
-            dia,
-            mes,
-            ano
-        FROM frequencias 
-        WHERE mes = ? 
-            AND ano = ? 
-            AND id_professor = ?
-    `;
-    
-    const params = [parseInt(mes), parseInt(ano), idProfessor];
-
-    // Filtro por aluno específico se fornecido
-    if (aluno && aluno !== '') {
-        sql += ' AND aluno_id = ?';
-        params.push(parseInt(aluno));
-    }
-
-    sql += ' ORDER BY dia ASC, aluno ASC';
-
-    db.query(sql, params, (err, results) => {
-        if (err) {
-            console.error('❌ Erro ao gerar relatório:', err);
-            return res.status(500).json({ sucesso: false, erro: 'Erro interno ao gerar relatório.' });
-        }
-
-        console.log(`✅ Relatório gerado: ${results.length} registros encontrados`);
-        res.json({ 
-            sucesso: true, 
-            relatorio: results,
-            totalRegistros: results.length
-        });
-    });
-});
-
-// ========================
-// ROTAS DO SISTEMA DE NOTAS
-// ========================
-
-// Rota para buscar turmas do professor (NOTAS)
-app.get('/api/notas-turmas-professor', verificarProfessor, (req, res) => {
-    const idProfessor = req.session.usuario.id;
-
-    const sql = `
-        SELECT DISTINCT 
-            t.nome as turma_nome, 
-            t.id as turma_id
-        FROM turmas t
-        INNER JOIN professor_turma pt ON t.id = pt.id_turma
-        WHERE pt.id_professor = ?
-        ORDER BY t.nome
-    `;
-    
-    db.query(sql, [idProfessor], (err, turmas) => {
-        if (err) {
-            console.error('Erro ao buscar turmas:', err);
-            return res.status(500).json({ sucesso: false, erro: 'Erro interno' });
-        }
-        
-        const alunosPorTurma = {};
-        const turmasNomes = [];
-        
-        // Função para buscar alunos de cada turma
-        const buscarAlunosDaTurma = (index) => {
-            if (index >= turmas.length) {
-                // Todas as turmas processadas
-                res.json({
-                    sucesso: true,
-                    turmas: turmasNomes,
-                    alunosPorTurma: alunosPorTurma
-                });
-                return;
-            }
-            
-            const turma = turmas[index];
-            const sqlAlunos = 'SELECT id, nome, turma_id FROM alunos WHERE turma_id = ? ORDER BY nome';
-            
-            db.query(sqlAlunos, [turma.turma_id], (err, alunos) => {
-                if (err) {
-                    console.error('Erro ao buscar alunos:', err);
-                    return res.status(500).json({ sucesso: false, erro: 'Erro interno' });
-                }
-                
-                alunosPorTurma[turma.turma_nome] = alunos;
-                turmasNomes.push(turma.turma_nome);
-                
-                // Processa próxima turma
-                buscarAlunosDaTurma(index + 1);
-            });
-        };
-        
-        // Inicia o processamento das turmas
-        buscarAlunosDaTurma(0);
-    });
-});
-
-// Rota para carregar notas
-app.get('/api/notas-turma', verificarProfessor, (req, res) => {
-    const { turma_id, unidade } = req.query;
-    const idProfessor = req.session.usuario.id;
-    
-    if (!turma_id || !unidade) {
-        return res.status(400).json({ sucesso: false, erro: 'Dados incompletos' });
-    }
-    
-    // Verifica acesso
-    const sqlAcesso = 'SELECT 1 FROM professor_turma WHERE id_professor = ? AND id_turma = ?';
-    db.query(sqlAcesso, [idProfessor, turma_id], (err, acesso) => {
-        if (err) {
-            console.error('Erro ao verificar acesso:', err);
-            return res.status(500).json({ sucesso: false, erro: 'Erro interno' });
-        }
-        
-        if (acesso.length === 0) {
-            return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
-        }
-        
-        // Busca notas
-        const sqlNotas = 'SELECT aluno_id, participacao, organizacao, respeito, atividade, avaliacao, recuperacao FROM notas WHERE turma_id = ? AND unidade = ? AND professor_id = ?';
-        db.query(sqlNotas, [turma_id, unidade, idProfessor], (err, notas) => {
-            if (err) {
-                console.error('Erro ao carregar notas:', err);
-                return res.status(500).json({ sucesso: false, erro: 'Erro interno' });
-            }
-            
-            const notasFormatadas = {};
-            notas.forEach(nota => {
-                notasFormatadas[nota.aluno_id] = {
-                    qualitativo: {
-                        participacao: parseFloat(nota.participacao) || 0,
-                        organizacao: parseFloat(nota.organizacao) || 0,
-                        respeito: parseFloat(nota.respeito) || 0
-                    },
-                    atividade: parseFloat(nota.atividade) || 0,
-                    avaliacao: parseFloat(nota.avaliacao) || 0,
-                    recuperacao: parseFloat(nota.recuperacao) || 0
-                };
-            });
-            
-            res.json({ sucesso: true, notas: notasFormatadas });
-        });
-    });
-});
-
-// Rota para salvar notas
-app.post('/api/salvar-notas', verificarProfessor, (req, res) => {
-    const { turma_id, unidade, notas } = req.body;
-    const idProfessor = req.session.usuario.id;
-    
-    if (!turma_id || !unidade || !notas) {
-        return res.status(400).json({ sucesso: false, erro: 'Dados incompletos' });
-    }
-    
-    // Verifica acesso
-    const sqlAcesso = 'SELECT 1 FROM professor_turma WHERE id_professor = ? AND id_turma = ?';
-    db.query(sqlAcesso, [idProfessor, turma_id], (err, acesso) => {
-        if (err) {
-            console.error('Erro ao verificar acesso:', err);
-            return res.status(500).json({ sucesso: false, erro: 'Erro interno' });
-        }
-        
-        if (acesso.length === 0) {
-            return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
-        }
-        
-        let registrosAtualizados = 0;
-        const operacoes = [];
-        
-        // Prepara as operações de INSERT/UPDATE
-        for (const [alunoId, dadosNota] of Object.entries(notas)) {
-            const { qualitativo, atividade, avaliacao, recuperacao } = dadosNota;
-            
-            // Verifica se já existe nota
-            const sqlCheck = 'SELECT id FROM notas WHERE professor_id = ? AND aluno_id = ? AND unidade = ? AND turma_id = ?';
-            operacoes.push(new Promise((resolve, reject) => {
-                db.query(sqlCheck, [idProfessor, alunoId, unidade, turma_id], (err, notaExistente) => {
-                    if (err) return reject(err);
-                    
-                    if (notaExistente.length > 0) {
-                        // UPDATE
-                        const sqlUpdate = `
-                            UPDATE notas SET
-                                participacao = ?, organizacao = ?, respeito = ?, atividade = ?, avaliacao = ?, recuperacao = ?, atualizado_em = CURRENT_TIMESTAMP
-                            WHERE professor_id = ? AND aluno_id = ? AND unidade = ? AND turma_id = ?
-                        `;
-                        db.query(sqlUpdate, [
-                            qualitativo.participacao || 0, 
-                            qualitativo.organizacao || 0, 
-                            qualitativo.respeito || 0,
-                            atividade || 0, 
-                            avaliacao || 0, 
-                            recuperacao || 0,
-                            idProfessor, 
-                            alunoId, 
-                            unidade, 
-                            turma_id
-                        ], (err) => {
-                            if (err) return reject(err);
-                            registrosAtualizados++;
-                            resolve();
-                        });
-                    } else {
-                        // INSERT
-                        const sqlInsert = `
-                            INSERT INTO notas (professor_id, turma_id, aluno_id, unidade, participacao, organizacao, respeito, atividade, avaliacao, recuperacao)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        `;
-                        db.query(sqlInsert, [
-                            idProfessor, 
-                            turma_id, 
-                            alunoId, 
-                            unidade,
-                            qualitativo.participacao || 0, 
-                            qualitativo.organizacao || 0, 
-                            qualitativo.respeito || 0,
-                            atividade || 0, 
-                            avaliacao || 0, 
-                            recuperacao || 0
-                        ], (err) => {
-                            if (err) return reject(err);
-                            registrosAtualizados++;
-                            resolve();
-                        });
-                    }
-                });
-            }));
-        }
-        
-        // Executa todas as operações
-        Promise.all(operacoes)
-            .then(() => {
-                res.json({
-                    sucesso: true,
-                    registros: registrosAtualizados,
-                    mensagem: `Notas da Unidade ${unidade} salvas com sucesso!`
-                });
-            })
-            .catch(error => {
-                console.error('Erro ao salvar notas:', error);
-                res.status(500).json({ sucesso: false, erro: 'Erro interno' });
-            });
-    });
-});
-
-// Rota para médias anuais (CORRIGIDA - recuperação substitui média quando maior)
-app.get('/api/medias-anuais', verificarProfessor, (req, res) => {
-    const { turma_id } = req.query;
-    const idProfessor = req.session.usuario.id;
-    
-    if (!turma_id) {
-        return res.status(400).json({ sucesso: false, erro: 'Turma ID obrigatório' });
-    }
-    
-    const sqlAcesso = 'SELECT 1 FROM professor_turma WHERE id_professor = ? AND id_turma = ?';
-    db.query(sqlAcesso, [idProfessor, turma_id], (err, acesso) => {
-        if (err) {
-            console.error('Erro ao verificar acesso:', err);
-            return res.status(500).json({ sucesso: false, erro: 'Erro interno' });
-        }
-        
-        if (acesso.length === 0) {
-            return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
-        }
-        
-        const sqlMedias = `
-            SELECT 
-                a.id as aluno_id,
-                a.nome as aluno_nome,
-                
-                -- Unidade 1: usa a maior nota entre média original e recuperação
-                GREATEST(
-                    COALESCE((n1.participacao + n1.organizacao + n1.respeito + n1.atividade + n1.avaliacao), 0),
-                    COALESCE(n1.recuperacao, 0)
-                ) as media_unidade1,
-                
-                -- Unidade 2: usa a maior nota entre média original e recuperação
-                GREATEST(
-                    COALESCE((n2.participacao + n2.organizacao + n2.respeito + n2.atividade + n2.avaliacao), 0),
-                    COALESCE(n2.recuperacao, 0)
-                ) as media_unidade2,
-                
-                -- Unidade 3: usa a maior nota entre média original e recuperação
-                GREATEST(
-                    COALESCE((n3.participacao + n3.organizacao + n3.respeito + n3.atividade + n3.avaliacao), 0),
-                    COALESCE(n3.recuperacao, 0)
-                ) as media_unidade3,
-                
-                -- Notas de recuperação para exibição
-                COALESCE(n1.recuperacao, 0) as recuperacao_unidade1,
-                COALESCE(n2.recuperacao, 0) as recuperacao_unidade2,
-                COALESCE(n3.recuperacao, 0) as recuperacao_unidade3
-                
-            FROM alunos a
-            LEFT JOIN notas n1 ON n1.aluno_id = a.id AND n1.unidade = 1 AND n1.professor_id = ?
-            LEFT JOIN notas n2 ON n2.aluno_id = a.id AND n2.unidade = 2 AND n2.professor_id = ?
-            LEFT JOIN notas n3 ON n3.aluno_id = a.id AND n3.unidade = 3 AND n3.professor_id = ?
-            WHERE a.turma_id = ?
-            ORDER BY a.nome
-        `;
-        
-        db.query(sqlMedias, [idProfessor, idProfessor, idProfessor, turma_id], (err, medias) => {
-            if (err) {
-                console.error('Erro ao carregar médias:', err);
-                return res.status(500).json({ sucesso: false, erro: 'Erro interno' });
-            }
-            
-            res.json({ sucesso: true, medias: medias });
-        });
-    });
-});
-
-// ========================
-// ROTAS OBJETOS DE CONHECIMENTO - CORRIGIDAS
-// ========================
-
-// Rota para buscar dados do usuário
-app.get('/api/dados-usuario', verificarAuth, (req, res) => {
-    res.json({ 
-        sucesso: true, 
-        usuario: {
-            id: req.session.usuario.id,
-            nome: req.session.usuario.nome,
-            email: req.session.usuario.email,
-            tipo: req.session.usuario.tipo
-        }
-    });
-});
-
-// Rota para buscar turmas do professor
-app.get('/api/turmas-professor', verificarProfessor, (req, res) => {
-    const idProfessor = req.session.usuario.id;
-
-    const sql = `
-        SELECT DISTINCT 
-            t.id,
-            t.nome
-        FROM turmas t
-        INNER JOIN professor_turma pt ON t.id = pt.id_turma
-        WHERE pt.id_professor = ?
-        ORDER BY t.nome
-    `;
-    
-    db.query(sql, [idProfessor], (err, turmas) => {
-        if (err) {
-            console.error('Erro ao buscar turmas:', err);
-            return res.status(500).json({ sucesso: false, erro: 'Erro ao carregar turmas' });
-        }
-        
-        res.json({ sucesso: true, turmas });
-    });
-});
-
-// Rota para buscar disciplinas do professor
-app.get('/api/disciplinas-professor', verificarProfessor, (req, res) => {
-    const idProfessor = req.session.usuario.id;
-
-    // Primeiro tenta buscar da tabela professor_disciplinas
-    const sql = `
-        SELECT DISTINCT 
-            d.id,
-            d.nome
-        FROM disciplinas d
-        LEFT JOIN professor_disciplinas pd ON d.id = pd.disciplina_id
-        WHERE pd.professor_id = ? OR pd.professor_id IS NULL
-        ORDER BY d.nome
-    `;
-    
-    db.query(sql, [idProfessor], (err, disciplinas) => {
-        if (err) {
-            console.log('Erro ao buscar disciplinas, usando fallback...');
-            
-            // Fallback: retorna disciplinas padrão
-            const disciplinasFallback = [
-                { id: 1, nome: 'Matemática' },
-                { id: 2, nome: 'Português' },
-                { id: 3, nome: 'Ciências' },
-                { id: 4, nome: 'História' },
-                { id: 5, nome: 'Geografia' },
-                { id: 6, nome: 'Inglês' },
-                { id: 7, nome: 'Artes' },
-                { id: 8, nome: 'Educação Física' }
-            ];
-            
-            return res.json({ sucesso: true, disciplinas: disciplinasFallback });
-        }
-        
-        // Se não encontrou disciplinas, usa fallback
-        if (disciplinas.length === 0) {
-            const disciplinasFallback = [
-                { id: 1, nome: 'Matemática' },
-                { id: 2, nome: 'Português' },
-                { id: 3, nome: 'Ciências' },
-                { id: 4, nome: 'História' },
-                { id: 5, nome: 'Geografia' }
-            ];
-            return res.json({ sucesso: true, disciplinas: disciplinasFallback });
-        }
-        
-        res.json({ sucesso: true, disciplinas });
-    });
-});
-
-// Rota para buscar objetos de conhecimento
-app.get('/api/objetos-conhecimento', verificarProfessor, (req, res) => {
-    const { turma, disciplina, mes, ano } = req.query;
-    const idProfessor = req.session.usuario.id;
-
-    console.log('📍 Buscando objetos:', { turma, disciplina, mes, ano, idProfessor });
-
-    if (!turma || !disciplina || !mes || !ano) {
-        return res.status(400).json({ sucesso: false, erro: 'Parâmetros incompletos' });
-    }
-
-    const sql = `
-        SELECT DAY(data_aula) as dia, objeto_conhecimento 
-        FROM objetos_conhecimento 
-        WHERE professor_id = ? 
-            AND turma_id = ?
-            AND disciplina_id = ?
-            AND MONTH(data_aula) = ? 
-            AND YEAR(data_aula) = ?
-        ORDER BY data_aula
-    `;
-    
-    db.query(sql, [idProfessor, turma, disciplina, mes, ano], (err, resultados) => {
-        if (err) {
-            console.error('❌ Erro ao buscar objetos:', err);
-            return res.status(500).json({ sucesso: false, erro: 'Erro ao carregar objetos' });
-        }
-
-        const objetos = {};
-        resultados.forEach(item => {
-            objetos[item.dia] = item.objeto_conhecimento;
-        });
-
-        console.log('✅ Objetos encontrados:', objetos);
-        res.json({ sucesso: true, objetos });
-    });
-});
-
-// Rota para salvar objetos de conhecimento - CORRIGIDA
-app.post('/api/salvar-objetos-conhecimento', verificarProfessor, (req, res) => {
-    const { turma, disciplina, mes, ano, objetos } = req.body;
-    const idProfessor = req.session.usuario.id;
-
-    console.log('📍 Salvando objetos:', { 
-        turma, 
-        disciplina, 
-        mes, 
-        ano, 
-        idProfessor,
-        totalObjetos: Object.keys(objetos).length 
-    });
-
-    if (!turma || !disciplina || !mes || !ano || !objetos) {
-        return res.status(400).json({ sucesso: false, erro: 'Dados incompletos' });
-    }
-
-    const operacoes = [];
-    let registrosProcessados = 0;
-
-    // Para cada objeto, verifica se já existe e faz INSERT ou UPDATE
-    Object.keys(objetos).forEach(dia => {
-        const dataAula = `${ano}-${mes.toString().padStart(2, '0')}-${dia.padStart(2, '0')}`;
-        const objetoConhecimento = objetos[dia];
-        
-        // Verifica se já existe registro
-        const sqlCheck = `
-            SELECT id FROM objetos_conhecimento 
-            WHERE professor_id = ? 
-                AND turma_id = ? 
-                AND disciplina_id = ? 
-                AND data_aula = ?
-        `;
-        
-        operacoes.push(new Promise((resolve, reject) => {
-            db.query(sqlCheck, [idProfessor, turma, disciplina, dataAula], (err, resultados) => {
-                if (err) {
-                    console.error('❌ Erro ao verificar objeto:', err);
-                    return reject(err);
-                }
-                
-                if (resultados.length > 0) {
-                    // UPDATE
-                    const idObjeto = resultados[0].id;
-                    const sqlUpdate = `
-                        UPDATE objetos_conhecimento 
-                        SET objeto_conhecimento = ?, updated_at = CURRENT_TIMESTAMP
-                        WHERE id = ?
-                    `;
-                    
-                    db.query(sqlUpdate, [objetoConhecimento, idObjeto], (err) => {
-                        if (err) {
-                            console.error('❌ Erro ao atualizar objeto:', err);
-                            return reject(err);
-                        }
-                        registrosProcessados++;
-                        console.log(`✅ Objeto atualizado: dia ${dia}`);
-                        resolve();
-                    });
-                } else {
-                    // INSERT
-                    const sqlInsert = `
-                        INSERT INTO objetos_conhecimento 
-                        (professor_id, turma_id, disciplina_id, data_aula, objeto_conhecimento) 
-                        VALUES (?, ?, ?, ?, ?)
-                    `;
-                    
-                    db.query(sqlInsert, [idProfessor, turma, disciplina, dataAula, objetoConhecimento], (err) => {
-                        if (err) {
-                            console.error('❌ Erro ao inserir objeto:', err);
-                            return reject(err);
-                        }
-                        registrosProcessados++;
-                        console.log(`✅ Objeto inserido: dia ${dia}`);
-                        resolve();
-                    });
-                }
-            });
-        }));
-    });
-
-    // Executa todas as operações
-    Promise.all(operacoes)
-        .then(() => {
-            console.log(`✅ Todos os objetos salvos: ${registrosProcessados} registros processados`);
-            res.json({ 
-                sucesso: true, 
-                mensagem: `Objetos de conhecimento salvos com sucesso! (${registrosProcessados} registros)`,
-                registros: registrosProcessados
-            });
-        })
-        .catch(error => {
-            console.error('❌ Erro ao salvar objetos:', error);
-            res.status(500).json({ 
-                sucesso: false, 
-                erro: 'Erro interno ao salvar objetos de conhecimento' 
-            });
-        });
-});
-
-// ========================
-// ROTAS PARA GERENCIAR DISCIPLINAS DO PROFESSOR
-// ========================
-
-// Buscar todas as disciplinas
-app.get('/api/todas-disciplinas', verificarAdmin, (req, res) => {
-    const sql = 'SELECT id, nome FROM disciplinas ORDER BY nome';
-    
-    db.query(sql, (err, disciplinas) => {
-        if (err) {
-            console.error('Erro ao buscar disciplinas:', err);
-            return res.status(500).json({ sucesso: false, erro: 'Erro ao carregar disciplinas' });
-        }
-        
-        res.json({ sucesso: true, disciplinas });
-    });
-});
-
-// Buscar disciplinas de um professor específico
-app.get('/api/disciplinas-professor/:professorId', verificarAdmin, (req, res) => {
-    const professorId = req.params.professorId;
-    
-    const sql = `
-        SELECT d.id, d.nome 
-        FROM disciplinas d
-        INNER JOIN professor_disciplinas pd ON d.id = pd.disciplina_id
-        WHERE pd.professor_id = ?
-        ORDER BY d.nome
-    `;
-    
-    db.query(sql, [professorId], (err, disciplinas) => {
-        if (err) {
-            console.error('Erro ao buscar disciplinas do professor:', err);
-            return res.status(500).json({ sucesso: false, erro: 'Erro ao carregar disciplinas' });
-        }
-        
-        res.json({ sucesso: true, disciplinas });
-    });
-});
-
-// Vincular disciplinas ao professor
-app.post('/api/vincular-disciplinas', verificarAdmin, (req, res) => {
-    const { professor_id, disciplinas } = req.body;
-    
-    if (!professor_id || !disciplinas || !Array.isArray(disciplinas)) {
-        return res.status(400).json({ sucesso: false, erro: 'Dados inválidos' });
-    }
-    
-    // Remove vínculos existentes
-    const sqlDelete = 'DELETE FROM professor_disciplinas WHERE professor_id = ?';
-    db.query(sqlDelete, [professor_id], (err) => {
-        if (err) {
-            console.error('Erro ao remover vínculos antigos:', err);
-            return res.status(500).json({ sucesso: false, erro: 'Erro ao vincular disciplinas' });
-        }
-        
-        // Insere novos vínculos
-        if (disciplinas.length > 0) {
-            const valores = disciplinas.map(disciplina_id => [professor_id, disciplina_id]);
-            const sqlInsert = 'INSERT INTO professor_disciplinas (professor_id, disciplina_id) VALUES ?';
-            
-            db.query(sqlInsert, [valores], (err) => {
-                if (err) {
-                    console.error('Erro ao vincular disciplinas:', err);
-                    return res.status(500).json({ sucesso: false, erro: 'Erro ao vincular disciplinas' });
-                }
-                
-                console.log(`✅ Disciplinas vinculadas ao professor ${professor_id}: ${disciplinas.length} disciplinas`);
-                res.json({ sucesso: true, mensagem: 'Disciplinas vinculadas com sucesso!' });
-            });
-        } else {
-            res.json({ sucesso: true, mensagem: 'Todas as disciplinas foram removidas!' });
-        }
-    });
-});
-
-// Remover disciplina específica do professor
-app.post('/api/remover-disciplina', verificarAdmin, (req, res) => {
-    const { professor_id, disciplina_id } = req.body;
-    
-    const sql = 'DELETE FROM professor_disciplinas WHERE professor_id = ? AND disciplina_id = ?';
-    
-    db.query(sql, [professor_id, disciplina_id], (err, result) => {
-        if (err) {
-            console.error('Erro ao remover disciplina:', err);
-            return res.status(500).json({ sucesso: false, erro: 'Erro ao remover disciplina' });
-        }
-        
-        console.log(`✅ Disciplina ${disciplina_id} removida do professor ${professor_id}`);
-        res.json({ sucesso: true, mensagem: 'Disciplina removida com sucesso!' });
-    });
-});
-
-// Rota para excluir turma (COM VERIFICAÇÃO DE VÍNCULOS)
-app.delete('/api/turmas/:id', verificarAdmin, (req, res) => {
-  const turmaId = req.params.id;
-  
-  // Primeiro verifica se há alunos na turma
-  const sqlCheckAlunos = 'SELECT COUNT(*) as total FROM alunos WHERE turma_id = ?';
-  const sqlCheckProfessores = 'SELECT COUNT(*) as total FROM professor_turma WHERE id_turma = ?';
-  
-  db.query(sqlCheckAlunos, [turmaId], (err, resultAlunos) => {
-    if (err) {
-      console.error('Erro ao verificar alunos:', err);
-      return res.status(500).json({ sucesso: false, erro: 'Erro ao verificar vínculos da turma' });
-    }
-    
-    const totalAlunos = resultAlunos[0].total;
-    
-    if (totalAlunos > 0) {
-      return res.status(400).json({ 
-        sucesso: false, 
-        erro: `Não é possível excluir a turma. Existem ${totalAlunos} aluno(s) vinculado(s) a esta turma. Transfira os alunos para outra turma primeiro.` 
-      });
-    }
-    
-    // Verifica se há professores vinculados
-    db.query(sqlCheckProfessores, [turmaId], (err, resultProfessores) => {
-      if (err) {
-        console.error('Erro ao verificar professores:', err);
-        return res.status(500).json({ sucesso: false, erro: 'Erro ao verificar vínculos da turma' });
-      }
-      
-      const totalProfessores = resultProfessores[0].total;
-      
-      if (totalProfessores > 0) {
-        return res.status(400).json({ 
-          sucesso: false, 
-          erro: `Não é possível excluir a turma. Existem ${totalProfessores} professor(es) vinculado(s) a esta turma. Remova os vínculos primeiro.` 
-        });
-      }
-      
-      // Se não há vínculos, pode excluir
-      const sqlDelete = 'DELETE FROM turmas WHERE id = ?';
-      db.query(sqlDelete, [turmaId], (err, result) => {
-        if (err) {
-          console.error('Erro ao excluir turma:', err);
-          return res.status(500).json({ sucesso: false, erro: 'Erro ao excluir turma' });
-        }
-        
-        if (result.affectedRows === 0) {
-          return res.status(404).json({ sucesso: false, erro: 'Turma não encontrada' });
-        }
-        
-        console.log(`✅ Turma ${turmaId} excluída com sucesso`);
-        res.json({ sucesso: true, mensagem: 'Turma excluída com sucesso!' });
-      });
-    });
-  });
-});
-
-// ========================
-// ROTAS DE FREQUÊNCIA
-// ========================
-
-// Obter turmas e alunos do professor
-app.get('/api/professor/turmas-alunos', verificarAuth, verificarProfessor, async (req, res) => {
-  try {
-    const professorId = req.session.usuario.id;
-    
-    // Obter turmas do professor
-    const [turmas] = await db.execute(`
-      SELECT DISTINCT t.id, t.nome 
-      FROM turmas t
-      INNER JOIN professor_turma pt ON t.id = pt.id_turma
-      WHERE pt.id_professor = ?
-      ORDER BY t.nome
-    `, [professorId]);
-    
-    // Obter alunos por turma
-    const alunosPorTurma = {};
-    for (const turma of turmas) {
-      const [alunos] = await db.execute(`
-        SELECT u.id, u.nome, u.turma_id 
-        FROM usuarios u
-        WHERE u.tipo = 'aluno' AND u.turma_id = ?
-        ORDER BY u.nome
-      `, [turma.id]);
-      
-      alunosPorTurma[turma.nome] = alunos;
-    }
-    
-    res.json({ 
-      sucesso: true, 
-      turmas: turmas.map(t => t.nome),
-      alunosPorTurma 
-    });
-  } catch (err) {
-    console.error('Erro ao carregar turmas e alunos:', err);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao carregar turmas e alunos.' });
-  }
-});
-
-// Salvar frequência
-app.post('/api/frequencia', verificarAuth, verificarProfessor, async (req, res) => {
-  try {
-    const { dia, mes, ano, turma_id, frequencias } = req.body;
-    const professorId = req.session.usuario.id;
-    
-    // Verificar se o professor tem acesso à turma
-    const [verificacao] = await db.execute(`
-      SELECT 1 FROM professor_turma 
-      WHERE id_professor = ? AND id_turma = ?
-    `, [professorId, turma_id]);
-    
-    if (verificacao.length === 0) {
-      return res.json({ sucesso: false, erro: 'Acesso negado à turma.' });
-    }
-    
-    // Salvar/atualizar cada frequência
-    for (const freq of frequencias) {
-      const [existente] = await db.execute(`
-        SELECT id FROM frequencias 
-        WHERE aluno_id = ? AND dia = ? AND mes = ? AND ano = ? AND turma_id = ?
-      `, [freq.aluno_id, dia, mes, ano, turma_id]);
-      
-      if (existente.length > 0) {
-        // Atualizar
-        await db.execute(`
-          UPDATE frequencias 
-          SET presente = ?, observacao = ?, atualizado_em = NOW() 
-          WHERE id = ?
-        `, [freq.presente, freq.observacao, existente[0].id]);
-      } else {
-        // Inserir
-        await db.execute(`
-          INSERT INTO frequencias (aluno_id, dia, mes, ano, turma_id, presente, observacao, professor_id)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `, [freq.aluno_id, dia, mes, ano, turma_id, freq.presente, freq.observacao, professorId]);
-      }
-    }
-    
-    res.json({ sucesso: true, mensagem: 'Frequência salva com sucesso!' });
-  } catch (err) {
-    console.error('Erro ao salvar frequência:', err);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao salvar frequência.' });
-  }
-});
-
-// Obter frequência
-app.get('/api/frequencia', verificarAuth, verificarProfessor, async (req, res) => {
-  try {
-    const { dia, mes, ano, turma_id } = req.query;
-    
-    const [frequencias] = await db.execute(`
-      SELECT aluno_id, presente, observacao 
-      FROM frequencias 
-      WHERE dia = ? AND mes = ? AND ano = ? AND turma_id = ?
-    `, [dia, mes, ano, turma_id]);
-    
-    res.json({ sucesso: true, frequencias });
-  } catch (err) {
-    console.error('Erro ao carregar frequência:', err);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao carregar frequência.' });
-  }
-});
-
-// ========================
-// ROTA DE RELATÓRIOS DE FREQUÊNCIA
-// ========================
-
-app.get('/api/relatorios/frequencia', verificarAuth, verificarProfessor, async (req, res) => {
-  try {
-    const { mes, ano, turma_id, aluno } = req.query;
-    
-    if (!mes || !ano || !turma_id) {
-      return res.json({ sucesso: false, erro: 'Mês, ano e turma são obrigatórios' });
-    }
-
-    let query = `
-      SELECT 
-        u.nome as aluno,
-        f.dia,
-        f.mes, 
-        f.ano,
-        f.presente,
-        f.observacao
-      FROM frequencias f
-      INNER JOIN usuarios u ON f.aluno_id = u.id
-      WHERE f.turma_id = ? AND f.mes = ? AND f.ano = ?
-    `;
-    
-    const params = [turma_id, mes, ano];
-    
-    if (aluno && aluno !== 'todos') {
-      query += ' AND f.aluno_id = ?';
-      params.push(aluno);
-    }
-    
-    query += ' ORDER BY f.ano, f.mes, f.dia, u.nome';
-    
-    const [results] = await db.execute(query, params);
-    
-    res.json({ 
-      sucesso: true, 
-      relatorio: results 
-    });
-  } catch (err) {
-    console.error('Erro ao gerar relatório:', err);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao gerar relatório' });
-  }
-});
-
-// ========================
-// ROTAS DE NOTAS
-// ========================
-
-// Rota para obter turmas e alunos do professor (notas)
-app.get('/api/professor/turmas', verificarAuth, verificarProfessor, async (req, res) => {
-  try {
-    const professorId = req.session.usuario.id;
-    
-    // Obter turmas do professor
-    const [turmas] = await db.execute(`
-      SELECT DISTINCT t.id, t.nome 
-      FROM turmas t
-      INNER JOIN professor_turma pt ON t.id = pt.id_turma
-      WHERE pt.id_professor = ?
-      ORDER BY t.nome
-    `, [professorId]);
-    
-    // Obter alunos por turma
-    const alunosPorTurma = {};
-    for (const turma of turmas) {
-      const [alunos] = await db.execute(`
-        SELECT u.id, u.nome, u.turma_id 
-        FROM usuarios u
-        WHERE u.tipo = 'aluno' AND u.turma_id = ?
-        ORDER BY u.nome
-      `, [turma.id]);
-      
-      alunosPorTurma[turma.nome] = alunos;
-    }
-    
-    res.json({ 
-      sucesso: true, 
-      turmas: turmas.map(t => t.nome),
-      alunosPorTurma 
-    });
-  } catch (err) {
-    console.error('Erro ao carregar turmas e alunos:', err);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao carregar turmas e alunos.' });
-  }
-});
-
-// Rota para buscar notas da turma
-app.get('/api/turmas/:turmaId/notas', verificarAuth, verificarProfessor, async (req, res) => {
-  try {
-    const { turmaId } = req.params;
-    const { unidade } = req.query;
-    
-    if (!unidade) {
-      return res.json({ sucesso: false, erro: 'Unidade é obrigatória' });
-    }
-
-    // Buscar alunos da turma
-    const [alunos] = await db.execute(
-      'SELECT id, nome FROM usuarios WHERE tipo = "aluno" AND turma_id = ?',
-      [turmaId]
-    );
-
-    // Buscar notas existentes
-    const [notasExistentes] = await db.execute(
-      `SELECT aluno_id, qualitativo_participacao, qualitativo_organizacao, qualitativo_respeito, 
-              atividade, avaliacao, recuperacao 
-       FROM notas 
-       WHERE turma_id = ? AND unidade = ?`,
-      [turmaId, unidade]
-    );
-
-    // Estruturar resposta
-    const notas = {};
-    alunos.forEach(aluno => {
-      const notaExistente = notasExistentes.find(n => n.aluno_id === aluno.id);
-      
-      if (notaExistente) {
-        notas[aluno.id] = {
-          qualitativo: {
-            participacao: notaExistente.qualitativo_participacao || 0,
-            organizacao: notaExistente.qualitativo_organizacao || 0,
-            respeito: notaExistente.qualitativo_respeito || 0
-          },
-          atividade: notaExistente.atividade || 0,
-          avaliacao: notaExistente.avaliacao || 0,
-          recuperacao: notaExistente.recuperacao || 0
-        };
-      } else {
-        // Notas padrão se não existirem
-        notas[aluno.id] = {
-          qualitativo: { participacao: 0, organizacao: 0, respeito: 0 },
-          atividade: 0,
-          avaliacao: 0,
-          recuperacao: 0
-        };
-      }
-    });
-
-    res.json({ sucesso: true, notas });
-  } catch (err) {
-    console.error('Erro ao carregar notas:', err);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao carregar notas.' });
-  }
-});
-
-// Rota para salvar notas
-app.post('/api/notas/salvar', verificarAuth, verificarProfessor, async (req, res) => {
-  try {
-    const { turma_id, unidade, notas } = req.body;
-    const professorId = req.session.usuario.id;
-
-    if (!turma_id || !unidade || !notas) {
-      return res.json({ sucesso: false, erro: 'Dados incompletos para salvar notas.' });
-    }
-
-    let registros = 0;
-
-    // Para cada aluno, salvar/atualizar notas
-    for (const [alunoId, dadosNota] of Object.entries(notas)) {
-      const { qualitativo, atividade, avaliacao, recuperacao } = dadosNota;
-      
-      // Verificar se já existe nota para este aluno na unidade
-      const [existentes] = await db.execute(
-        'SELECT id FROM notas WHERE aluno_id = ? AND turma_id = ? AND unidade = ?',
-        [alunoId, turma_id, unidade]
-      );
-
-      if (existentes.length > 0) {
-        // Atualizar nota existente
-        // Atualizar nota existente
-        await db.execute(
-          `UPDATE notas 
-           SET 
-             qualitativo_participacao = ?, 
-             qualitativo_organizacao = ?, 
-             qualitativo_respeito = ?, 
-             atividade = ?, 
-             avaliacao = ?, 
-             recuperacao = ?, 
-             atualizado_em = NOW()
-           WHERE id = ?`,
-          [
-            qualitativo.participacao || 0,
-            qualitativo.organizacao || 0,
-            qualitativo.respeito || 0,
-            atividade || 0,
-            avaliacao || 0,
-            recuperacao || 0,
-            existentes[0].id
-          ]
-        );
-      } else {
-        // Inserir nova nota
-        await db.execute(
-          `INSERT INTO notas 
-            (aluno_id, turma_id, unidade, qualitativo_participacao, qualitativo_organizacao, qualitativo_respeito, atividade, avaliacao, recuperacao, professor_id, criado_em)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-          [
-            alunoId,
-            turma_id,
-            unidade,
-            qualitativo.participacao || 0,
-            qualitativo.organizacao || 0,
-            qualitativo.respeito || 0,
-            atividade || 0,
-            avaliacao || 0,
-            recuperacao || 0,
-            professorId
-          ]
-        );
-      }
-
-      registros++;
-    }
-
-    res.json({ sucesso: true, mensagem: `${registros} notas processadas com sucesso!` });
-  } catch (err) {
-    console.error('Erro ao salvar notas:', err);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao salvar notas.' });
-  }
-});
-
-// Rota para buscar médias anuais
-app.get('/api/turmas/:turmaId/medias-anuais', verificarAuth, verificarProfessor, async (req, res) => {
-  try {
-    const { turmaId } = req.params;
-
-    // Buscar médias calculadas do banco
-    const [medias] = await db.execute(
-      `SELECT aluno_id, 
-              media_unidade1, media_unidade2, media_unidade3,
-              recuperacao_unidade1, recuperacao_unidade2, recuperacao_unidade3,
-              media_anual
-       FROM medias_anuais 
-       WHERE turma_id = ?`,
-      [turmaId]
-    );
-
-    res.json({ sucesso: true, medias });
-  } catch (err) {
-    console.error('Erro ao carregar médias anuais:', err);
-    // Se a tabela não existir, retornar array vazio
-    res.json({ sucesso: true, medias: [] });
-  }
-});
-
-// ========================
-// ROTAS DE DEBUG
-// ========================
-app.get('/debug/tables', async (req, res) => {
-  try {
-    const [tables] = await db.execute('SHOW TABLES');
-    res.json({ sucesso: true, tabelas: tables });
-  } catch (err) {
-    res.status(500).json({ sucesso: false, erro: err.message });
-  }
-});
-
-app.get('/debug/usuarios', async (req, res) => {
-  try {
-    const [usuarios] = await db.execute('SELECT * FROM usuarios');
-    res.json({ sucesso: true, usuarios: usuarios });
-  } catch (err) {
-    res.status(500).json({ sucesso: false, erro: err.message });
-  }
-});
-
-app.get('/debug/turmas', async (req, res) => {
-  try {
-    const [turmas] = await db.execute('SELECT * FROM turmas');
-    res.json({ sucesso: true, turmas: turmas });
-  } catch (err) {
-    res.status(500).json({ sucesso: false, erro: err.message });
-  }
-});
-
-app.get('/debug/estrutura/usuarios', async (req, res) => {
-  try {
-    const [estrutura] = await db.execute('DESCRIBE usuarios');
-    res.json({ sucesso: true, estrutura: estrutura });
-  } catch (err) {
-    res.status(500).json({ sucesso: false, erro: err.message });
-  }
-});
-
-// ===============================
-// ROTA: Buscar turmas e alunos do professor
-// ===============================
-app.get('/api/professor/turmas-alunos', async (req, res) => {
-  try {
-    const professorId = req.query.professorId;
-
-    if (!professorId) {
-      return res.status(400).json({ success: false, message: 'ID do professor não fornecido.' });
-    }
-
-    const [turmas] = await db.query(
-      `SELECT t.id, t.nome_turma, d.nome_disciplina
-       FROM turmas t
-       JOIN disciplinas d ON t.disciplina_id = d.id
-       JOIN professor_disciplinas pd ON pd.turma_id = t.id
-       WHERE pd.professor_id = ?`,
-      [professorId]
-    );
-
-    const [alunos] = await db.query(
-      `SELECT a.id, a.nome, a.turma_id
-       FROM alunos a
-       JOIN turmas t ON a.turma_id = t.id
-       JOIN professor_disciplinas pd ON pd.turma_id = t.id
-       WHERE pd.professor_id = ?`,
-      [professorId]
-    );
-
-    res.json({
-      success: true,
-      turmas,
-      alunos
-    });
-
-  } catch (error) {
-    console.error('Erro ao buscar turmas e alunos:', error);
-    res.status(500).json({ success: false, message: 'Erro interno ao buscar dados.' });
-  }
-});
 
 // ========================
 // TRATAMENTO DE ERROS
@@ -2943,94 +395,62 @@ app.use((err, req, res, next) => {
     detalhes: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
+
 // ========================
-// ROTA PÁGINA PRINCIPAL OU STATUS
+// ROTA PÁGINA PRINCIPAL
 // ========================
 app.get('/', (req, res) => {
-  res.send('🟢 API do Sistema Escolar rodando!');
+  res.send('🟢 API do Sistema Escolar SEMED rodando!');
 });
 
 // ========================
-// ROTA DE TESTE DO CORS
-// ========================
-app.get('/api/test-cors', (req, res) => {
-  res.json({ message: 'CORS funcionando corretamente 🚀' });
-});
-// ========================
-// SERVIR ARQUIVOS ESTÁTICOS DO FRONTEND
+// SERVIR ARQUIVOS ESTÁTICOS
 // ========================
 import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Caminho para a pasta do front-end (ajuste se necessário)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ========================
-// ROTA PADRÃO (para o index.html do front)
-// ========================
+// Rota padrão para o frontend
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
 // ========================
 // INICIAR SERVIDOR
 // ========================
-const PORT = process.env.PORT || 5000; // Se PORT não estiver no Railway, usará 8080
+const PORT = process.env.PORT || 5000;
 
-// Esta função assíncrona garante que a conexão com o DB seja testada
-// ANTES que o servidor Express comece a escutar.
 async function startServer() {
   try {
-    // 1. Testar conexão com o banco de dados
     const connection = await db.getConnection();
-    console.log('✅ Conectado ao MySQL Railway com sucesso! (projetos separados)');
-    
-    // Testar query básica
-    const [result] = await connection.execute('SELECT 1 + 1 AS test');
-    console.log('✅ Query teste executada:', result[0].test); // Agora você deve ver esta mensagem
-    
-    connection.release(); // Liberar a conexão de teste
+    console.log('✅ Conectado ao MySQL Railway com sucesso!');
+    connection.release();
 
-    
-    // 2. Iniciar o servidor Express
     app.listen(PORT, '0.0.0.0', () => {
-      console.log('\n🚀 Servidor Prosemed Diário Digital iniciado!');
+      console.log('\n🚀 Servidor Projeto SEMED Diário Digital iniciado!');
       console.log(`📍 Porta: ${PORT}`);
       console.log(`🌐 Ambiente: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🗄️ Database: Railway MySQL`);
-      console.log(`🔗 URL: https://prosemeddiariodigital-production.up.railway.app`);
-      console.log('\n📋 Endpoints disponíveis:');
-      console.log(`   GET  /health          - Status da aplicação`);
-      console.log(`   GET  /debug/tables    - Listar tabelas`);
-      console.log(`   POST /api/login       - Login de usuário`); // Corrigi para /api/login
-      console.log(`   POST /api/cadastro    - Cadastro de usuário`); // Corrigi para /api/cadastro
-      console.log(`   GET  /api/admin/verificar-master - Verificar admin master`);
-      console.log(`   POST /api/admin/redefinir-senha - Redefinir senha (admin master)`); // Corrigi para /api/admin/redefinir-senha
-      console.log(`   POST /api/recuperar-senha - Recuperação de senha`);
-      console.log(`   GET  /api/relatorios/frequencia - Relatórios de frequência`);
+      console.log(`🔗 URL: https://projetosemeddiariodigital-production.up.railway.app`);
+      console.log('\n📋 Endpoints principais:');
+      console.log(`   GET  /api/check-auth          - Verificar autenticação`);
+      console.log(`   POST /api/login               - Login`);
+      console.log(`   POST /api/cadastro            - Cadastro`);
+      console.log(`   GET  /api/turmas              - Listar turmas (admin)`);
+      console.log(`   GET  /api/professores         - Listar professores (admin)`);
+      console.log(`   GET  /api/alunos              - Listar alunos (admin)`);
+      console.log(`   GET  /api/admin/administradores - Listar administradores`);
+      console.log(`   POST /api/admin/toggle-permission - Alternar permissões`);
     });
 
   } catch (err) {
-    console.error('❌ ERRO CRÍTICO ao iniciar o servidor ou conectar ao MySQL:');
-    console.error('   Código:', err.code);
-    console.error('   Mensagem:', err.message);
-    console.error('   Host:', process.env.MYSQLHOST);
-    console.error('   Port:', process.env.MYSQLPORT);
-    
-    if (err.code === 'ENOTFOUND') {
-      console.error('\n💡 ERRO CRÍTICO: Host do MySQL não encontrado.');
-      console.error('   Verifique se as variáveis no Railway estão CORRETAS:');
-      console.error('   - MYSQLHOST deve ser: caboose.proxy.rlwy.net');
-      console.error('   - MYSQLPORT deve ser: 29311');
-    }
-    // IMPORTANTE: Se o servidor não conseguir iniciar devido a um erro crítico,
-    // é bom sair do processo para que o Railway possa tentar um novo deploy.
-    process.exit(1); 
+    console.error('❌ ERRO CRÍTICO ao iniciar o servidor:', err.message);
+    process.exit(1);
   }
 }
 
-// Chamar a função para iniciar o servidor
 startServer();
 
-// O 'export default app;' deve estar no final do arquivo, APENAS UMA VEZ
 export default app;

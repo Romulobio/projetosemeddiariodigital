@@ -1,6 +1,9 @@
-// ===============================
+// =============================== 
 // BASE URL AUTOMÁTICA
 // ===============================
+
+// Se estiver rodando no VS Code → localhost
+// Caso contrário → Railway
 const BASE_URL = window.location.hostname.includes("localhost")
   ? "http://localhost:5000"
   : "https://projetosemeddiariodigital-production.up.railway.app";
@@ -23,7 +26,7 @@ class ApiService {
         "Content-Type": "application/json",
         ...options.headers,
       },
-      credentials: "include",
+      credentials: "include", // permite cookies/sessões
     };
 
     if (options.body) {
@@ -34,7 +37,11 @@ class ApiService {
       const response = await fetch(url, config);
 
       let data = null;
-      try { data = await response.json(); } catch {}
+      try {
+        data = await response.json();
+      } catch {
+        console.warn("⚠️ Resposta não era JSON.");
+      }
 
       if (!response.ok) {
         throw new Error(data?.erro || data?.error || `Erro ${response.status}`);
@@ -188,6 +195,6 @@ class ApiService {
   }
 }
 
-// EXPORTAÇÃO GLOBAL PARA O script-admin.js
+// Disponível globalmente
 window.apiService = ApiService;
 export default ApiService;
